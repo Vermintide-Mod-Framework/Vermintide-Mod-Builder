@@ -28,8 +28,8 @@ const ignoredDirs = [
 
 // Probably don't CHANGE THESE:
 // These will be replaced in the template mod when using running task
-const temp = "%%template";
-const tempAuthor = "%%author";
+const temp = '%%template';
+const tempAuthor = '%%author';
 
 // Folders with scripts and resources
 const resDir = '/resource_packages/';
@@ -133,7 +133,7 @@ function getRegistryValue(key, value) {
 			{windowsVerbatimArguments: true}
 		);
 
-		let result = "";
+		let result = '';
 
 		spawn.stdout.on('data', (data) => {
 			result += String(data);
