@@ -34,6 +34,7 @@ const tempAuthor = "%%author";
 // Folders with scripts and resources
 const resDir = '/resource_packages/';
 const scriptDir = '/scripts/mods/';
+const localDir = 'localization/';
 const renameDirs = [
 	resDir,
 	scriptDir
@@ -45,7 +46,8 @@ const coreSrc = [path.join(temp, '/core/**/*')];
 // Folders with mod specific files
 const modSrc = [
 	path.join(temp, resDir, temp, temp + '.package'),
-	path.join(temp, scriptDir, temp, temp + '.lua'),			
+	path.join(temp, scriptDir, temp, temp + '.lua'),	
+	path.join(temp, localDir, temp + '.lua'),	
 	path.join(temp, temp + '.mod'),
 	path.join(temp, '/*')	
 ];
