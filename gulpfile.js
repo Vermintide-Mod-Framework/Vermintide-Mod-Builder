@@ -332,12 +332,10 @@ function moveMod(modName, buildDir, modsDir) {
 				p.extname = '';
 			}))
 			.on('error', err => {		    		
-				console.log(err);
 				reject(err);
 			})
 			.pipe(gulp.dest(modsDir))
 			.on('error', err => {		    		
-				console.log(err);
 				reject(err);
 			})
 			.on('end', () => {
