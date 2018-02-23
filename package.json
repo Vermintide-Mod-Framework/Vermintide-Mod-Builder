@@ -1,0 +1,21 @@
+{
+  "name": "unshame-sdk-mods",
+  "version": "1.0.0",
+  "description": "UnShame-SDK-Mods",
+  "main": "gulpfile.js",
+  "dependencies": {
+    "gulp": "^4.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-replace": "^0.6.1",
+    "merge-stream": "^1.0.1",
+    "minimist": "^1.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "http://gitlab.ludoruisch.nl/unshame/UnShame-SDK-Mods.git"
+  },
+  "author": "",
+  "license": "UNLICENSED"
+}
