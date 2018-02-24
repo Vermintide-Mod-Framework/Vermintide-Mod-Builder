@@ -45,7 +45,7 @@ I can't be bothered to add parameters to change the title, description etc, you 
 
 #### Open an existing mod's page on Steam Workshop:  
 
-	gulp open -m <mod_name> [--id <item_id>]  
+	gulp open {-m <mod_name> | --id <item_id>}  
 
 #### Build all or specified mods from current directory:
 	
