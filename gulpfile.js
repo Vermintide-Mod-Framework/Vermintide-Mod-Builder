@@ -87,7 +87,7 @@ gulp.task('create', (callback) => {
 		visibility: argv.v || argv.visibility || 'private'
 	};
 	if(!modName || fs.existsSync(modName + '/')) {
-		throw Error(`Folder ${modName} not specified or already exists`);
+		throw Error(`Folder ${modName} is invalid or already exists`);
 	}
 	console.log('Copying template');
 	copyTemplate(config)
@@ -110,13 +110,13 @@ gulp.task('create', (callback) => {
 });
 
 // Uploads the last built version of the mod to the workshop
-// gulp upload -m <mod_name> [-u <changenote>]
+// gulp upload -m <mod_name> [-n <changenote>] --open
 gulp.task('upload', (callback) => {
 	let argv = minimist(process.argv);
 
 	let modName = argv.m || argv.mod || '';
 	if(!fs.existsSync(modName + '/')) {
-		throw Error(`Folder ${modName} not specified or already exists`);
+		throw Error(`Folder ${modName} doesn't exist`);
 	}
 
 	let changenote = argv.n || argv.note || argv.changenote || '';
@@ -124,7 +124,21 @@ gulp.task('upload', (callback) => {
 		changenote = '';
 	}
 
+	let openUrl = argv.o || argv.open || false;
+
 	uploadMod(modName, changenote)
+		.then(() => getModId(modName))
+		.then((modId) => {
+			let modUrl = 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+			console.log('Uploaded to '+ modUrl);
+			if(openUrl){
+				console.log('Opening url...');
+				return opn(modUrl);
+			}
+			else{
+				return Promise.resolve();
+			}
+		})
 		.catch((error) => {
 			console.log(error);
 		})
@@ -499,7 +513,8 @@ function readProcessedBundles(modName, dataDir, code) {
 					outputFailedBundles(data, modName);
 				}
 				if(code) {
-					return reject('Building failed with code: ' + code + '. Please check your scripts for syntax errors.\n');
+					console.log('Stingray exited with code: ' + code + '. Please check your scripts for syntax errors.');
+					return resolve();
 				}
 				resolve();
 			});
