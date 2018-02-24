@@ -189,7 +189,7 @@ gulp.task('open', (callback) => {
 
 	let modName = argv.m || argv.mod || '';
 	let modId = argv.id || null;
-	if(!modName || !fs.existsSync(modName + '/')) {
+	if(!modId && (!modName || !fs.existsSync(modName + '/'))) {
 		throw Error(`Folder ${modName} doesn't exist`);
 	}
 
