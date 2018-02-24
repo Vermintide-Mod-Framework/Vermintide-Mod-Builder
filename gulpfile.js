@@ -85,17 +85,8 @@ const cfgFile = 'item.cfg';
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 gulp.task('create', (callback) => {
-	let argv = minimist(process.argv);
-
-	let modName = argv.m || argv.mod || '';
-	let modTitle = argv.t || argv.title || modName;
-	let config = {
-		name: modName,
-		title: modTitle,
-		description: argv.d || argv.desc || argv.description || modTitle + ' description',
-		language: argv.l || argv.language || 'english',
-		visibility: argv.v || argv.visibility || 'private'
-	};
+	let config = getConfig(process.argv);
+	let modName = config.name;
 	if(!modName || fs.existsSync(modName + '/')) {
 		throw Error(`Folder ${modName} is invalid or already exists`);
 	}
@@ -112,6 +103,38 @@ gulp.task('create', (callback) => {
 		.catch((error) => {
 			console.log(error);
 			return deleteDirectory(modName);
+		})
+		.catch((error) => {
+			console.log(error);
+		})
+		.then(() => callback());
+});
+
+// Creates item.cfg for an existing mod if it doesn't exist
+// and publishes the last built version to workshop as a new item
+// If item.cfg is present it shouldn't have published_id in it
+// gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+gulp.task('publish', (callback) => {
+	let config = getConfig(process.argv);
+	let modName = config.name;
+	if(!fs.existsSync(modName + '/')) {
+		throw Error(`Folder ${modName} doesn't exist`);
+	}
+	checkIfPublished(modName)
+		.then((cfgExists) => {
+			if(cfgExists) {
+				console.log('Using existing item.cfg');
+			}
+			return cfgExists ? Promise.resolve() : createCfgFile(config);
+		})
+		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modName))
+		.then(() => uploadMod(modName))
+		.then(() => getModId(modName))
+		.then((modId) => {
+			let modUrl =  formUrl(modId);
+			console.log('Uploaded to '+ modUrl);
+			console.log('Opening url...');
+			return opn(modUrl);
 		})
 		.catch((error) => {
 			console.log(error);
@@ -170,7 +193,7 @@ gulp.task('open', (callback) => {
 	getModId(modName)
 		.then((modId) => opn(formUrl(modId)))
 		.catch((error) => {
-			console.log(error)
+			console.log(error);
 		})
 		.then(callback);
 });
@@ -221,6 +244,20 @@ gulp.task('watch', (callback) => {
 
 /* CREATE AND UPLOAD METHODS */
 
+function getConfig(pargv) {
+	let argv = minimist(pargv);
+
+	let modName = argv.m || argv.mod || '';
+	let modTitle = argv.t || argv.title || modName;
+	return {
+		name: modName,
+		title: modTitle,
+		description: argv.d || argv.desc || argv.description || modTitle + ' description',
+		language: argv.l || argv.language || 'english',
+		visibility: argv.v || argv.visibility || 'private'
+	};
+}
+
 function copyTemplate(config) {
 	let modName = config.name;
 	return new Promise((resolve, reject) => {
@@ -252,6 +289,8 @@ function createCfgFile(config) {
 					`content = "dist";\n` +
 					`language = "${config.language}";\n` +
 					`visibility = "${config.visibility}";\n`;
+	console.log('item.cfg:');
+	console.log(configText);
 	return writeFile(join(config.name, cfgFile), configText);
 }
 
@@ -289,7 +328,7 @@ function uploadMod(modName, changenote, skip) {
 
 		uploader.on('close', (code) => {
 			if(code) {
-				reject(code);
+				reject('Uploader exited with code: ' + code);
 			}
 			else {
 				resolve(modId);
@@ -300,6 +339,21 @@ function uploadMod(modName, changenote, skip) {
 
 function formUrl(modId) {
 	return 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+}
+
+function checkIfPublished(modName) {
+	let modCfg = join(modName, cfgFile);
+	if(!fs.existsSync(modCfg)){
+		return Promise.resolve(false);
+	}
+	return readFile(modCfg, 'utf8').then((data) => {
+		if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
+			return Promise.reject('Mod has already been published, use gulp upload instead.');
+		}
+		else {
+			return Promise.resolve(true);
+		}
+	});
 }
 
 
@@ -634,6 +688,20 @@ function deleteDirectory(dir) {
             });
         });
     });
+}
+
+function copyIfDoesntExist(filePath, fileName, base, dest) {
+	return new Promise((resolve, reject) => {
+		if(fs.existsSync(join(dest, fileName))) {
+			resolve();
+		}
+		else{
+			gulp.src(join(filePath, fileName), {base: base})
+				.pipe(gulp.dest(dest))
+				.on('error', reject)
+				.on('end', resolve);
+		}
+	});
 }
 
 // Removes trailing /n

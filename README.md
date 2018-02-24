@@ -19,32 +19,39 @@ Run npm (included in node.js) from where you put this to install dependencies:
 
 ### Usage
 
-#### To create a mod from template:
+#### Create a mod from template:
 
 	gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 
-This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop, add its item id to `item.cfg` in the new mod folder and open a browser window for you to subscribe to the mod.  
+This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `item.cfg` in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for building the mod.
 
-#### To upload a mod to the Steam Workshop:
+#### Publish an existing mod to Steam Workshop:  
+
+	gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+
+This will create `item.cfg` for a mod if it doesn't exist and publish the last built version to workshop as a new item.
+If `item.cfg` is present it shouldn't have `published_id` in it.  
+
+#### Upload a new version of a mod to Steam Workshop:  
 
 	gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]  
 
-This will use `item.cfg` in the mod's folder. Seems to only update the mod if the content has changed.  
+This will use `item.cfg` in the mod's folder and upload the last built version. Seems to only update the mod if the content has changed.  
 `-changenote` or `-n`- list of changes made  
 `--open` or `-o` - opens the mod's url after uploading  
 `--skip` or `-s` - only uploads the contents of `item.cfg`  
 I can't be bothered to add parameters to change the title, description etc, you can simply edit `item.cfg` file.  
 
-#### To open mod's Steam Workshop page:  
+#### Open an existing mod's page on Steam Workshop:  
 
 	gulp open -m <mod_name>  
 
-#### To build all or specified mods from current directory:
+#### Build all or specified mods from current directory:
 	
 	gulp build [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>]
 
-#### To automatically build all or specified mods from current directory:
+#### Automatically build all or specified mods from current directory:
 
 	gulp watch [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>]
 
@@ -52,4 +59,4 @@ Both of these will build and copy the bundle to the dist folder, as well as repl
 `item.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output  
 `--temp` or `-t` - overwrites the .temp folder instead of deleting it (builds faster)  
-`--id` - forces item id. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.
+`--id` - forces item ID. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.
