@@ -116,7 +116,7 @@ gulp.task('publish', (callback) => {
 	let config = getConfig(process.argv);
 	let modName = config.name;
 	let verbose = process.argv.verbose || false;
-	if(!fs.existsSync(modName + '/')) {
+	if(!modName || !fs.existsSync(modName + '/')) {
 		throw Error(`Folder ${modName} doesn't exist`);
 	}
 	
