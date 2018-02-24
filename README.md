@@ -38,7 +38,7 @@ If `item.cfg` is present it shouldn't have `published_id` in it.
 	gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]  
 
 This will use `item.cfg` in the mod's folder and upload the last built version. Seems to only update the mod if the content has changed.  
-`-changenote` or `-n`- list of changes made  
+`--changenote` or `-n`- list of changes made  
 `--open` or `-o` - opens the mod's url after uploading  
 `--skip` or `-s` - only uploads the contents of `item.cfg`  
 I can't be bothered to add parameters to change the title, description etc, you can simply edit `item.cfg` file.  
@@ -49,11 +49,11 @@ I can't be bothered to add parameters to change the title, description etc, you 
 
 #### Build all or specified mods from current directory:
 	
-	gulp build [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>] [--dist]
+	gulp build [-m "<mod1>; <mod2>; <mod3>..."] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 #### Automatically build all or specified mods from current directory:
 
-	gulp watch [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>] [--dist]
+	gulp watch [-m "<mod1>; <mod2>; <mod3>..."] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 Both of these will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. 
 `item.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
