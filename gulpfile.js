@@ -3,6 +3,7 @@
 const 
 	fs = require('fs'),
 	path = require('path'),
+	join = path.join,
 	gulp = require('gulp'),
 	minimist = require('minimist'),
 	merge = require('merge-stream'),
@@ -10,12 +11,17 @@ const
 	rename = require('gulp-rename'),
 	child_process = require('child_process'),
 	util = require('util'),
-	readFile = util.promisify(fs.readFile);
+	opn = require('opn');
+
+const 
+	readFile = util.promisify(fs.readFile),
+	writeFile = util.promisify(fs.writeFile);
+
 
 // CHANGE THESE:
-// Fallback paths to stingray executable and the folder to copy mods to
+// Fallback paths to stingray executable and steam workshop folder
 let fallbackStingrayExe = 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe';
-let fallbackModsDir = 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide/bundle/mods';
+let fallbackWorkshopDir = 'E:/SteamLibrary/SteamApps/workshop/content/235540';
 
 // CHANGE THESE maybe:
 // Folders that will be ignored when building/watching all mods
@@ -23,82 +29,127 @@ const ignoredDirs = [
 	'%%template',
 	'.git',
 	'.temp',
-	'node_modules'
+	'node_modules',
+	'ugc_tool'
 ];
 
 // Probably don't CHANGE THESE:
-// These will be replaced in the template mod when using running task
-const temp = '%%template';
-const tempAuthor = '%%author';
+// These will be replaced in the template mod when running tasks
+const temp = '%%template',
+	tempTitle = '%%title',
+	tempDescription = '%%description';
+
+// Path to workshop uploader tool
+// The tool and all its dlls should be placed in ./ugc_tool folder as paths are relative to current directory
+let uploaderExe = 'ugc_tool/ugc_tool.exe';
+
+// Config file for workshop uploader tool
+const cfgFile = 'item.cfg';
 
 // Folders with scripts and resources
-const resDir = '/resource_packages/';
-const scriptDir = '/scripts/mods/';
-const localDir = 'localization/';
+const resDir = '/resource_packages';
+const scriptDir = '/scripts/mods';
+const localDir = '/localization';
+const distDir = '/dist';
 const renameDirs = [
 	resDir,
 	scriptDir
 ];
 
 // Folders with static files
-const coreSrc = [path.join(temp, '/core/**/*')];
+const coreSrc = [
+	join(temp, '/core/**/*'),
+	join(temp, 'item_preview.jpg')
+];
 
 // Folders with mod specific files
 const modSrc = [
-	path.join(temp, resDir, temp, temp + '.package'),
-	path.join(temp, scriptDir, temp, temp + '.lua'),	
-	path.join(temp, localDir, temp + '.lua'),	
-	path.join(temp, temp + '.mod'),
-	path.join(temp, '/*')	
+	join(temp, resDir, temp, temp + '.package'),
+	join(temp, scriptDir, temp, temp + '.lua'),	
+	join(temp, localDir, temp + '.lua'),	
+	join(temp, distDir, temp),	
+	join(temp, temp + '.mod')
 ];
 
 // Creates a copy of the template mod and renames it to the provided name
-// gulp create -m mod_name [-a Author]
+// Uploads the an empty mod file to the workshop to create an id
+// gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 gulp.task('create', (callback) => {
 	let argv = minimist(process.argv);
+
 	let modName = argv.m || argv.mod || '';
-	let authorName = argv.a || argv.author || '';
-	let modPath = modName + '/';
-	if(!modName || fs.existsSync(modPath)) {
+	let modTitle = argv.t || argv.title || modName;
+	let config = {
+		name: modName,
+		title: modTitle,
+		description: argv.d || argv.desc || argv.description || modTitle + ' description',
+		language: argv.l || argv.language || 'english',
+		visibility: argv.v || argv.visibility || 'private'
+	};
+	if(!modName || fs.existsSync(modName + '/')) {
+		throw Error(`Folder ${modName} not specified or already exists`);
+	}
+	console.log('Copying template');
+	copyTemplate(config)
+		.then(() => createCfgFile(config))
+		.then(() => uploadMod(modName))
+		.then((modId) => {
+			let modUrl = 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+			console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
+			console.log('Opening url...');
+			return opn(modUrl);
+		})
+		.catch((error) => {
+			console.log(error);
+			return deleteDirectory(modName);
+		})
+		.catch((error) => {
+			console.log(error);
+		})
+		.then(() => callback());
+});
+
+// Uploads the last built version of the mod to the workshop
+// gulp upload -m <mod_name> [-u <changenote>]
+gulp.task('upload', (callback) => {
+	let argv = minimist(process.argv);
+
+	let modName = argv.m || argv.mod || '';
+	if(!fs.existsSync(modName + '/')) {
 		throw Error(`Folder ${modName} not specified or already exists`);
 	}
 
-	let corePipe = gulp.src(coreSrc, {base: temp}).pipe(gulp.dest(modPath));
+	let changenote = argv.n || argv.note || argv.changenote || '';
+	if(typeof changenote != 'string') {
+		changenote = '';
+	}
 
-	let modPipe = gulp.src(modSrc, {base: temp})
-		.pipe(replace(temp, modName))
-		.pipe(replace(tempAuthor, authorName))
-		.pipe(rename((p) => {
-			p.basename = p.basename.replace(temp, modName);
-		}))
-		.pipe(gulp.dest(modPath))
-		.on('end', () => {
-			renameDirs.forEach((dir) => {				
-				fs.renameSync(path.join(modName, dir, temp), path.join(modName, dir, modName));
-			});
-		});
-
-	return merge(corePipe, modPipe);
+	uploadMod(modName, changenote)
+		.catch((error) => {
+			console.log(error);
+		})
+		.then(() => callback());
 });
 
-// Builds specified mods and copies the bundles to the game folder
-// gulp build [-m "mod1; mod2;mod3"] [--verbose] [-t] 
+// Builds specified mods and copies the bundles to the game workshop folder
+// gulp build [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
 // --verbose - prints stingray console output even on successful build
 // -t - doesn't delete .temp folder before building
+// --id - forces item id. can only be passed if building one mod
 gulp.task('build', (callback) => {
 
-	let {modNames, verbose, leaveTemp} = getBuildParams(process.argv);
+	let {modNames, verbose, leaveTemp, modId} = getBuildParams(process.argv);
 
 	console.log('Mods to build:');
 	modNames.forEach(modName => console.log('- ' + modName));
 	console.log();
 
-	getPaths().then(paths => {
+	getStingrayExe().then(stingrayExe => {
 
 		let promise = Promise.resolve();	
 		modNames.forEach(modName => {
 			if(modName){
-		    	promise = promise.then(() => buildMod(paths, modName, !leaveTemp, verbose));
+		    	promise = promise.then(() => buildMod(stingrayExe, modName, !leaveTemp, verbose, modId));
 			}
 		});
 		return promise;
@@ -107,20 +158,171 @@ gulp.task('build', (callback) => {
 });
 
 // Watches for changes in specified mods and builds them whenever they occur
-// gulp watch [-m "mod1; mod2;mod3"] [--verbose] [-t] 
+// gulp watch [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
 gulp.task('watch', (callback) => {
-	let {modNames, verbose, leaveTemp} = getBuildParams(process.argv);
-	getPaths().then(paths => {
+	let {modNames, verbose, leaveTemp, modId} = getBuildParams(process.argv);
+	getStingrayExe().then(stingrayExe => {
 		modNames.forEach((modName) => {
 			console.log('Watching ', modName, '...');
-			gulp.watch([modName, '!' + modName + '/*.tmp'], buildMod.bind(null, paths, modName, !leaveTemp, verbose));
+			gulp.watch([
+				modName, 
+				'!' + modName + '/*.tmp', 
+				'!' + modName + distDir + '/*'
+			], buildMod.bind(null, stingrayExe, modName, !leaveTemp, verbose, modId));
 		});
 		return callback();
 	});
 });
 
+//////////////
+
+function copyTemplate(config) {
+	let modName = config.name;
+	return new Promise((resolve, reject) => {
+		gulp.src(modSrc, {base: temp})
+			.pipe(replace(temp, modName))
+			.pipe(replace(tempTitle, config.title))
+			.pipe(replace(tempDescription, config.description))
+			.pipe(rename((p) => {
+				p.basename = p.basename.replace(temp, modName);
+			}))
+			.pipe(gulp.dest(modName))
+			.on('error', reject)
+			.on('end', () => {
+				renameDirs.forEach((dir) => {				
+					fs.renameSync(join(modName, dir, temp), join(modName, dir, modName));
+				});
+				gulp.src(coreSrc, {base: temp})
+					.pipe(gulp.dest(modName))
+					.on('error', reject)
+					.on('end', resolve);
+			});
+	});
+}
+
+function createCfgFile(config) {
+	let configText = `title = "${config.title}";\n` +
+					`description = "${config.description}";\n` +
+					`preview = "item_preview.jpg";\n` +
+					`content = "dist";\n` +
+					`language = "${config.language}";\n` +
+					`visibility = "${config.visibility}";\n`;
+	return writeFile(join(config.name, cfgFile), configText);
+}
+
+function uploadMod(modName, changenote, skip) {
+	return new Promise((resolve, reject) => {
+		let configPath = modName + '\\' + cfgFile;
+		let uploaderParams = [
+			'-c', '"' + configPath + '"'
+		];
+		if(changenote) {
+			uploaderParams.push('-n');
+			uploaderParams.push('"' + changenote + '"');
+		}
+		if(skip) {			
+			uploaderParams.push('-s');
+		}
+
+		let uploader = child_process.spawn(
+			uploaderExe, 
+			uploaderParams, 
+			{windowsVerbatimArguments: true}
+		);
+
+		let modId = '';
+		uploader.stdout.on('data', (data) => {
+			console.log(rmn(data));
+			data = String(data);
+			if (data.includes('publisher_id')){
+				modId = data.match(/publisher_id: (\d*)/)[1];
+			}
+		});
+
+		uploader.on('error', (error) => reject(error));
+
+		uploader.on('close', (code) => {
+			if(code) {
+				reject(code);
+			}
+			else {
+				resolve(modId);
+			}
+		});
+	});
+}
+
+function deleteFile(dir, file) {
+    return new Promise(function (resolve, reject) {
+        var filePath = path.join(dir, file);
+        fs.lstat(filePath, function (err, stats) {
+            if (err) {
+                return reject(err);
+            }
+            if (stats.isDirectory()) {
+                resolve(deleteDirectory(filePath));
+            } else {
+                fs.unlink(filePath, function (err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            }
+        });
+    });
+}
+
+function deleteDirectory(dir) {
+    return new Promise(function (resolve, reject) {
+        fs.access(dir, function (err) {
+            if (err) {
+                return reject(err);
+            }
+            fs.readdir(dir, function (err, files) {
+                if (err) {
+                    return reject(err);
+                }
+                Promise.all(files.map(function (file) {
+                    return deleteFile(dir, file);
+                })).then(function () {
+                    fs.rmdir(dir, function (err) {
+                        if (err) {
+                            return reject(err);
+                        }
+                        resolve();
+                    });
+                }).catch(reject);
+            });
+        });
+    });
+}
+
 
 //////////////
+
+// Builds modName, optionally deleting its .temp folder, and copies it to the dist and workshop dirs
+function buildMod(stingrayExe, modName, removeTemp = true, verbose, modId) {
+	console.log('Building ', modName);
+
+	let tempDir = join('.temp', modName);
+	let dataDir = join(tempDir, 'compile');
+	let buildDir = join(tempDir, 'bundle');
+
+	return checkTempFolder(modName, removeTemp)
+		.then(() => readFile(join(modName, cfgFile), 'utf8'))
+		.then(() => runStingray(stingrayExe, modName, dataDir, buildDir, verbose))
+		.then((code) => readProcessedBundles(modName, dataDir, code))
+		.then(() => getModDir(modName, modId))
+		.then(modDir => moveMod(modName, buildDir, modDir))
+		.then(success => {
+			console.log(success);
+			return Promise.resolve();
+		})
+		.catch(error => {
+			console.error(error + '\n');
+		});
+}
 
 // Returns a promise with specified registry entry value
 function getRegistryValue(key, value) {
@@ -159,41 +361,56 @@ function getRegistryValue(key, value) {
 	});
 }
 
-// Returns a promise with paths to mods dir and stingray exe
-function getPaths(){
+function getStingrayExe(){
 	return new Promise((resolve, reject) => {
-		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 235540"';
 		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 718610"';
 		let value = '"InstallLocation"';
 
-		let modsDir = fallbackModsDir;
 		let stingrayExe = fallbackStingrayExe;
-		getRegistryValue(appKey, value)
-			.catch(err => {
-				console.log('Vermintide directory not found, using fallback.');
-			})
-			.then(appPath => {
-				if(appPath) {
-					modsDir = path.join(appPath, 'bundle/mods');
-				}
-				return getRegistryValue(sdkKey, value);
-			})
+		getRegistryValue(sdkKey, value)
 			.catch(err => {
 				console.log('Vermintide mod SDK directory not found, using fallback.');
 			})
 			.then(appPath => {
 				if(appPath) {
-					stingrayExe = path.join(appPath, 'bin/stingray_win64_dev_x64.exe');
+					stingrayExe = join(appPath, 'bin/stingray_win64_dev_x64.exe');
 				}
-				console.log('Mods directory:', modsDir);
 				console.log('Stingray executable:', stingrayExe);
 				console.log();
-				resolve({modsDir, stingrayExe});
+				resolve(stingrayExe);
 			});
 	});
 }
 
-// Returns [-m "mod1; mod2;mod3"] [--verbose] [-t] params
+function getWorkshopDir() {
+	return new Promise((resolve, reject) => {
+		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 235540"';
+		let value = '"InstallLocation"';
+
+		let workshopDir = fallbackWorkshopDir;
+		let error = 'Vermintide workshop directory not found, using fallback.';
+		getRegistryValue(appKey, value)
+			.catch(err => {
+				console.log(error);
+			})
+			.then(appPath => {
+				if(appPath) {
+					workshopDir = appPath.match(/(.*)common[\\\/]Warhammer End Times Vermintide[\\\/]?$/);
+					workshopDir = workshopDir[1];
+					if(!workshopDir){
+						console.log(error);
+						workshopDir = fallbackWorkshopDir;
+					}
+					else{
+						workshopDir = join(workshopDir, '\\workshop\\content\\235540\\');
+					}
+				}
+				console.log('Workshop folder:', workshopDir);
+				resolve(workshopDir);
+			});
+	});
+}
+
 function getBuildParams(pargv) {
 	let argv = minimist(pargv);
 	let verbose = argv.verbose || false;
@@ -205,42 +422,21 @@ function getBuildParams(pargv) {
 	else{
 		modNames = modNames.split(/;+\s*/);
 	}
-	return {modNames, verbose, leaveTemp};
+	let modId = modNames.length == 1 ? argv.id : null;
+	return {modNames, verbose, leaveTemp, modId};
 }
 
 // Returns an array of folders in dir, except the ones in second param
 function getFolders(dir, except) {
 	return fs.readdirSync(dir)
 		.filter(function(fileName) {
-			return fs.statSync(path.join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
-		});
-}
-
-// Builds modName, optionally deleting its .temp folder, and copies it to the modsDir
-function buildMod(paths, modName, removeTemp = true, verbose = false) {
-	console.log('Building ', modName);
-
-	let tempDir = path.join('.temp', modName);
-	let dataDir = path.join(tempDir, 'compile');
-	let buildDir = path.join(tempDir, 'bundle');
-
-	return Promise.resolve()
-		.then(() => checkTempFolder(modName, removeTemp))
-		.then(() => runStingray(paths, modName, dataDir, buildDir, verbose))
-		.then((code) => readProcessedBundles(modName, dataDir, code))
-		.then(() => moveMod(modName, buildDir, paths.modsDir))
-		.then(success => {
-			console.log(success);
-			return Promise.resolve();
-		})
-		.catch(error => {
-			console.error(error);
+			return fs.statSync(join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
 		});
 }
 
 function checkTempFolder(modName, shouldRemove) {
 	return new Promise((resolve, reject) => {
-		let tempPath = path.join('.temp', modName);
+		let tempPath = join('.temp', modName);
 		let tempExists = fs.existsSync(tempPath);
 		if(tempExists && shouldRemove) {
 			child_process.exec('rmdir /s /q "' + tempPath + '"', function (error) {
@@ -260,7 +456,7 @@ function checkTempFolder(modName, shouldRemove) {
 	});
 }
 
-function runStingray(paths, modName, dataDir, buildDir, verbose) {
+function runStingray(stingrayExe, modName, dataDir, buildDir, verbose) {
 	return new Promise((resolve, reject) => {
 
 
@@ -272,7 +468,7 @@ function runStingray(paths, modName, dataDir, buildDir, verbose) {
 		];
 
 		let stingray = child_process.spawn(
-			paths.stingrayExe, 
+			stingrayExe, 
 			stingrayParams, 
 			{windowsVerbatimArguments: true} // fucking WHY???
 		);
@@ -285,13 +481,15 @@ function runStingray(paths, modName, dataDir, buildDir, verbose) {
 
 		stingray.on('error', (error) => reject(error));
 
-		stingray.on('close', (code) => resolve(code));
+		stingray.on('close', (code) => {
+			console.log('Finished building');
+			resolve(code);
+		});
 	});
 }
 
 function readProcessedBundles(modName, dataDir, code) {
-	return Promise.resolve()
-		.then(() => readFile(path.join(dataDir, 'processed_bundles.csv'), 'utf8'))
+	return readFile(join(dataDir, 'processed_bundles.csv'), 'utf8')
 		.catch(error => {
 			console.log(error + '\nFailed to read processed_bundles.csv');
 		})
@@ -320,9 +518,42 @@ function outputFailedBundles(data, modName) {
 	});
 }
 
+function getModDir(modName, modId) {
+	if(modId) {
+		console.log('Using specified item ID');
+	}
+	let promise = modId ? Promise.resolve(modId) : getModId(modName);
+	return promise.then(modId => {
+		console.log('Item ID:', modId);
+		return getWorkshopDir().then(workshopDir => {
+			return Promise.resolve(join(workshopDir, String(modId)));
+		});
+	});
+}
+
+function getModId(modName) {
+	return readFile(join(modName, cfgFile), 'utf8')
+		.then((data) => {
+			let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
+			modId = modId && modId[1];
+			if(modId) {
+				return Promise.resolve(modId);
+			}
+			else {
+				return Promise.reject(
+					'Item ID not found in item.cfg file.\n' +
+					'You need to upload your mod to workshop before you can build it.\n' +
+					'Alternatively you can specify the workshop item id with --id param.'
+				);
+			}
+		});
+}
+
 // Copies the mod to the modsDir
-function moveMod(modName, buildDir, modsDir) {
+function moveMod(modName, buildDir, modDir) {
 	return new Promise((resolve, reject) => {
+		console.log('Copying to ', modDir);
+		let modDistDir = join(modName, distDir);
 		gulp.src([
 				buildDir + '/*([0-f])', 
 				'!' + buildDir + '/dlc'
@@ -331,13 +562,11 @@ function moveMod(modName, buildDir, modsDir) {
 				p.basename = modName;
 				p.extname = '';
 			}))
-			.on('error', err => {		    		
-				reject(err);
-			})
-			.pipe(gulp.dest(modsDir))
-			.on('error', err => {		    		
-				reject(err);
-			})
+			.on('error', reject)
+			.pipe(gulp.dest(modDistDir))
+			.on('error', reject)
+			.pipe(gulp.dest(modDir))
+			.on('error', reject)
 			.on('end', () => {
 				resolve('Successfully built ' + modName + '\n');
 			});

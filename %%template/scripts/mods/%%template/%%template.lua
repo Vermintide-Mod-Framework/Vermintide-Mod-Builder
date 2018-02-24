@@ -1,7 +1,3 @@
---[[
-	Author: %%author	
---]]
-
 local mod = get_mod("%%template")
 
 mod.options_widgets = {
@@ -75,7 +71,7 @@ end
 --]] 
 
 -- Add option to mod settings menu (args: 1 = widget table, 2 = presence of checkbox in mod settings, 3 = descriptive name, 4 = description)
-mod:create_options(mod.options_widgets, true, "%%template", "%%template description")
+mod:create_options(mod.options_widgets, true, "%%title", "%%description")
 
 -- Check for suspend setting
 if not mod:is_enabled() then
