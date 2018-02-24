@@ -133,8 +133,8 @@ gulp.task('publish', (callback) => {
 		.then(() => uploadMod(modName))
 		.then(() => getModId(modName))
 		.then((modId) => {
-			let modUrl =  formUrl(modId);
-			console.log('Uploaded to '+ modUrl);
+			let modUrl = formUrl(modId);
+			console.log('Uploaded to ' + modUrl);
 			console.log('Opening url...');
 			return opn(modUrl);
 		})
@@ -150,7 +150,7 @@ gulp.task('upload', (callback) => {
 	let argv = minimist(process.argv);
 
 	let modName = argv.m || argv.mod || '';
-	if(!fs.existsSync(modName + '/')) {
+	if(!modName || !fs.existsSync(modName + '/')) {
 		throw Error(`Folder ${modName} doesn't exist`);
 	}
 
@@ -166,8 +166,8 @@ gulp.task('upload', (callback) => {
 	uploadMod(modName, changenote, skip)
 		.then(() => getModId(modName))
 		.then((modId) => {
-			let modUrl =  formUrl(modId);
-			console.log('Uploaded to '+ modUrl);
+			let modUrl = formUrl(modId);
+			console.log('Uploaded to ' + modUrl);
 			if(openUrl){
 				console.log('Opening url...');
 				return opn(modUrl);
@@ -189,7 +189,7 @@ gulp.task('open', (callback) => {
 
 	let modName = argv.m || argv.mod || '';
 	let modId = argv.id || null;
-	if(!fs.existsSync(modName + '/')) {
+	if(!modName || !fs.existsSync(modName + '/')) {
 		throw Error(`Folder ${modName} doesn't exist`);
 	}
 
@@ -219,13 +219,17 @@ gulp.task('build', (callback) => {
 
 		let promise = Promise.resolve();	
 		modNames.forEach(modName => {
+
 			if(!modName) return;
+
 			if(fs.existsSync(modName) && (fs.existsSync(join(modName, cfgFile)) || noWorkshopCopy)) {
+
 		    	promise = promise.then(() => {
 		    		return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch((error) => {
 		    			console.log(error);
 		    		});
 		    	});
+
 			}
 			else {
 				console.error('Folder', modName, 'doesn\'t exist or doesn\'t have item.cfg in it');
@@ -242,20 +246,23 @@ gulp.task('watch', (callback) => {
 	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
 	getStingrayExe().then(stingrayExe => {
 		modNames.forEach((modName) => {
+
+			if(!modName) return;
+
 			if(fs.existsSync(modName) && (fs.existsSync(join(modName, cfgFile)) || noWorkshopCopy)) {
+
 				console.log('Watching ', modName, '...');
-				gulp.watch(
-					[
-						modName, 
-						'!' + modName + '/*.tmp', 
-						'!' + modName + distDir + '/*'
-					], 
-					() => {
-						return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch((error) => {
-			    			console.log(error);
-			    		});
-					}
-				);
+
+				let src = [
+					modName, 
+					'!' + modName + '/*.tmp', 
+					'!' + modName + distDir + '/*'
+				];
+				gulp.watch(src, () => {
+					return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch((error) => {
+		    			console.log(error);
+		    		});
+				});
 			}
 			else {
 				console.error('Folder', modName, 'doesn\'t exist or doesn\'t have item.cfg in it');
