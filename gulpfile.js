@@ -18,14 +18,14 @@ const
 	writeFile = util.promisify(fs.writeFile);
 
 
-// CHANGE THESE:
-// Fallback paths to stingray executable and steam workshop folder
-let fallbackStingrayExe = 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe';
-let fallbackWorkshopDir = 'E:/SteamLibrary/SteamApps/workshop/content/235540';
+/* THINGS TO CHANGE */
 
-// CHANGE THESE maybe:
+// Fallback paths to stingray executable and steam workshop folder
+const FALLBACK_STINGRAY_EXE = 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe';
+const FALLBACK_WORKSHOP_DIR = 'E:/SteamLibrary/SteamApps/workshop/content/235540';
+
 // Folders that will be ignored when building/watching all mods
-const ignoredDirs = [
+const IGNORED_DIRS = [
 	'%%template',
 	'.git',
 	'.temp',
@@ -33,18 +33,15 @@ const ignoredDirs = [
 	'ugc_tool'
 ];
 
-// Probably don't CHANGE THESE:
+/* /THINGS TO CHANGE */
+
+
+/* FOR CREATING */
+
 // These will be replaced in the template mod when running tasks
 const temp = '%%template',
 	tempTitle = '%%title',
 	tempDescription = '%%description';
-
-// Path to workshop uploader tool
-// The tool and all its dlls should be placed in ./ugc_tool folder as paths are relative to current directory
-let uploaderExe = 'ugc_tool/ugc_tool.exe';
-
-// Config file for workshop uploader tool
-const cfgFile = 'item.cfg';
 
 // Folders with scripts and resources
 const resDir = '/resource_packages';
@@ -71,8 +68,21 @@ const modSrc = [
 	join(temp, temp + '.mod')
 ];
 
+
+/* FOR BUILDING */
+
+// Path to workshop uploader tool
+// The tool and all its files should be placed in ./ugc_tool folder as paths are relative to current directory
+let uploaderExe = 'ugc_tool/ugc_tool.exe';
+
+// Config file for workshop uploader tool
+const cfgFile = 'item.cfg';
+
+
+/* TASKS */
+
 // Creates a copy of the template mod and renames it to the provided name
-// Uploads the an empty mod file to the workshop to create an id
+// Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 gulp.task('create', (callback) => {
 	let argv = minimist(process.argv);
@@ -94,7 +104,7 @@ gulp.task('create', (callback) => {
 		.then(() => createCfgFile(config))
 		.then(() => uploadMod(modName))
 		.then((modId) => {
-			let modUrl = 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+			let modUrl = formUrl(modId);
 			console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
 			console.log('Opening url...');
 			return opn(modUrl);
@@ -110,7 +120,7 @@ gulp.task('create', (callback) => {
 });
 
 // Uploads the last built version of the mod to the workshop
-// gulp upload -m <mod_name> [-n <changenote>] --open
+// gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
 gulp.task('upload', (callback) => {
 	let argv = minimist(process.argv);
 
@@ -126,10 +136,12 @@ gulp.task('upload', (callback) => {
 
 	let openUrl = argv.o || argv.open || false;
 
-	uploadMod(modName, changenote)
+	let skip = argv.s || argv.skip;
+
+	uploadMod(modName, changenote, skip)
 		.then(() => getModId(modName))
 		.then((modId) => {
-			let modUrl = 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+			let modUrl =  formUrl(modId);
 			console.log('Uploaded to '+ modUrl);
 			if(openUrl){
 				console.log('Opening url...');
@@ -143,6 +155,24 @@ gulp.task('upload', (callback) => {
 			console.log(error);
 		})
 		.then(() => callback());
+});
+
+// Opens mod's workshop page
+// gulp open -m <mod_name>
+gulp.task('open', (callback) => {
+	let argv = minimist(process.argv);
+
+	let modName = argv.m || argv.mod || '';
+	if(!fs.existsSync(modName + '/')) {
+		throw Error(`Folder ${modName} doesn't exist`);
+	}
+
+	getModId(modName)
+		.then((modId) => opn(formUrl(modId)))
+		.catch((error) => {
+			console.log(error)
+		})
+		.then(callback);
 });
 
 // Builds specified mods and copies the bundles to the game workshop folder
@@ -188,7 +218,8 @@ gulp.task('watch', (callback) => {
 	});
 });
 
-//////////////
+
+/* CREATE AND UPLOAD METHODS */
 
 function copyTemplate(config) {
 	let modName = config.name;
@@ -224,6 +255,7 @@ function createCfgFile(config) {
 	return writeFile(join(config.name, cfgFile), configText);
 }
 
+// Uploads mod to the workshop
 function uploadMod(modName, changenote, skip) {
 	return new Promise((resolve, reject) => {
 		let configPath = modName + '\\' + cfgFile;
@@ -266,54 +298,12 @@ function uploadMod(modName, changenote, skip) {
 	});
 }
 
-function deleteFile(dir, file) {
-    return new Promise(function (resolve, reject) {
-        var filePath = path.join(dir, file);
-        fs.lstat(filePath, function (err, stats) {
-            if (err) {
-                return reject(err);
-            }
-            if (stats.isDirectory()) {
-                resolve(deleteDirectory(filePath));
-            } else {
-                fs.unlink(filePath, function (err) {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve();
-                });
-            }
-        });
-    });
-}
-
-function deleteDirectory(dir) {
-    return new Promise(function (resolve, reject) {
-        fs.access(dir, function (err) {
-            if (err) {
-                return reject(err);
-            }
-            fs.readdir(dir, function (err, files) {
-                if (err) {
-                    return reject(err);
-                }
-                Promise.all(files.map(function (file) {
-                    return deleteFile(dir, file);
-                })).then(function () {
-                    fs.rmdir(dir, function (err) {
-                        if (err) {
-                            return reject(err);
-                        }
-                        resolve();
-                    });
-                }).catch(reject);
-            });
-        });
-    });
+function formUrl(modId) {
+	return 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
 }
 
 
-//////////////
+/* BUILD METHODS */
 
 // Builds modName, optionally deleting its .temp folder, and copies it to the dist and workshop dirs
 function buildMod(stingrayExe, modName, removeTemp = true, verbose, modId) {
@@ -324,7 +314,9 @@ function buildMod(stingrayExe, modName, removeTemp = true, verbose, modId) {
 	let buildDir = join(tempDir, 'bundle');
 
 	return checkTempFolder(modName, removeTemp)
-		.then(() => readFile(join(modName, cfgFile), 'utf8'))
+		.then(() => {
+			return modId ? Promise.resolve() : readFile(join(modName, cfgFile), 'utf8');
+		})
 		.then(() => runStingray(stingrayExe, modName, dataDir, buildDir, verbose))
 		.then((code) => readProcessedBundles(modName, dataDir, code))
 		.then(() => getModDir(modName, modId))
@@ -375,12 +367,13 @@ function getRegistryValue(key, value) {
 	});
 }
 
+// Gets stingray.exe placement from Vermintide Mod Tools install location
 function getStingrayExe(){
 	return new Promise((resolve, reject) => {
 		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 718610"';
 		let value = '"InstallLocation"';
 
-		let stingrayExe = fallbackStingrayExe;
+		let stingrayExe = FALLBACK_STINGRAY_EXE;
 		getRegistryValue(sdkKey, value)
 			.catch(err => {
 				console.log('Vermintide mod SDK directory not found, using fallback.');
@@ -396,12 +389,13 @@ function getStingrayExe(){
 	});
 }
 
+// Gets the steam workshop folder from vermintide's install location
 function getWorkshopDir() {
 	return new Promise((resolve, reject) => {
 		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 235540"';
 		let value = '"InstallLocation"';
 
-		let workshopDir = fallbackWorkshopDir;
+		let workshopDir = FALLBACK_WORKSHOP_DIR;
 		let error = 'Vermintide workshop directory not found, using fallback.';
 		getRegistryValue(appKey, value)
 			.catch(err => {
@@ -413,7 +407,7 @@ function getWorkshopDir() {
 					workshopDir = workshopDir[1];
 					if(!workshopDir){
 						console.log(error);
-						workshopDir = fallbackWorkshopDir;
+						workshopDir = FALLBACK_WORKSHOP_DIR;
 					}
 					else{
 						workshopDir = join(workshopDir, '\\workshop\\content\\235540\\');
@@ -425,13 +419,14 @@ function getWorkshopDir() {
 	});
 }
 
+// Returns [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
 function getBuildParams(pargv) {
 	let argv = minimist(pargv);
 	let verbose = argv.verbose || false;
 	let leaveTemp = argv.t || argv.temp || false;
 	let modNames = argv.m || argv.mod || argv.mods || '';
 	if(!modNames || typeof modNames != 'string') {
-		modNames = getFolders('./', ignoredDirs);
+		modNames = getFolders('./', IGNORED_DIRS);
 	}
 	else{
 		modNames = modNames.split(/;+\s*/);
@@ -440,14 +435,7 @@ function getBuildParams(pargv) {
 	return {modNames, verbose, leaveTemp, modId};
 }
 
-// Returns an array of folders in dir, except the ones in second param
-function getFolders(dir, except) {
-	return fs.readdirSync(dir)
-		.filter(function(fileName) {
-			return fs.statSync(join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
-		});
-}
-
+// Checks if temp folder exists, optionally removes it
 function checkTempFolder(modName, shouldRemove) {
 	return new Promise((resolve, reject) => {
 		let tempPath = join('.temp', modName);
@@ -470,6 +458,7 @@ function checkTempFolder(modName, shouldRemove) {
 	});
 }
 
+// Builds the mod
 function runStingray(stingrayExe, modName, dataDir, buildDir, verbose) {
 	return new Promise((resolve, reject) => {
 
@@ -502,6 +491,7 @@ function runStingray(stingrayExe, modName, dataDir, buildDir, verbose) {
 	});
 }
 
+// Reads and outputs processed_bundles.csv
 function readProcessedBundles(modName, dataDir, code) {
 	return readFile(join(dataDir, 'processed_bundles.csv'), 'utf8')
 		.catch(error => {
@@ -533,6 +523,7 @@ function outputFailedBundles(data, modName) {
 	});
 }
 
+// Returns mod's directory in workshop folder
 function getModDir(modName, modId) {
 	if(modId) {
 		console.log('Using specified item ID');
@@ -564,7 +555,7 @@ function getModId(modName) {
 		});
 }
 
-// Copies the mod to the modsDir
+// Copies the mod to the modsDir and modName/dist
 function moveMod(modName, buildDir, modDir) {
 	return new Promise((resolve, reject) => {
 		console.log('Copying to ', modDir);
@@ -586,6 +577,63 @@ function moveMod(modName, buildDir, modDir) {
 				resolve('Successfully built ' + modName + '\n');
 			});
 	});
+}
+
+
+/* MISC METHODS */
+
+// Returns an array of folders in dir, except the ones in second param
+function getFolders(dir, except) {
+	return fs.readdirSync(dir)
+		.filter(function(fileName) {
+			return fs.statSync(join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
+		});
+}
+
+function deleteFile(dir, file) {
+    return new Promise(function (resolve, reject) {
+        var filePath = path.join(dir, file);
+        fs.lstat(filePath, function (err, stats) {
+            if (err) {
+                return reject(err);
+            }
+            if (stats.isDirectory()) {
+                resolve(deleteDirectory(filePath));
+            } else {
+                fs.unlink(filePath, function (err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            }
+        });
+    });
+}
+
+function deleteDirectory(dir) {
+    return new Promise(function (resolve, reject) {
+        fs.access(dir, function (err) {
+            if (err) {
+                return reject(err);
+            }
+            fs.readdir(dir, function (err, files) {
+                if (err) {
+                    return reject(err);
+                }
+                Promise.all(files.map(function (file) {
+                    return deleteFile(dir, file);
+                })).then(function () {
+                    fs.rmdir(dir, function (err) {
+                        if (err) {
+                            return reject(err);
+                        }
+                        resolve();
+                    });
+                }).catch(reject);
+            });
+        });
+    });
 }
 
 // Removes trailing /n
