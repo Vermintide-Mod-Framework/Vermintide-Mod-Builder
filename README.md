@@ -28,9 +28,9 @@ This is needed for building the mod.
 
 #### Publish an existing mod to Steam Workshop:  
 
-	gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+	gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 
-This will create `item.cfg` for a mod if it doesn't exist and publish the last built version to workshop as a new item.
+This will create `item.cfg` for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If `item.cfg` is present it shouldn't have `published_id` in it.  
 
 #### Upload a new version of a mod to Steam Workshop:  
@@ -45,18 +45,19 @@ I can't be bothered to add parameters to change the title, description etc, you 
 
 #### Open an existing mod's page on Steam Workshop:  
 
-	gulp open -m <mod_name>  
+	gulp open -m <mod_name> [--id <item_id>]  
 
 #### Build all or specified mods from current directory:
 	
-	gulp build [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>]
+	gulp build [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 #### Automatically build all or specified mods from current directory:
 
-	gulp watch [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>]
+	gulp watch [-m "<mod1>; <mod2>; <mod3>"] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 Both of these will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. 
 `item.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output  
 `--temp` or `-t` - overwrites the .temp folder instead of deleting it (builds faster)  
 `--id` - forces item ID. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.
+`--dist` - this will build the mod even if item.cfg isn't present but will only copy it to the `dist` folder in mod's folder
