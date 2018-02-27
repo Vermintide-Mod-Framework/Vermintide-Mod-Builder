@@ -56,12 +56,12 @@ mod.on_setting_changed = function(setting_name)
 end
 
 -- Call when governing settings checkbox is unchecked
-mod.on_disabled = function()
+mod.on_disabled = function(is_first_call)
 	mod:disable_all_hooks()
 end
 
 -- Call when governing settings checkbox is checked
-mod.on_enabled = function()
+mod.on_enabled = function(is_first_call)
 	mod:enable_all_hooks()
 end
 
@@ -71,9 +71,7 @@ end
 --]] 
 
 -- Add option to mod settings menu (args: 1 = widget table, 2 = presence of checkbox in mod settings, 3 = descriptive name, 4 = description)
-mod:create_options(mod.options_widgets, true, "%%title", "%%description")
+mod:create_options(mod.options_widgets, true, "%%title", mod:localize("mod_description"))
 
 -- Check for suspend setting
-if not mod:is_enabled() then
-	mod.suspended()
-end
+mod:init_state()

@@ -59,5 +59,5 @@ Both of these will build and copy the bundle to the dist folder, as well as repl
 `item.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output  
 `--temp` or `-t` - overwrites the .temp folder instead of deleting it (builds faster)  
-`--id` - forces item ID. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.
+`--id` - forces item ID. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if item.cfg isn't present but will only copy it to the `dist` folder in mod's folder
