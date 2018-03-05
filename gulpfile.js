@@ -145,7 +145,6 @@ gulp.task('publish', (callback) => {
 	let config = getWorkshopConfig(process.argv);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
-	let verbose = process.argv.verbose || false;
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
@@ -159,7 +158,7 @@ gulp.task('publish', (callback) => {
 			return cfgExists ? Promise.resolve() : createCfgFile(config);
 		})
 		.then(() => getStingrayExe())
-		.then(stingrayExe => buildMod(stingrayExe, modName, false, true, verbose, null))
+		.then(stingrayExe => buildMod(stingrayExe, modName, false, true, config.verbose, null))
 		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modDir, 'item_preview', '.jpg'))
 		.then(() => uploadMod(modName))
 		.then(() => getModId(modName))
@@ -386,7 +385,8 @@ function getWorkshopConfig(pargv) {
 		title: modTitle,
 		description: argv.d || argv.desc || argv.description || modTitle + ' description',
 		language: argv.l || argv.language || 'english',
-		visibility: argv.v || argv.visibility || 'private'
+		visibility: argv.v || argv.visibility || 'private',
+		verbose: argv.verbose
 	};
 }
 
