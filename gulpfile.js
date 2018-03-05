@@ -45,6 +45,7 @@ const FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
 
 let modsDir = scriptConfig.mods_dir;
 
+
 /* FOR CREATING */
 
 // These will be replaced in the template mod when running tasks
@@ -94,9 +95,13 @@ const cfgFile = 'item.cfg';
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 gulp.task('create', (callback) => {
-	let config = getConfig(process.argv);
+
+	setModsDir(process.argv);
+
+	let config = getWorkshopConfig(process.argv);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
+
 	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
 		throw Error(`Folder ${modDir} is invalid or already exists`);
 	}
@@ -123,10 +128,14 @@ gulp.task('create', (callback) => {
 // Builds the mod then uploads it to workshop as a new item
 // gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 gulp.task('publish', (callback) => {
-	let config = getConfig(process.argv);
+
+	setModsDir(process.argv);
+
+	let config = getWorkshopConfig(process.argv);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 	let verbose = process.argv.verbose || false;
+
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		throw Error(`Folder ${modDir} isn't valid or doesn't exist`);
 	}
@@ -158,10 +167,13 @@ gulp.task('publish', (callback) => {
 // Uploads the last built version of the mod to the workshop
 // gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
 gulp.task('upload', (callback) => {
-	let argv = minimist(process.argv);
 
+	setModsDir(process.argv);
+
+	let argv = minimist(process.argv);
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
+
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		throw Error(`Folder ${modDir} doesn't exist`);
 	}
@@ -197,11 +209,14 @@ gulp.task('upload', (callback) => {
 // Opens mod's workshop page
 // gulp open -m <mod_name> [--id <item_id>]
 gulp.task('open', (callback) => {
-	let argv = minimist(process.argv);
 
+	setModsDir(process.argv);
+
+	let argv = minimist(process.argv);
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
 	let modId = argv.id || null;
+
 	if(!modId && (!validModName(modName) || !fs.existsSync(modDir + '/'))) {
 		throw Error(`Folder ${modDir} doesn't exist`);
 	}
@@ -221,6 +236,8 @@ gulp.task('open', (callback) => {
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
 gulp.task('build', (callback) => {
+
+	setModsDir(process.argv);
 
 	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
 
@@ -246,7 +263,7 @@ gulp.task('build', (callback) => {
 
 			}
 			else {
-				console.error('Folder', modName, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
+				console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
 			}
 		});
 		return promise;
@@ -257,7 +274,11 @@ gulp.task('build', (callback) => {
 // Watches for changes in specified mods and builds them whenever they occur
 // gulp watch [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>] [--dist]
 gulp.task('watch', (callback) => {
+
+	setModsDir(process.argv);
+
 	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
+
 	getStingrayExe().then(stingrayExe => {
 		modNames.forEach((modName) => {
 
@@ -280,7 +301,7 @@ gulp.task('watch', (callback) => {
 				});
 			}
 			else {
-				console.error('Folder', modName, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
+				console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
 			}
 		});
 		return callback();
@@ -288,17 +309,58 @@ gulp.task('watch', (callback) => {
 });
 
 
-/* CREATE AND UPLOAD METHODS */
+/* SHARED METHODS */
+
+function setModsDir(pargv) {
+	let argv = minimist(pargv);
+
+	let newModsDir = argv.f || argv.folder;
+
+	if(!newModsDir) {
+		console.log(`Using mods folder '${modsDir}'`);
+		return;
+	}
+
+	if(typeof newModsDir == 'string') {
+		console.log(`Using mods folder '${newModsDir}'`);
+		modsDir = newModsDir;
+	}
+	else {
+		console.log(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`)
+	}
+}
 
 function validModName(modName) {
 	return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- ]+$/);
 }
 
-function getConfig(pargv) {
+function getModId(modName) {
+	return readFile(join(modsDir, modName, cfgFile), 'utf8')
+		.then((data) => {
+			let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
+			modId = modId && modId[1];
+			if(modId) {
+				return Promise.resolve(modId);
+			}
+			else {
+				return Promise.reject(
+					'Item ID not found in item.cfg file.\n' +
+					'You need to upload your mod to workshop before you can build/view it.\n' +
+					'Alternatively you can specify the workshop item id with --id param.'
+				);
+			}
+		});
+}
+
+
+/* CREATE AND UPLOAD METHODS */
+
+function getWorkshopConfig(pargv) {
 	let argv = minimist(pargv);
 
 	let modName = argv.m || argv.mod || '';
 	let modTitle = argv.t || argv.title || modName;
+
 	return {
 		name: modName,
 		title: modTitle,
@@ -641,24 +703,6 @@ function getModWorkshopDir(modName, modId) {
 			return Promise.resolve(join(workshopDir, String(modId)));
 		});
 	});
-}
-
-function getModId(modName) {
-	return readFile(join(modsDir, modName, cfgFile), 'utf8')
-		.then((data) => {
-			let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
-			modId = modId && modId[1];
-			if(modId) {
-				return Promise.resolve(modId);
-			}
-			else {
-				return Promise.reject(
-					'Item ID not found in item.cfg file.\n' +
-					'You need to upload your mod to workshop before you can build/view it.\n' +
-					'Alternatively you can specify the workshop item id with --id param.'
-				);
-			}
-		});
 }
 
 // Copies the mod to the modsDir and modName/dist
