@@ -40,7 +40,7 @@ function readScriptConfig() {
 }`
 		);
 	}
-	return JSON.parse(scriptConfigFile, fs.readFileSync(, 'utf8'));
+	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
 
 /* FOR CREATING */
