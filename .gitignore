@@ -1,4 +1,11 @@
-/.temp
-/node_modules
+*
 
-/npm-debug.log
+!.gitignore
+!gulpfile.js
+!package.json
+!package-lock.json
+!README.md
+!mods/.gitkeep
+
+!/ugc_tool
+!/%%template

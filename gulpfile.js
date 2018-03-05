@@ -17,26 +17,31 @@ const
 	readFile = util.promisify(fs.readFile),
 	writeFile = util.promisify(fs.writeFile);
 
+const scriptConfig = readScriptConfig();
 
-/* THINGS TO CHANGE */
+const modsDir = scriptConfig.mods_dir,
+	FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
+	FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
+	IGNORED_DIRS = scriptConfig.ignored_dirs || [];
 
-// Fallback paths to stingray executable and steam workshop folder
-const FALLBACK_STINGRAY_EXE = 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe';
-const FALLBACK_WORKSHOP_DIR = 'E:/SteamLibrary/SteamApps/workshop/content/235540';
+function readScriptConfig() {
+	let scriptConfigFile = 'config.json';
+	if(!fs.existsSync(scriptConfigFile)) {
+		fs.writeFileSync(scriptConfigFile, 
+`{
+	"mods_dir" : "mods",
 
-// Folders that will be ignored when building/watching all mods
-const IGNORED_DIRS = [
-	'%%template',
-	'.git',
-	'.temp',
-	'node_modules',
-	'ugc_tool'
-];
+	"fallback_stingray_exe": "E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe",
+	"fallback_workshop_dir": "E:/SteamLibrary/SteamApps/workshop/content/235540",
 
-const modsDir = 'mods';
-
-/* /THINGS TO CHANGE */
-
+	"ignored_dirs": [
+		".git"
+	]
+}`
+		);
+	}
+	return JSON.parse(scriptConfigFile, fs.readFileSync(, 'utf8'));
+}
 
 /* FOR CREATING */
 
