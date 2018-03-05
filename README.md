@@ -6,18 +6,21 @@ Why is it used for this then? Because that's what I know.
 
 ### Installation
 
-Required paths are acquired from the registry, but fallback values can be specified by hand in gulpfile.js: 
-	
-	const FALLBACK_STINGRAY_EXE = '.../SteamApps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe'
-	const FALLBACK_WORKSHOP_DIR = '.../SteamApps/workshop/content/235540'
+1. [Node.js](https://nodejs.org/en/) must be installed.  
+1. Run npm (included in node.js) from where you put this to install dependencies:  
 
-[Node.js](https://nodejs.org/en/) must be installed.  
-Run npm (included in node.js) from where you put this to install dependencies:
+	npm install gulp-cli -g  
+	npm i  
 
-	npm install gulp-cli -g
-	npm i
+1. Run `gulp` from command line to create config.json file.  
+2. Place your existing mods in the `mods` folder or specify alternative path in config.json. This path can be relative or absolute. To use current folder specify `.` as the path.  
+3. Set `fallback_stingray_exe` and `fallback_workshop_dir` in config.json. These paths will be used if the script fails to find them in the registry.  
+4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in config.json.   
+5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`.
 
 ### Usage
+
+All of these commands have the optional `-f <folder>` param that temporaly sets current mods folder.
 
 #### Create a mod from template:
 

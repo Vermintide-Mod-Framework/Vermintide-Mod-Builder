@@ -24,12 +24,14 @@ function readScriptConfig() {
 		fs.writeFileSync(scriptConfigFile, 
 			JSON.stringify({
 				mods_dir: 'mods',
+				temp_dir: '',
 
 				fallback_stingray_exe: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe',
 				fallback_workshop_dir: 'E:/SteamLibrary/SteamApps/workshop/content/235540',
 
 				ignored_dirs: [
-					'.git'
+					'.git',
+					'.temp'
 				]
 			}, null, '\t')
 		);
@@ -39,11 +41,18 @@ function readScriptConfig() {
 
 const scriptConfig = readScriptConfig();
 
+let modsDir = scriptConfig.mods_dir || 'mods';
+let tempDir = scriptConfig.temp_dir;
+
+const UNSPECIFIED_TEMP_DIR = !tempDir;
+
+if(UNSPECIFIED_TEMP_DIR) {
+	tempDir = join(modsDir, '.temp');
+}
+
 const FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
 	FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
 	IGNORED_DIRS = scriptConfig.ignored_dirs || [];
-
-let modsDir = scriptConfig.mods_dir;
 
 
 /* FOR CREATING */
@@ -91,6 +100,8 @@ const cfgFile = 'item.cfg';
 
 /* TASKS */
 
+// All of these have the optional -f param that sets mods directory
+
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
@@ -137,7 +148,7 @@ gulp.task('publish', (callback) => {
 	let verbose = process.argv.verbose || false;
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		throw Error(`Folder ${modDir} isn't valid or doesn't exist`);
+		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
 	}
 	
 	checkIfPublished(modName)
@@ -175,7 +186,7 @@ gulp.task('upload', (callback) => {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		throw Error(`Folder ${modDir} doesn't exist`);
+		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
 	}
 
 	let changenote = argv.n || argv.note || argv.changenote || '';
@@ -232,7 +243,7 @@ gulp.task('open', (callback) => {
 // Builds specified mods and copies the bundles to the game workshop folder
 // gulp build [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>] [--dist]
 // --verbose - prints stingray console output even on successful build
-// -t - doesn't delete .temp folder before building
+// -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
 gulp.task('build', (callback) => {
@@ -267,6 +278,8 @@ gulp.task('build', (callback) => {
 			}
 		});
 		return promise;
+	}).catch((error) => {
+		console.log(error);
 	})
 	.then(() => callback());
 });
@@ -305,6 +318,8 @@ gulp.task('watch', (callback) => {
 			}
 		});
 		return callback();
+	}).catch((error) => {
+		console.log(error);
 	});
 });
 
@@ -318,16 +333,21 @@ function setModsDir(pargv) {
 
 	if(!newModsDir) {
 		console.log(`Using mods folder '${modsDir}'`);
+		console.log(`Using temp folder '${tempDir}'`);
 		return;
 	}
 
 	if(typeof newModsDir == 'string') {
 		console.log(`Using mods folder '${newModsDir}'`);
 		modsDir = newModsDir;
+		if(UNSPECIFIED_TEMP_DIR) {
+			tempDir = join(modsDir, '.temp');
+		}
 	}
 	else {
 		console.log(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`)
 	}
+	console.log(`Using temp folder '${tempDir}'`);
 }
 
 function validModName(modName) {
@@ -472,15 +492,15 @@ function checkIfPublished(modName) {
 
 /* BUILD METHODS */
 
-// Builds modName, optionally deleting its .temp folder, and copies it to the dist and workshop dirs
+// Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
 function buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId) {
 	console.log('Building ', modName);
 
 	let modDir = join(modsDir, modName);
 
-	let tempDir = join('.temp', modsDir, modName);
-	let dataDir = join(tempDir, 'compile');
-	let buildDir = join(tempDir, 'bundle');
+	let modTempDir = join(tempDir, modName);
+	let dataDir = join(modTempDir, 'compile');
+	let buildDir = join(modTempDir, 'bundle');
 
 	return checkTempFolder(modName, !leaveTemp)
 		.then(() => {
@@ -607,7 +627,7 @@ function getBuildParams(pargv) {
 // Checks if temp folder exists, optionally removes it
 function checkTempFolder(modName, shouldRemove) {
 	return new Promise((resolve, reject) => {
-		let tempPath = join('.temp', modsDir, modName);
+		let tempPath = join(tempDir, modName);
 		let tempExists = fs.existsSync(tempPath);
 		if(tempExists && shouldRemove) {
 			child_process.exec('rmdir /s /q "' + tempPath + '"', function (error) {
@@ -620,7 +640,7 @@ function checkTempFolder(modName, shouldRemove) {
 		}
 		else{
 			if(tempExists) {
-				console.log('Overwriting .temp folder');
+				console.log('Overwriting temp folder');
 			}
 			return resolve();
 		}
