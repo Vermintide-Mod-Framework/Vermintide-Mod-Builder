@@ -17,31 +17,33 @@ const
 	readFile = util.promisify(fs.readFile),
 	writeFile = util.promisify(fs.writeFile);
 
-const scriptConfig = readScriptConfig();
-
-const modsDir = scriptConfig.mods_dir,
-	FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
-	FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
-	IGNORED_DIRS = scriptConfig.ignored_dirs || [];
-
 function readScriptConfig() {
 	let scriptConfigFile = 'config.json';
 	if(!fs.existsSync(scriptConfigFile)) {
+		console.log('Creating default config.json');
 		fs.writeFileSync(scriptConfigFile, 
-`{
-	"mods_dir" : "mods",
+			JSON.stringify({
+				mods_dir: 'mods',
 
-	"fallback_stingray_exe": "E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe",
-	"fallback_workshop_dir": "E:/SteamLibrary/SteamApps/workshop/content/235540",
+				fallback_stingray_exe: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe',
+				fallback_workshop_dir: 'E:/SteamLibrary/SteamApps/workshop/content/235540',
 
-	"ignored_dirs": [
-		".git"
-	]
-}`
+				ignored_dirs: [
+					'.git'
+				]
+			}, null, '\t')
 		);
 	}
 	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
+
+const scriptConfig = readScriptConfig();
+
+const FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
+	FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
+	IGNORED_DIRS = scriptConfig.ignored_dirs || [];
+
+let modsDir = scriptConfig.mods_dir;
 
 /* FOR CREATING */
 
