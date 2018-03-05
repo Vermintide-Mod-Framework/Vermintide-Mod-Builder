@@ -1,11 +1,13 @@
-*
+/**
 
 !.gitignore
 !gulpfile.js
 !package.json
 !package-lock.json
 !README.md
-!mods/.gitkeep
+!/mods
+/mods/*
+!/mods/.gitkeep
 
 !/ugc_tool
 !/%%template
