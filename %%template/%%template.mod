@@ -1,18 +1,12 @@
-local directory_name = "%%template"
-local file_name = "%%template"
+print("[LOADING MOD] %%template")
 
-local main_script_path = "scripts/mods/" .. directory_name .. "/" ..file_name
-
-print("[LOADING MOD] " .. file_name)
-
-local ret = {
+return {
 	run = function()
-		local mod = new_mod(file_name)
-		mod:localization("localization/" .. file_name)
-		mod:dofile(main_script_path)
+		local mod = new_mod("%%template")
+		mod:localization("localization/%%template")
+		mod:dofile("scripts/mods/%%template/%%template")
 	end,
 	packages = {
-		"resource_packages/" .. directory_name.. "/" .. file_name
-	},
+		"resource_packages/%%template/%%template"
+	}
 }
-return ret
