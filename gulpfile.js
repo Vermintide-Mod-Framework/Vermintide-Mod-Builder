@@ -1,26 +1,30 @@
 'use strict';
 
-const 
-	fs = require('fs'),
-	path = require('path'),
-	join = path.join,
-	gulp = require('gulp'),
-	minimist = require('minimist'),
-	merge = require('merge-stream'),
-	replace = require('gulp-replace'),
-	rename = require('gulp-rename'),
-	child_process = require('child_process'),
-	util = require('util'),
-	opn = require('opn');
+const fs = require('fs'),
+      path = require('path'),
+      join = path.join,
+      gulp = require('gulp'),
+      minimist = require('minimist'),
+      merge = require('merge-stream'),
+      replace = require('gulp-replace'),
+      rename = require('gulp-rename'),
+      child_process = require('child_process'),
+      util = require('util'),
+      opn = require('opn');
 
-const 
-	readFile = util.promisify(fs.readFile),
-	writeFile = util.promisify(fs.writeFile);
+const readFile = util.promisify(fs.readFile),
+      writeFile = util.promisify(fs.writeFile);
+
+const defaultTempDir = '.temp';
 
 function readScriptConfig() {
+
 	let scriptConfigFile = 'config.json';
+
 	if(!fs.existsSync(scriptConfigFile)) {
+
 		console.log('Creating default config.json');
+
 		fs.writeFileSync(scriptConfigFile, 
 			JSON.stringify({
 				mods_dir: 'mods',
@@ -31,11 +35,12 @@ function readScriptConfig() {
 
 				ignored_dirs: [
 					'.git',
-					'.temp'
+					defaultTempDir
 				]
 			}, null, '\t')
 		);
 	}
+
 	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
 
@@ -47,12 +52,12 @@ let tempDir = scriptConfig.temp_dir;
 const UNSPECIFIED_TEMP_DIR = !tempDir;
 
 if(UNSPECIFIED_TEMP_DIR) {
-	tempDir = join(modsDir, '.temp');
+	tempDir = join(modsDir, defaultTempDir);
 }
 
 const FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
-	FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
-	IGNORED_DIRS = scriptConfig.ignored_dirs || [];
+      FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
+      IGNORED_DIRS = scriptConfig.ignored_dirs || [];
 
 
 /* FOR CREATING */
@@ -105,7 +110,7 @@ const cfgFile = 'item.cfg';
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-gulp.task('create', (callback) => {
+gulp.task('create', callback => {
 
 	setModsDir(process.argv);
 
@@ -116,21 +121,23 @@ gulp.task('create', (callback) => {
 	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
 		throw Error(`Folder ${modDir} is invalid or already exists`);
 	}
+
 	console.log('Copying template');
+
 	copyTemplate(config)
 		.then(() => createCfgFile(config))
 		.then(() => uploadMod(modName))
-		.then((modId) => {
+		.then(modId => {
 			let modUrl = formUrl(modId);
 			console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
 			console.log('Opening url...');
 			return opn(modUrl);
 		})
-		.catch((error) => {
+		.catch(error => {
 			console.log(error);
 			return deleteDirectory(join(modsDir, modName));
 		})
-		.catch((error) => {
+		.catch(error => {
 			console.log(error);
 		})
 		.then(() => callback());
@@ -138,7 +145,7 @@ gulp.task('create', (callback) => {
 
 // Builds the mod then uploads it to workshop as a new item
 // gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-gulp.task('publish', (callback) => {
+gulp.task('publish', callback => {
 
 	setModsDir(process.argv);
 
@@ -151,7 +158,7 @@ gulp.task('publish', (callback) => {
 	}
 	
 	checkIfPublished(modName)
-		.then((cfgExists) => {
+		.then(cfgExists => {
 			if(cfgExists) {
 				console.log('Using existing item.cfg');
 			}
@@ -162,13 +169,13 @@ gulp.task('publish', (callback) => {
 		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modDir, 'item_preview', '.jpg'))
 		.then(() => uploadMod(modName))
 		.then(() => getModId(modName))
-		.then((modId) => {
+		.then(modId => {
 			let modUrl = formUrl(modId);
 			console.log('Uploaded to ' + modUrl);
 			console.log('Opening url...');
 			return opn(modUrl);
 		})
-		.catch((error) => {
+		.catch(error => {
 			console.log(error);
 		})
 		.then(() => callback());
@@ -176,7 +183,7 @@ gulp.task('publish', (callback) => {
 
 // Uploads the last built version of the mod to the workshop
 // gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
-gulp.task('upload', (callback) => {
+gulp.task('upload', callback => {
 
 	setModsDir(process.argv);
 
@@ -199,7 +206,7 @@ gulp.task('upload', (callback) => {
 
 	uploadMod(modName, changenote, skip)
 		.then(() => getModId(modName))
-		.then((modId) => {
+		.then(modId => {
 			let modUrl = formUrl(modId);
 			console.log('Uploaded to ' + modUrl);
 			if(openUrl){
@@ -210,7 +217,7 @@ gulp.task('upload', (callback) => {
 				return Promise.resolve();
 			}
 		})
-		.catch((error) => {
+		.catch(error => {
 			console.log(error);
 		})
 		.then(() => callback());
@@ -218,7 +225,7 @@ gulp.task('upload', (callback) => {
 
 // Opens mod's workshop page
 // gulp open -m <mod_name> [--id <item_id>]
-gulp.task('open', (callback) => {
+gulp.task('open', callback => {
 
 	setModsDir(process.argv);
 
@@ -232,8 +239,8 @@ gulp.task('open', (callback) => {
 	}
 
 	(modId ? Promise.resolve(modId) : getModId(modName))
-		.then((modId) => opn(formUrl(modId)))
-		.catch((error) => {
+		.then(modId => opn(formUrl(modId)))
+		.catch(error => {
 			console.log(error);
 		})
 		.then(() => callback());
@@ -245,7 +252,7 @@ gulp.task('open', (callback) => {
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
-gulp.task('build', (callback) => {
+gulp.task('build', callback => {
 
 	setModsDir(process.argv);
 
@@ -258,26 +265,15 @@ gulp.task('build', (callback) => {
 	getStingrayExe().then(stingrayExe => {
 
 		let promise = Promise.resolve();	
-		modNames.forEach(modName => {
-
-			if(!modName) return;
-			let modDir = join(modsDir, modName);
-
-			if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
-
-		    	promise = promise.then(() => {
-		    		return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch((error) => {
-		    			console.log(error);
-		    		});
-		    	});
-
-			}
-			else {
-				console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
-			}
+		forEachMod(modNames, noWorkshopCopy, modName => {
+			promise = promise.then(() => {
+				return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+					console.log(error);
+				});
+			});
 		});
 		return promise;
-	}).catch((error) => {
+	}).catch(error => {
 		console.log(error);
 	})
 	.then(() => callback());
@@ -285,39 +281,30 @@ gulp.task('build', (callback) => {
 
 // Watches for changes in specified mods and builds them whenever they occur
 // gulp watch [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>] [--dist]
-gulp.task('watch', (callback) => {
+gulp.task('watch', callback => {
 
 	setModsDir(process.argv);
 
 	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
 
 	getStingrayExe().then(stingrayExe => {
-		modNames.forEach((modName) => {
+		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
+			console.log('Watching ', modName, '...');
 
-			if(!modName) return;
-			let modDir = join(modsDir, modName);
+			let src = [
+				modDir, 
+				'!' + modDir + '/*.tmp', 
+				'!' + modDir + distDir + '/*'
+			];
 
-			if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
-
-				console.log('Watching ', modName, '...');
-
-				let src = [
-					modDir, 
-					'!' + modDir + '/*.tmp', 
-					'!' + modDir + distDir + '/*'
-				];
-				gulp.watch(src, () => {
-					return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch((error) => {
-		    			console.log(error);
-		    		});
-				});
-			}
-			else {
-				console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
-			}
+			gulp.watch(src, () => {
+				return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+	    			console.log(error);
+	    		});
+			});
 		});
 		return callback();
-	}).catch((error) => {
+	}).catch(error => {
 		console.log(error);
 	});
 });
@@ -340,11 +327,11 @@ function setModsDir(pargv) {
 		console.log(`Using mods folder '${newModsDir}'`);
 		modsDir = newModsDir;
 		if(UNSPECIFIED_TEMP_DIR) {
-			tempDir = join(modsDir, '.temp');
+			tempDir = join(modsDir, defaultTempDir);
 		}
 	}
 	else {
-		console.log(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`)
+		console.log(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
 	}
 	console.log(`Using temp folder '${tempDir}'`);
 }
@@ -355,7 +342,7 @@ function validModName(modName) {
 
 function getModId(modName) {
 	return readFile(join(modsDir, modName, cfgFile), 'utf8')
-		.then((data) => {
+		.then(data => {
 			let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
 			modId = modId && modId[1];
 			if(modId) {
@@ -398,13 +385,13 @@ function copyTemplate(config) {
 			.pipe(replace(temp, modName))
 			.pipe(replace(tempTitle, config.title))
 			.pipe(replace(tempDescription, config.description))
-			.pipe(rename((p) => {
+			.pipe(rename(p => {
 				p.basename = p.basename.replace(temp, modName);
 			}))
 			.pipe(gulp.dest(modDir))
 			.on('error', reject)
 			.on('end', () => {
-				renameDirs.forEach((dir) => {				
+				renameDirs.forEach(dir => {				
 					fs.renameSync(join(modDir, dir, temp), join(modDir, dir, modName));
 				});
 				gulp.src(coreSrc, {base: temp})
@@ -449,7 +436,7 @@ function uploadMod(modName, changenote, skip) {
 		);
 
 		let modId = '';
-		uploader.stdout.on('data', (data) => {
+		uploader.stdout.on('data', data => {
 			console.log(rmn(data));
 			data = String(data);
 			if (data.includes('publisher_id')){
@@ -457,9 +444,9 @@ function uploadMod(modName, changenote, skip) {
 			}
 		});
 
-		uploader.on('error', (error) => reject(error));
+		uploader.on('error', error => reject(error));
 
-		uploader.on('close', (code) => {
+		uploader.on('close', code => {
 			if(code) {
 				reject('Uploader exited with code: ' + code);
 			}
@@ -479,7 +466,7 @@ function checkIfPublished(modName) {
 	if(!fs.existsSync(modCfg)){
 		return Promise.resolve(false);
 	}
-	return readFile(modCfg, 'utf8').then((data) => {
+	return readFile(modCfg, 'utf8').then(data => {
 		if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
 			return Promise.reject('Mod has already been published, use gulp upload instead.');
 		}
@@ -491,6 +478,21 @@ function checkIfPublished(modName) {
 
 
 /* BUILD METHODS */
+
+function forEachMod(modNames, noWorkshopCopy, action) {
+	modNames.forEach(modName => {
+
+		if(!modName) return;
+		let modDir = join(modsDir, modName);
+
+		if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
+			action(modName, modDir);
+		}
+		else {
+			console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
+		}
+	});
+}
 
 // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
 function buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId) {
@@ -507,7 +509,7 @@ function buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modI
 			return modId || noWorkshopCopy ? Promise.resolve() : readFile(join(modDir, cfgFile), 'utf8');
 		})
 		.then(() => runStingray(stingrayExe, modDir, dataDir, buildDir, verbose))
-		.then((code) => readProcessedBundles(modName, dataDir, code))
+		.then(code => readProcessedBundles(modName, dataDir, code))
 		.then(() => {
 			return noWorkshopCopy ? Promise.resolve() : getModWorkshopDir(modName, modId);
 		})
@@ -531,15 +533,15 @@ function getRegistryValue(key, value) {
 
 		let result = '';
 
-		spawn.stdout.on('data', (data) => {
+		spawn.stdout.on('data', data => {
 			result += String(data);
 		});
 
-		spawn.on('error', (err) => {
+		spawn.on('error', err => {
 			reject(err);
 		});
 
-		spawn.on('close', (code) => {
+		spawn.on('close', code => {
 			if(code || !result){
 				reject(code);
 				return;
@@ -664,15 +666,15 @@ function runStingray(stingrayExe, modDir, dataDir, buildDir, verbose) {
 			{windowsVerbatimArguments: true} // fucking WHY???
 		);
 
-		stingray.stdout.on('data', (data) => {
+		stingray.stdout.on('data', data => {
 			if(verbose){
 			    console.log(rmn(data));
 			}
 		});
 
-		stingray.on('error', (error) => reject(error));
+		stingray.on('error', error => reject(error));
 
-		stingray.on('close', (code) => {
+		stingray.on('close', code => {
 			console.log('Finished building');
 			resolve(code);
 		});
@@ -733,7 +735,7 @@ function moveMod(modName, buildDir, modWorkshopDir) {
 				buildDir + '/*([0-f])', 
 				'!' + buildDir + '/dlc'
 			], {base: buildDir})
-			.pipe(rename((p) => {
+			.pipe(rename(p => {
 				p.basename = modName;
 				p.extname = '';
 			}))
@@ -786,18 +788,18 @@ function deleteFile(dir, file) {
 
 function deleteDirectory(dir) {
     return new Promise(function (resolve, reject) {
-        fs.access(dir, function (err) {
+        fs.access(dir, err => {
             if (err) {
                 return reject(err);
             }
-            fs.readdir(dir, function (err, files) {
+            fs.readdir(dir, (err, files) => {
                 if (err) {
                     return reject(err);
                 }
-                Promise.all(files.map(function (file) {
+                Promise.all(files.map(file => {
                     return deleteFile(dir, file);
-                })).then(function () {
-                    fs.rmdir(dir, function (err) {
+                })).then(() => {
+                    fs.rmdir(dir, err => {
                         if (err) {
                             return reject(err);
                         }
@@ -816,7 +818,7 @@ function copyIfDoesntExist(filePath, fileName, base, dest, destBase, destExt) {
 		}
 		else{
 			gulp.src(join(filePath, fileName), {base: base})
-				.pipe(rename((p) => {
+				.pipe(rename(p => {
 					p.basename = destBase;
 					p.extname = destExt;
 				}))
