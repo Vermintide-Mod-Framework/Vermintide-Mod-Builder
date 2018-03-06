@@ -632,7 +632,7 @@ function checkTempFolder(modName, shouldRemove) {
 		let tempPath = join(tempDir, modName);
 		let tempExists = fs.existsSync(tempPath);
 		if(tempExists && shouldRemove) {
-			child_process.exec('rmdir /s /q "' + tempPath + '"', function (error) {
+			child_process.exec('rmdir /s /q "' + tempPath + '"', error => {
 				if(error){
 					return reject(error + '\nFailed to delete temp folder');
 				}
@@ -760,22 +760,22 @@ function moveMod(modName, buildDir, modWorkshopDir) {
 // Returns an array of folders in dir, except the ones in second param
 function getFolders(dir, except) {
 	return fs.readdirSync(dir)
-		.filter(function(fileName) {
+		.filter(fileName => {
 			return fs.statSync(join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
 		});
 }
 
 function deleteFile(dir, file) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         var filePath = path.join(dir, file);
-        fs.lstat(filePath, function (err, stats) {
+        fs.lstat(filePath, (err, stats) => {
             if (err) {
                 return reject(err);
             }
             if (stats.isDirectory()) {
                 resolve(deleteDirectory(filePath));
             } else {
-                fs.unlink(filePath, function (err) {
+                fs.unlink(filePath, err => {
                     if (err) {
                         return reject(err);
                     }
@@ -787,7 +787,7 @@ function deleteFile(dir, file) {
 }
 
 function deleteDirectory(dir) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         fs.access(dir, err => {
             if (err) {
                 return reject(err);
