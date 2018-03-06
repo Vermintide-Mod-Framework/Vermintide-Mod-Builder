@@ -293,10 +293,10 @@ gulp.task('watch', callback => {
 
 			let src = [
 				modDir, 
-				'!' + modDir + '/*.tmp', 
-				'!' + modDir + distDir + '/*'
+				'!' + modsDir + '/' + modName + '/*.tmp', 
+				'!' + modsDir + '/' + modName + '/' + distDir + '/*'
 			];
-
+			
 			gulp.watch(src, () => {
 				return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch(error => {
 	    			console.log(error);
