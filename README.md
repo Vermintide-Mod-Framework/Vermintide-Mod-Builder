@@ -16,7 +16,7 @@ This script works for both Vermintide 1 and 2.
 
 1. Run `gulp` from command line to create config.json file.  
 2. Place your existing mods in the `mods` folder or specify alternative path in config.json. This path can be relative or absolute. To use current folder put `.` as the path.  
-3. Set `game` in config.json to 1 or 2 to determine which game mods are gonna be built and uploaded for by default.  
+3. Set `game` in config.json to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
 3. Set `fallback_tools_dir` and `fallback_workshop_dir` in config.json for both games. These paths will be used if the script fails to find them in the registry.  
 4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in config.json.   
 5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`.
@@ -71,7 +71,7 @@ I can't be bothered to add parameters to change the title, description etc. You 
 Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. 
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output  
-`--temp` or `-t` - overwrites the temp folder instead of deleting it (builds faster)  
+`--temp` or `-t` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch)  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder
 
