@@ -708,14 +708,15 @@ function getWorkshopDir() {
 				if(appPath && typeof appPath == 'string') {
 
 					appPath = path.normalize(appPath);
-					let position = appPath.lastIndexOf(path.basename(appPath));
-					workshopDir = appPath.substring(0, position);
-
-					if(!workshopDir){
+					let parts = appPath.split(path.sep);
+					let neededPart = parts[parts.length - 2];
+					
+					if(!neededPart){
 						console.error(errorMsg);
 						workshopDir = FALLBACK_WORKSHOP_DIR;
 					}
 					else{
+						workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
 						workshopDir = join(workshopDir, 'workshop/content', gameId);
 					}
 				}
