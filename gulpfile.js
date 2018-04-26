@@ -144,7 +144,7 @@ gulp.task('default', callback => {
 		'    gulp create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
 		'    gulp publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]\n' +
 		'    gulp upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
-		'    gulp open      -m <mod_name> [--id <item_id>]\n' +
+		'    gulp open      {-m <mod_name> | --id <item_id>}\n' +
 		'    gulp build     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
 		'    gulp watch     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]'
 	);

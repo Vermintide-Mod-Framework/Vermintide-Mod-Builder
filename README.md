@@ -4,6 +4,8 @@ I made a few gulp tasks to ease the ever-growing pain of creating and rebuilding
 Gulp is like make only in javascript and for web development. 
 Why is it used for this then? Because that's what I know.
 
+This script works for both Vermintide 1 and 2. 
+
 ### Installation
 
 1. [Node.js](https://nodejs.org/en/) must be installed.  
@@ -13,28 +15,36 @@ Why is it used for this then? Because that's what I know.
 	npm i  
 
 1. Run `gulp` from command line to create config.json file.  
-2. Place your existing mods in the `mods` folder or specify alternative path in config.json. This path can be relative or absolute. To use current folder specify `.` as the path.  
-3. Set `fallback_stingray_exe` and `fallback_workshop_dir` in config.json. These paths will be used if the script fails to find them in the registry.  
+2. Place your existing mods in the `mods` folder or specify alternative path in config.json. This path can be relative or absolute. To use current folder put `.` as the path.  
+3. Set `game` in config.json to 1 or 2 to determine which game mods are gonna be built and uploaded for by default.  
+3. Set `fallback_tools_dir` and `fallback_workshop_dir` in config.json for both games. These paths will be used if the script fails to find them in the registry.  
 4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in config.json.   
 5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`.
 
 ### Usage
 
-All of these commands have the optional `-f <folder>` parameter that temporally sets current mods folder.
+	gulp <command> [command-specific params] [-f <folder>] [-g <game_number>] [--reset]
+
+`-f <folder>` or `--folder <folder>` - temporally sets current mods folder  
+`-g <game_number>` or `--game <game_number>` - temporary sets which game should the mods be built/uploaded for  
+`--reset` - resets config.json before executing the command  
+
+Run without command to see a list of commands with parameters.
+
 
 #### Create a mod from template:
 
 	gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 
 This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `item.cfg` in the new mod folder and open a browser window for you to subscribe to the mod.  
-This is needed for building the mod.
+This is needed for the game to recognize the mod.
 
 #### Publish an existing mod to Steam Workshop:  
 
 	gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 
-This will create `item.cfg` for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
-If `item.cfg` is present it shouldn't have `published_id` in it.  
+This will create `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the config.json) for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
+If .cfg file is present it shouldn't have `published_id` in it.  
 
 #### Upload a new version of a mod to Steam Workshop:  
 
@@ -52,11 +62,11 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	gulp build [-m "<mod1>; <mod2>; <mod3>..."] [--verbose] [--temp] [--id <item_id>] [--dist]
+	gulp build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 #### Automatically build all or specified mods from current directory:
 
-	gulp watch [-m "<mod1>; <mod2>; <mod3>..."] [--verbose] [--temp] [--id <item_id>] [--dist]
+	gulp watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. 
 `item.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
@@ -64,3 +74,9 @@ Two of the commands above will build and copy the bundle to the dist folder, as 
 `--temp` or `-t` - overwrites the temp folder instead of deleting it (builds faster)  
 `--id` - forces item ID. This way you can build a mod without having an `item.cfg` file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if item.cfg isn't present but will only copy it to the `dist` folder in mod's folder
+
+#### To quickly change options in config.json 
+	
+	gulp config [--<key1>=<value1> --<key2>=<value2>...]
+
+Note that you cannot set `ignored_dirs` this way.
