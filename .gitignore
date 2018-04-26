@@ -9,5 +9,4 @@
 /mods/*
 !/mods/.gitkeep
 
-!/ugc_tool
 !/%%template
