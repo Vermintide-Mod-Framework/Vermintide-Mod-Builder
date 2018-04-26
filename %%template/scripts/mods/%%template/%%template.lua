@@ -3,22 +3,24 @@ local mod = get_mod("%%template")
 local mod_data = {}
 
 -- Everything here is optional. You can remove unused parts.
-mod_data.name = "%%title" -- Readable mod name
-mod_data.description = "%%description"
-mod_data.is_togglable = true -- If the mod can be enabled/disabled
-mod_data.is_mutator = false -- If the mod is mutator
-mod_data.mutator_setting = {} -- Extra settings, if it's mutator
-mod_data.options_widgets = {
-	{
-		["setting_name"] = "checkbox",
-		["widget_type"] = "checkbox",
-		["text"] = "Checkbox",
-		["tooltip"] = "Checkbox\n" ..
-					"Line_1\n\n" ..
-					"Line_2\n\n" ..
-					"Line_3",
-		["default_value"] = true
-	}
+mod_data = {
+	name = "%%title",               -- Readable mod name
+	description = "%%description",  -- Mod description
+	is_togglable = true,            -- If the mod can be enabled/disabled
+	is_mutator = false,             -- If the mod is mutator
+	mutator_settings = {},          -- Extra settings, if it's mutator
+	options_widgets = {				-- Widget settings for the mod options menu
+		{
+			["setting_name"] = "checkbox",
+			["widget_type"] = "checkbox",
+			["text"] = "Checkbox",
+			["tooltip"] = "Checkbox\n" ..
+						"Line_1\n\n" ..
+						"Line_2\n\n" ..
+						"Line_3",
+			["default_value"] = true
+		}
+	},
 }
 
 mod:initialize_data(mod_data)
