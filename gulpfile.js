@@ -2,7 +2,6 @@
 
 const fs = require('fs'),
       path = require('path'),
-      join = path.join,
       gulp = require('gulp'),
       minimist = require('minimist'),
       merge = require('merge-stream'),
@@ -14,6 +13,10 @@ const fs = require('fs'),
 
 const readFile = util.promisify(fs.readFile),
       writeFile = util.promisify(fs.writeFile);
+
+function join(...args){
+	return path.normalize(path.join(...args));
+}
 
 const defaultTempDir = '.temp';
 
@@ -43,9 +46,6 @@ function readScriptConfig() {
 
 				tools_id1: '718610',
 				tools_id2: '718610',
-
-				game_folder1: 'Warhammer End Times Vermintide',
-				game_folder2: 'Warhammer Vermintide 2',
 
 				fallback_tools_dir1: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
 				fallback_tools_dir2: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
@@ -184,7 +184,8 @@ gulp.task('create', callback => {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
-		throw Error(`Folder ${modDir} is invalid or already exists`);
+		console.error(`Folder ${modDir} is invalid or already exists`);
+		return callback();
 	}
 
 	console.log('Copying template');
@@ -218,7 +219,8 @@ gulp.task('publish', callback => {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
+		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		return callback();
 	}
 	
 	let toolsDir = null;
@@ -257,7 +259,8 @@ gulp.task('upload', callback => {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
+		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		return callback();
 	}
 
 	let changenote = argv.n || argv.note || argv.changenote || '';
@@ -298,7 +301,8 @@ gulp.task('open', callback => {
 	let modId = argv.id || null;
 
 	if(!modId && (!validModName(modName) || !fs.existsSync(modDir + '/'))) {
-		throw Error(`Folder ${modDir} doesn't exist`);
+		console.error(`Folder ${modDir} doesn't exist`);
+		return callback();
 	}
 
 	(modId ? Promise.resolve(modId) : getModId(modName))
@@ -374,7 +378,8 @@ gulp.task('watch', callback => {
 function getGameSpecificKey(key){
 	let id = scriptConfig[key + gameNumber];
 	if(typeof id != 'string'){
-		throw new Error(`Vermintide ${gameNumber} hasn\'t been released yet. Check your ${scriptConfigFile}.`);
+		console.error(`Failed to find '${key + gameNumber}' in ${scriptConfigFile}.`);
+		process.exit(1);
 	}
 	return id;
 }
@@ -417,6 +422,11 @@ function setGameNumber(argv) {
 		gameNumber = newGameNumber;
 	}
 
+	if(gameNumber !== 1 && gameNumber !== 2){
+		console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${scriptConfigFile}.`);
+		process.exit(1);
+	}
+
 	console.log('Game is Vermintide ' + gameNumber);
 }
 
@@ -451,14 +461,19 @@ function getModToolsDir(){
 		let value = '"InstallLocation"';
 
 		let toolsDir = FALLBACK_TOOLS_DIR;
+		let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
 		getRegistryValue(sdkKey, value)
 			.catch(err => {
-				console.log('Vermintide mod SDK directory not found, using fallback.');
+				console.log(errorMsg);
 			})
 			.then(appPath => {
-				if(!appPath) {
+				if(appPath) {
 					toolsDir = appPath;
 				}
+				else {
+					console.log(errorMsg);
+				}
+				toolsDir = path.normalize(toolsDir);
 				console.log('Modding tools dir:', toolsDir);
 				console.log();
 				resolve(toolsDir);
@@ -608,7 +623,7 @@ function forEachMod(modNames, noWorkshopCopy, action) {
 			action(modName, modDir);
 		}
 		else {
-			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it`);
+			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it.`);
 		}
 	});
 }
@@ -684,31 +699,28 @@ function getWorkshopDir() {
 		let value = '"InstallLocation"';
 
 		let workshopDir = FALLBACK_WORKSHOP_DIR;
-		let error = 'Vermintide workshop directory not found, using fallback.';
+		let errorMsg = 'Vermintide workshop directory not found, using fallback.';
 		getRegistryValue(appKey, value)
 			.catch(err => {
-				console.log(error);
+				console.error(errorMsg);
 			})
 			.then(appPath => {
-				if(appPath) {
-					let gameFolder = getGameSpecificKey('game_folder');
-					let regEx = new RegExp(`(.*)common[\\\\\\/]${gameFolder}[\\\\\\/]?$`);
-					workshopDir = appPath.match(regEx);
+				if(appPath && typeof appPath == 'string') {
 
-					try {
-						workshopDir = workshopDir[1];
-					}
-					catch (err) {
-						console.error(`Couldn't figure out workshop dir from install location`);
-					}
+					appPath = path.normalize(appPath);
+					let position = appPath.lastIndexOf(path.basename(appPath);
+					workshopDir = appPath.substring(0, position));
 
 					if(!workshopDir){
-						console.log(error);
+						console.error(errorMsg);
 						workshopDir = FALLBACK_WORKSHOP_DIR;
 					}
 					else{
-						workshopDir = join(workshopDir, '\\workshop\\content\\' + gameId + '\\');
+						workshopDir = join(workshopDir, 'workshop/content', gameId);
 					}
+				}
+				else {
+					console.error(errorMsg);
 				}
 				console.log('Workshop folder:', workshopDir);
 				resolve(workshopDir);
@@ -890,7 +902,7 @@ function getFolders(dir, except) {
 
 function deleteFile(dir, file) {
     return new Promise((resolve, reject) => {
-        let filePath = path.join(dir, file);
+        let filePath = join(dir, file);
         fs.lstat(filePath, (err, stats) => {
             if (err) {
                 return reject(err);
