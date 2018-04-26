@@ -17,21 +17,41 @@ const readFile = util.promisify(fs.readFile),
 
 const defaultTempDir = '.temp';
 
+const argv = minimist(process.argv);
+const scriptConfigFile = 'config.json';
+
 function readScriptConfig() {
 
-	let scriptConfigFile = 'config.json';
+	if(argv.reset){
+		console.log(`Deleting ${scriptConfigFile}`);
+		fs.unlinkSync(scriptConfigFile);
+	}
 
 	if(!fs.existsSync(scriptConfigFile)) {
 
-		console.log('Creating default config.json');
+		console.log(`Creating default ${scriptConfigFile}`);
 
 		fs.writeFileSync(scriptConfigFile, 
 			JSON.stringify({
 				mods_dir: 'mods',
 				temp_dir: '',
 
-				fallback_stingray_exe: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/bin/stingray_win64_dev_x64.exe',
-				fallback_workshop_dir: 'E:/SteamLibrary/SteamApps/workshop/content/235540',
+				game: 1,
+
+				game_id1: '235540',
+				game_id2: '552500',
+
+				tools_id1: '718610',
+				tools_id2: '718610',
+
+				game_folder1: 'Warhammer End Times Vermintide',
+				game_folder2: 'Warhammer Vermintide 2',
+
+				fallback_tools_dir1: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+				fallback_tools_dir2: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+
+				fallback_workshop_dir1: 'E:/SteamLibrary/SteamApps/workshop/content/',
+				fallback_workshop_dir2: 'E:/SteamLibrary/SteamApps/workshop/content/',
 
 				ignored_dirs: [
 					'.git',
@@ -48,6 +68,7 @@ const scriptConfig = readScriptConfig();
 
 let modsDir = scriptConfig.mods_dir || 'mods';
 let tempDir = scriptConfig.temp_dir;
+let gameNumber = scriptConfig.game;
 
 const UNSPECIFIED_TEMP_DIR = !tempDir;
 
@@ -55,8 +76,11 @@ if(UNSPECIFIED_TEMP_DIR) {
 	tempDir = join(modsDir, defaultTempDir);
 }
 
-const FALLBACK_STINGRAY_EXE = scriptConfig.fallback_stingray_exe,
-      FALLBACK_WORKSHOP_DIR = scriptConfig.fallback_workshop_dir,
+setGameNumber(argv);
+setModsDir(argv);
+
+const FALLBACK_TOOLS_DIR = getGameSpecificKey('fallback_tools_dir'),
+      FALLBACK_WORKSHOP_DIR = join(getGameSpecificKey('fallback_workshop_dir'), getGameId()),
       IGNORED_DIRS = scriptConfig.ignored_dirs || [];
 
 
@@ -97,24 +121,65 @@ const modSrc = [
 
 // Path to workshop uploader tool
 // The tool and all its files should be placed in ./ugc_tool folder as paths are relative to current directory
-let uploaderExe = 'ugc_tool/ugc_tool.exe';
+let uploaderDir = 'ugc_uploader/';
+let uploaderExe = 'ugc_tool.exe';
+let uploaderGameConfig = 'steam_appid.txt';
+let stingrayDir = 'bin/';
+let stingrayExe = 'stingray_win64_dev_x64.exe';
 
 // Config file for workshop uploader tool
-const cfgFile = 'item.cfg';
+const cfgFile = 'itemV' + gameNumber + '.cfg';
 
 
 /* TASKS */
 
-// All of these have the optional -f param that sets mods directory
+// All of these have the optional -f param that sets mods directory and -g for setting game number
+
+// Prints all existing commands with params
+// gulp
+gulp.task('default', callback => {
+	console.log(
+		'    gulp <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
+		'    gulp config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
+		'    gulp create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
+		'    gulp publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]\n' +
+		'    gulp upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
+		'    gulp open      -m <mod_name> [--id <item_id>]\n' +
+		'    gulp build     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
+		'    gulp watch     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]'
+	);
+	callback();
+});
+
+// Sets and/or displayes config file values
+// Limited to non-object values
+// gulp config [--<key1>=<value1> --<key2>=<value2>...]
+gulp.task('config', callback => {
+
+	Object.keys(scriptConfig).forEach((key) => {
+		if(argv[key] !== undefined){
+			if(typeof scriptConfig[key] == 'object'){
+				console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
+				return;
+			}
+			console.log(`Set ${key} to ${argv[key]}`);
+			scriptConfig[key] = argv[key];
+		}
+	});
+
+	fs.writeFileSync(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
+
+	console.log(scriptConfig);
+
+	callback();
+});
 
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 gulp.task('create', callback => {
 
-	setModsDir(process.argv);
-
-	let config = getWorkshopConfig(process.argv);
+	let config = getWorkshopConfig(argv);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -126,7 +191,8 @@ gulp.task('create', callback => {
 
 	copyTemplate(config)
 		.then(() => createCfgFile(config))
-		.then(() => uploadMod(modName))
+		.then(() => getModToolsDir())
+		.then(toolsDir => uploadMod(toolsDir, modName))
 		.then(modId => {
 			let modUrl = formUrl(modId);
 			console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
@@ -147,9 +213,7 @@ gulp.task('create', callback => {
 // gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 gulp.task('publish', callback => {
 
-	setModsDir(process.argv);
-
-	let config = getWorkshopConfig(process.argv);
+	let config = getWorkshopConfig(argv);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -157,17 +221,21 @@ gulp.task('publish', callback => {
 		throw Error(`Folder ${modDir} is invalid or doesn't exist`);
 	}
 	
+	let toolsDir = null;
 	checkIfPublished(modName)
 		.then(cfgExists => {
 			if(cfgExists) {
-				console.log('Using existing item.cfg');
+				console.log(`Using existing ${cfgFile}`);
 			}
 			return cfgExists ? Promise.resolve() : createCfgFile(config);
 		})
-		.then(() => getStingrayExe())
-		.then(stingrayExe => buildMod(stingrayExe, modName, false, true, config.verbose, null))
+		.then(() => getModToolsDir())
+		.then((dir) => {
+			toolsDir = dir;
+		})
+		.then(() => buildMod(toolsDir, modName, false, true, config.verbose, null))
 		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modDir, 'item_preview', '.jpg'))
-		.then(() => uploadMod(modName))
+		.then(() => uploadMod(toolsDir, modName))
 		.then(() => getModId(modName))
 		.then(modId => {
 			let modUrl = formUrl(modId);
@@ -185,9 +253,6 @@ gulp.task('publish', callback => {
 // gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
 gulp.task('upload', callback => {
 
-	setModsDir(process.argv);
-
-	let argv = minimist(process.argv);
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
 
@@ -204,7 +269,8 @@ gulp.task('upload', callback => {
 
 	let skip = argv.s || argv.skip;
 
-	uploadMod(modName, changenote, skip)
+	getModToolsDir()
+		.then(toolsDir => uploadMod(toolsDir, modName, changenote, skip))
 		.then(() => getModId(modName))
 		.then(modId => {
 			let modUrl = formUrl(modId);
@@ -227,9 +293,6 @@ gulp.task('upload', callback => {
 // gulp open -m <mod_name> [--id <item_id>]
 gulp.task('open', callback => {
 
-	setModsDir(process.argv);
-
-	let argv = minimist(process.argv);
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
 	let modId = argv.id || null;
@@ -247,27 +310,25 @@ gulp.task('open', callback => {
 });
 
 // Builds specified mods and copies the bundles to the game workshop folder
-// gulp build [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>] [--dist]
+// gulp build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 // --verbose - prints stingray console output even on successful build
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
 gulp.task('build', callback => {
 
-	setModsDir(process.argv);
-
-	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv);
 
 	console.log('Mods to build:');
 	modNames.forEach(modName => console.log('- ' + modName));
 	console.log();
 
-	getStingrayExe().then(stingrayExe => {
+	getModToolsDir().then(toolsDir => {
 
 		let promise = Promise.resolve();	
 		forEachMod(modNames, noWorkshopCopy, modName => {
 			promise = promise.then(() => {
-				return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId).catch(error => {
 					console.log(error);
 				});
 			});
@@ -280,14 +341,12 @@ gulp.task('build', callback => {
 });
 
 // Watches for changes in specified mods and builds them whenever they occur
-// gulp watch [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>] [--dist]
+// gulp watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 gulp.task('watch', callback => {
 
-	setModsDir(process.argv);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv);
 
-	let {modNames, verbose, leaveTemp, modId, noWorkshopCopy} = getBuildParams(process.argv);
-
-	getStingrayExe().then(stingrayExe => {
+	getModToolsDir().then(toolsDir => {
 		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
 			console.log('Watching ', modName, '...');
 
@@ -298,7 +357,7 @@ gulp.task('watch', callback => {
 			];
 			
 			gulp.watch(src, () => {
-				return buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId).catch(error => {
 	    			console.log(error);
 	    		});
 			});
@@ -310,10 +369,25 @@ gulp.task('watch', callback => {
 });
 
 
-/* SHARED METHODS */
+/* CONFIG METHODS */
 
-function setModsDir(pargv) {
-	let argv = minimist(pargv);
+function getGameSpecificKey(key){
+	let id = scriptConfig[key + gameNumber];
+	if(typeof id != 'string'){
+		throw new Error(`Vermintide ${gameNumber} hasn\'t been released yet. Check your ${scriptConfigFile}.`);
+	}
+	return id;
+}
+
+function getGameId(){
+	return getGameSpecificKey('game_id');
+}
+
+function getToolsId(){
+	return getGameSpecificKey('tools_id');
+}
+
+function setModsDir(argv) {
 
 	let newModsDir = argv.f || argv.folder;
 
@@ -336,6 +410,18 @@ function setModsDir(pargv) {
 	console.log(`Using temp folder '${tempDir}'`);
 }
 
+function setGameNumber(argv) {
+	let newGameNumber = argv.g || argv.game;
+
+	if(newGameNumber !== undefined){
+		gameNumber = newGameNumber;
+	}
+
+	console.log('Game is Vermintide ' + gameNumber);
+}
+
+/* SHARED METHODS */
+
 function validModName(modName) {
 	return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- ]+$/);
 }
@@ -350,19 +436,40 @@ function getModId(modName) {
 			}
 			else {
 				return Promise.reject(
-					'Item ID not found in item.cfg file.\n' +
-					'You need to upload your mod to workshop before you can build/view it.\n' +
-					'Alternatively you can specify the workshop item id with --id param.'
+					`Item ID not found in ${cfgFile} file.\n` +
+					`You need to publish your mod to workshop before you can build/view it.\n` +
+					`Alternatively you can specify the workshop item id with --id param.`
 				);
 			}
 		});
 }
 
+// Gets mod tools placement from Vermintide Mod Tools install location
+function getModToolsDir(){
+	return new Promise((resolve, reject) => {
+		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + getToolsId() + '"';
+		let value = '"InstallLocation"';
+
+		let toolsDir = FALLBACK_TOOLS_DIR;
+		getRegistryValue(sdkKey, value)
+			.catch(err => {
+				console.log('Vermintide mod SDK directory not found, using fallback.');
+			})
+			.then(appPath => {
+				if(!appPath) {
+					toolsDir = appPath;
+				}
+				console.log('Modding tools dir:', toolsDir);
+				console.log();
+				resolve(toolsDir);
+			});
+	});
+}
+
 
 /* CREATE AND UPLOAD METHODS */
 
-function getWorkshopConfig(pargv) {
-	let argv = minimist(pargv);
+function getWorkshopConfig(argv) {
 
 	let modName = argv.m || argv.mod || '';
 	let modTitle = argv.t || argv.title || modName;
@@ -409,30 +516,39 @@ function createCfgFile(config) {
 					`content = "dist";\n` +
 					`language = "${config.language}";\n` +
 					`visibility = "${config.visibility}";\n`;
-	console.log('item.cfg:');
+	console.log(`${cfgFile}:`);
 	console.log(configText);
 	return writeFile(join(modsDir, config.name, cfgFile), configText);
 }
 
 // Uploads mod to the workshop
-function uploadMod(modName, changenote, skip) {
+function uploadMod(toolsDir, modName, changenote, skip) {
 	return new Promise((resolve, reject) => {
 		let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
+		if(!path.isAbsolute(modsDir)){
+			configPath = join(__dirname, configPath);
+		}
 		let uploaderParams = [
 			'-c', '"' + configPath + '"'
 		];
+
 		if(changenote) {
 			uploaderParams.push('-n');
 			uploaderParams.push('"' + changenote + '"');
 		}
+
 		if(skip) {			
 			uploaderParams.push('-s');
 		}
 
+		fs.writeFileSync(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
 		let uploader = child_process.spawn(
 			uploaderExe, 
 			uploaderParams, 
-			{windowsVerbatimArguments: true}
+			{
+				cwd: join(toolsDir, uploaderDir),
+				windowsVerbatimArguments: true
+			}
 		);
 
 		let modId = '';
@@ -489,13 +605,13 @@ function forEachMod(modNames, noWorkshopCopy, action) {
 			action(modName, modDir);
 		}
 		else {
-			console.error('Folder', modDir, 'doesn\'t exist, invalid or doesn\'t have item.cfg in it');
+			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it`);
 		}
 	});
 }
 
 // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
-function buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modId) {
+function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId) {
 	console.log('Building ', modName);
 
 	let modDir = join(modsDir, modName);
@@ -504,11 +620,11 @@ function buildMod(stingrayExe, modName, leaveTemp, noWorkshopCopy, verbose, modI
 	let dataDir = join(modTempDir, 'compile');
 	let buildDir = join(modTempDir, 'bundle');
 
-	return checkTempFolder(modName, !leaveTemp)
+	return checkTempFolder(modName, shouldRemoveTemp)
 		.then(() => {
 			return modId || noWorkshopCopy ? Promise.resolve() : readFile(join(modDir, cfgFile), 'utf8');
 		})
-		.then(() => runStingray(stingrayExe, modDir, dataDir, buildDir, verbose))
+		.then(() => runStingray(toolsDir, modDir, dataDir, buildDir, verbose))
 		.then(code => readProcessedBundles(modName, dataDir, code))
 		.then(() => {
 			return noWorkshopCopy ? Promise.resolve() : getModWorkshopDir(modName, modId);
@@ -557,32 +673,11 @@ function getRegistryValue(key, value) {
 	});
 }
 
-// Gets stingray.exe placement from Vermintide Mod Tools install location
-function getStingrayExe(){
-	return new Promise((resolve, reject) => {
-		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 718610"';
-		let value = '"InstallLocation"';
-
-		let stingrayExe = FALLBACK_STINGRAY_EXE;
-		getRegistryValue(sdkKey, value)
-			.catch(err => {
-				console.log('Vermintide mod SDK directory not found, using fallback.');
-			})
-			.then(appPath => {
-				if(appPath) {
-					stingrayExe = join(appPath, 'bin/stingray_win64_dev_x64.exe');
-				}
-				console.log('Stingray executable:', stingrayExe);
-				console.log();
-				resolve(stingrayExe);
-			});
-	});
-}
-
 // Gets the steam workshop folder from vermintide's install location
 function getWorkshopDir() {
 	return new Promise((resolve, reject) => {
-		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 235540"';
+		let gameId = getGameId();
+		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
 		let value = '"InstallLocation"';
 
 		let workshopDir = FALLBACK_WORKSHOP_DIR;
@@ -593,14 +688,23 @@ function getWorkshopDir() {
 			})
 			.then(appPath => {
 				if(appPath) {
-					workshopDir = appPath.match(/(.*)common[\\\/]Warhammer End Times Vermintide[\\\/]?$/);
-					workshopDir = workshopDir[1];
+					let gameFolder = getGameSpecificKey('game_folder');
+					let regEx = new RegExp(`(.*)common[\\\\\\/]${gameFolder}[\\\\\\/]?$`);
+					workshopDir = appPath.match(regEx);
+
+					try {
+						workshopDir = workshopDir[1];
+					}
+					catch (err) {
+						console.error(`Couldn't figure out workshop dir from install location`);
+					}
+
 					if(!workshopDir){
 						console.log(error);
 						workshopDir = FALLBACK_WORKSHOP_DIR;
 					}
 					else{
-						workshopDir = join(workshopDir, '\\workshop\\content\\235540\\');
+						workshopDir = join(workshopDir, '\\workshop\\content\\' + gameId + '\\');
 					}
 				}
 				console.log('Workshop folder:', workshopDir);
@@ -610,10 +714,9 @@ function getWorkshopDir() {
 }
 
 // Returns [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-function getBuildParams(pargv) {
-	let argv = minimist(pargv);
+function getBuildParams(argv) {
 	let verbose = argv.verbose || false;
-	let leaveTemp = argv.t || argv.temp || false;
+	let shouldRemoveTemp = argv.t || argv.temp || false;
 	let modNames = argv.m || argv.mod || argv.mods || '';
 	if(!modNames || typeof modNames != 'string') {
 		modNames = getFolders(modsDir, IGNORED_DIRS);
@@ -623,7 +726,7 @@ function getBuildParams(pargv) {
 	}
 	let modId = modNames.length == 1 ? argv.id : null;
 	let noWorkshopCopy = argv.dist || false;
-	return {modNames, verbose, leaveTemp, modId, noWorkshopCopy};
+	return {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy};
 }
 
 // Checks if temp folder exists, optionally removes it
@@ -650,8 +753,18 @@ function checkTempFolder(modName, shouldRemove) {
 }
 
 // Builds the mod
-function runStingray(stingrayExe, modDir, dataDir, buildDir, verbose) {
+function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 	return new Promise((resolve, reject) => {
+
+		if(!path.isAbsolute(modDir)){
+			modDir = join(__dirname, modDir);
+		}
+		if(!path.isAbsolute(dataDir)){
+			dataDir = join(__dirname, dataDir);
+		}
+		if(!path.isAbsolute(buildDir)){
+			buildDir = join(__dirname, buildDir);
+		}
 
 		let stingrayParams = [
 			`--compile-for win32`,
@@ -663,7 +776,10 @@ function runStingray(stingrayExe, modDir, dataDir, buildDir, verbose) {
 		let stingray = child_process.spawn(
 			stingrayExe, 
 			stingrayParams, 
-			{windowsVerbatimArguments: true} // fucking WHY???
+			{
+				cwd: join(toolsDir, stingrayDir),
+				windowsVerbatimArguments: true
+			} 
 		);
 
 		stingray.stdout.on('data', data => {
@@ -767,7 +883,7 @@ function getFolders(dir, except) {
 
 function deleteFile(dir, file) {
     return new Promise((resolve, reject) => {
-        var filePath = path.join(dir, file);
+        let filePath = path.join(dir, file);
         fs.lstat(filePath, (err, stats) => {
             if (err) {
                 return reject(err);

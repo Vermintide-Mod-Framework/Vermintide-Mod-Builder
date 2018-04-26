@@ -1,6 +1,14 @@
 local mod = get_mod("%%template")
 
-mod.options_widgets = {
+local mod_data = {}
+
+-- Everything here is optional. You can remove unused parts.
+mod_data.name = "%%title" -- Readable mod name
+mod_data.description = "%%description"
+mod_data.is_togglable = true -- If the mod can be enabled/disabled
+mod_data.is_mutator = false -- If the mod is mutator
+mod_data.mutator_setting = {} -- Extra settings, if it's mutator
+mod_data.options_widgets = {
 	{
 		["setting_name"] = "checkbox",
 		["widget_type"] = "checkbox",
@@ -13,6 +21,7 @@ mod.options_widgets = {
 	}
 }
 
+mod:initialize_data(mod_data)
 
 --[[
 	Functions
@@ -70,8 +79,4 @@ end
 	Execution
 --]] 
 
--- Add option to mod settings menu (args: 1 = widget table, 2 = presence of checkbox in mod settings, 3 = descriptive name, 4 = description)
-mod:create_options(mod.options_widgets, true, "%%title", mod:localize("mod_description"))
 
--- Check for suspend setting
-mod:init_state()
