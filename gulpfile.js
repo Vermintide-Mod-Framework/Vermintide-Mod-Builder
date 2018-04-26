@@ -708,8 +708,8 @@ function getWorkshopDir() {
 				if(appPath && typeof appPath == 'string') {
 
 					appPath = path.normalize(appPath);
-					let position = appPath.lastIndexOf(path.basename(appPath);
-					workshopDir = appPath.substring(0, position));
+					let position = appPath.lastIndexOf(path.basename(appPath));
+					workshopDir = appPath.substring(0, position);
 
 					if(!workshopDir){
 						console.error(errorMsg);
