@@ -22,7 +22,7 @@ const scriptConfigFile = 'config.json';
 
 function readScriptConfig() {
 
-	if(argv.reset){
+	if(argv.reset && fs.existsSync(scriptConfigFile)){
 		console.log(`Deleting ${scriptConfigFile}`);
 		fs.unlinkSync(scriptConfigFile);
 	}
@@ -556,7 +556,10 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 			console.log(rmn(data));
 			data = String(data);
 			if (data.includes('publisher_id')){
-				modId = data.match(/publisher_id: (\d*)/)[1];
+				try {
+					modId = data.match(/publisher_id: (\d*)/)[1];
+				}
+				catch(err) {}
 			}
 		});
 
@@ -823,6 +826,10 @@ function outputFailedBundles(data, modName) {
 	bundles.splice(0, 1);
 	bundles.forEach(line => {
 		let bundle = line.split(', ');
+		if(bundle.length < 4){
+			console.log(`Incorrect processed_bundles.csv string`, bundle);
+			return;
+		}
 		if(bundle[3] == 0) {
 			console.log('Failed to build %s/%s/%s.%s', modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
 		}
