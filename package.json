@@ -9,14 +9,17 @@
     "gulp-replace": "^0.6.1",
     "merge-stream": "^1.0.1",
     "minimist": "^1.2.0",
-    "nexe": "^2.0.0-rc.26",
     "opn": "^5.2.0"
   },
   "devDependencies": {},
-  "scripts": {},
+  "scripts": {
+    "start": "node vmb.js",
+    "setup": "npm i pkg -g | npm i",
+    "compile": "pkg vmb.js --target node8-win-x64"
+  },
   "repository": {
     "type": "git",
-    "url": "http://gitlab.ludoruisch.nl/unshame/UnShame-SDK-Mods.git"
+    "url": "https://github.com/Vermintide-Modders/VMF-Build-Script"
   },
   "author": "",
   "license": "UNLICENSED"

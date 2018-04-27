@@ -76,6 +76,13 @@ if(UNSPECIFIED_TEMP_DIR) {
 	tempDir = join(modsDir, defaultTempDir);
 }
 
+let earlyOutput = '';
+function earlyLog(line) {
+	if(earlyOutput) {
+		earlyOutput += '\n';
+	}
+	earlyOutput += line;
+}
 setGameNumber(argv);
 setModsDir(argv);
 
@@ -143,24 +150,24 @@ function addTask(name, action){
 // All of these have the optional -f param that sets mods directory and -g for setting game number
 
 // Prints all existing commands with params
-// gulp
+// vmb
 addTask('default', callback => {
 	console.log(
-		'    gulp <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
-		'    gulp config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
-		'    gulp create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
-		'    gulp publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]\n' +
-		'    gulp upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
-		'    gulp open      {-m <mod_name> | --id <item_id>}\n' +
-		'    gulp build     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
-		'    gulp watch     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]'
+		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
+		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
+		'vmb create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
+		'vmb publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]\n' +
+		'vmb upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
+		'vmb open      {-m <mod_name> | --id <item_id>}\n' +
+		'vmb build     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
+		'vmb watch     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]'
 	);
 	callback();
 });
 
 // Sets and/or displayes config file values
 // Limited to non-object values
-// gulp config [--<key1>=<value1> --<key2>=<value2>...]
+// vmb config [--<key1>=<value1> --<key2>=<value2>...]
 addTask('config', callback => {
 
 	Object.keys(scriptConfig).forEach((key) => {
@@ -183,7 +190,7 @@ addTask('config', callback => {
 
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
-// gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+// vmb create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 addTask('create', (callback, plainArg) => {
 
 	let config = getWorkshopConfig(argv, plainArg);
@@ -218,7 +225,7 @@ addTask('create', (callback, plainArg) => {
 });
 
 // Builds the mod then uploads it to workshop as a new item
-// gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
+// vmb publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 addTask('publish', (callback, plainArg) => {
 
 	let config = getWorkshopConfig(argv, plainArg);
@@ -259,10 +266,10 @@ addTask('publish', (callback, plainArg) => {
 });
 
 // Uploads the last built version of the mod to the workshop
-// gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
-addTask('upload', callback => {
+// vmb upload -m <mod_name> [-n <changenote>] [--open] [--skip]
+addTask('upload', (callback, plainArg) => {
 
-	let modName = argv.m || argv.mod || '';
+	let modName = argv.m || argv.mod || plainArg || '';
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
@@ -300,10 +307,10 @@ addTask('upload', callback => {
 });
 
 // Opens mod's workshop page
-// gulp open -m <mod_name> [--id <item_id>]
-addTask('open', callback => {
+// vmb open -m <mod_name> [--id <item_id>]
+addTask('open', (callback, plainArg) => {
 
-	let modName = argv.m || argv.mod || '';
+	let modName = argv.m || argv.mod || plainArg || '';
 	let modDir = join(modsDir, modName);
 	let modId = argv.id || null;
 
@@ -321,7 +328,7 @@ addTask('open', callback => {
 });
 
 // Builds specified mods and copies the bundles to the game workshop folder
-// gulp build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
+// vmb build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 // --verbose - prints stingray console output even on successful build
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
@@ -352,7 +359,7 @@ addTask('build', (callback, plainArg) => {
 });
 
 // Watches for changes in specified mods and builds them whenever they occur
-// gulp watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
+// vmb watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 addTask('watch', (callback, plainArg) => {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv, plainArg);
@@ -404,22 +411,22 @@ function setModsDir(argv) {
 	let newModsDir = argv.f || argv.folder;
 
 	if(!newModsDir) {
-		console.log(`Using mods folder '${modsDir}'`);
-		console.log(`Using temp folder '${tempDir}'`);
+		earlyLog(`Using mods folder '${modsDir}'`);
+		earlyLog(`Using temp folder '${tempDir}'`);
 		return;
 	}
 
 	if(typeof newModsDir == 'string') {
-		console.log(`Using mods folder '${newModsDir}'`);
+		earlyLog(`Using mods folder '${newModsDir}'`);
 		modsDir = newModsDir;
 		if(UNSPECIFIED_TEMP_DIR) {
 			tempDir = join(modsDir, defaultTempDir);
 		}
 	}
 	else {
-		console.log(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
+		earlyLog(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
 	}
-	console.log(`Using temp folder '${tempDir}'`);
+	earlyLog(`Using temp folder '${tempDir}'`);
 }
 
 function setGameNumber(argv) {
@@ -434,7 +441,7 @@ function setGameNumber(argv) {
 		process.exit(1);
 	}
 
-	console.log('Game is Vermintide ' + gameNumber);
+	earlyLog('Game is Vermintide ' + gameNumber);
 }
 
 /* SHARED METHODS */
@@ -493,8 +500,8 @@ function getModToolsDir(){
 
 function getWorkshopConfig(argv, plainArg) {
 
-	let modName = argv.m || argv.mod || '';
-	let modTitle = argv.t || argv.title || modName || plainArg;
+	let modName = argv.m || argv.mod || plainArg || '';
+	let modTitle = argv.t || argv.title || modName;
 
 	return {
 		name: modName,
@@ -548,7 +555,7 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 	return new Promise((resolve, reject) => {
 		let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
 		if(!path.isAbsolute(modsDir)){
-			configPath = join(__dirname, configPath);
+			configPath = join(process.cwd(), configPath);
 		}
 		let uploaderParams = [
 			'-c', '"' + configPath + '"'
@@ -782,13 +789,13 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 	return new Promise((resolve, reject) => {
 
 		if(!path.isAbsolute(modDir)){
-			modDir = join(__dirname, modDir);
+			modDir = join(process.cwd(), modDir);
 		}
 		if(!path.isAbsolute(dataDir)){
-			dataDir = join(__dirname, dataDir);
+			dataDir = join(process.cwd(), dataDir);
 		}
 		if(!path.isAbsolute(buildDir)){
-			buildDir = join(__dirname, buildDir);
+			buildDir = join(process.cwd(), buildDir);
 		}
 
 		let stingrayParams = [
@@ -991,7 +998,7 @@ function rmn(str) {
 let startTime = Date.now();
 function callback(task){
 	if(task != 'watch'){
-		console.log('Finished in %ss', (Date.now() - startTime)/1000);
+		// console.log('Finished in %ss', (Date.now() - startTime)/1000);
 	}
 }
 
@@ -999,6 +1006,7 @@ function runTask(args) {
 	for(var i = 0; i < args.length; i++){
 		let task = tasks[args[i]];
 		if(task){
+			console.log(earlyOutput);
 			task(callback.bind(null, args[i]), args[i + 1]);
 			return;
 		}
