@@ -4,28 +4,142 @@ const fs = require('fs'),
       path = require('path'),
       gulp = require('gulp'),
       minimist = require('minimist'),
-      merge = require('merge-stream'),
       replace = require('gulp-replace'),
       rename = require('gulp-rename'),
       child_process = require('child_process'),
       util = require('util'),
-      opn = require('opn');
+	  opn = require('opn'),
+	  setupCleanup = require('node-cleanup');
 
 const readFile = util.promisify(fs.readFile),
       writeFile = util.promisify(fs.writeFile);
 
+
+/* SETUP */
+
+// Callback wasn't called from current task
+let exitCode = 0;
+let taskFinished = false;
+setupCleanup(code => {
+	if(!taskFinished) {
+		console.error(`\nCommand didn't finish correctly`);
+		process.exit(2);
+	}
+});
+
+// Commandline arguments
+const argv = minimist(process.argv);
+
+// Tasks
+let tasks = {};
+addTask('default', taskDefault);
+addTask('config', taskConfig);
+addTask('create', taskCreate);
+addTask('publish', taskPublish);
+addTask('upload', taskUpload);
+addTask('open', taskOpen);
+addTask('build', taskBuild);
+addTask('watch', taskWatch);
+
+const {currentTask, plainArg} = getCurrentTask(argv._);
+
+
+/* CONFIG */
+
+const defaultTempDir = '.temp';
+const scriptConfigFile = 'config.json';
+const scriptConfig = readScriptConfig(argv.reset);
+
+// Early execution and exit for certain tasks
+if(currentTask == taskDefault || currentTask == taskConfig) {
+	runTask(currentTask, argv, plainArg);
+	process.exit(0);
+}
+
+// Mods directory and game number
+let modsDir = scriptConfig.mods_dir || 'mods';
+let tempDir = scriptConfig.temp_dir;
+let gameNumber = scriptConfig.game;
+
+const UNSPECIFIED_TEMP_DIR = !tempDir;
+
+if(UNSPECIFIED_TEMP_DIR) {
+	tempDir = join(modsDir, defaultTempDir);
+}
+
+setGameNumber(argv);
+setModsDir(argv);
+
+// Other config params
+const fallbackToolsDir = getGameSpecificKey('fallback_tools_dir');
+const fallbackWorkshopDir = join(getGameSpecificKey('fallback_workshop_dir'), getGameId());
+const ignoredDirs = scriptConfig.ignored_dirs || [];
+
+
+/* FOR CREATING */
+
+// These will be replaced in the template mod when running tasks
+const temp = '%%template',
+	tempTitle = '%%title',
+	tempDescription = '%%description';
+
+// Folders with scripts and resources
+const resDir = 'resource_packages';
+const scriptDir = 'scripts/mods';
+const localDir = 'localization';
+const distDir = 'dist';
+const renameDirs = [
+	resDir,
+	scriptDir
+];
+
+// Folders with static files
+const coreSrc = [
+	join(temp, '/core/**/*'),
+	join(temp, 'item_preview.jpg')
+];
+
+// Folders with mod specific files
+const modSrc = [
+	join(temp, resDir, temp, temp + '.package'),
+	join(temp, scriptDir, temp, temp + '.lua'),
+	join(temp, localDir, temp + '.lua'),
+	join(temp, distDir, temp),
+	join(temp, temp + '.mod')
+];
+
+
+/* FOR BUILDING */
+
+// Paths to mod tools relative to the mod tools folder
+const uploaderDir = 'ugc_uploader/';
+const uploaderExe = 'ugc_tool.exe';
+const uploaderGameConfig = 'steam_appid.txt';
+const stingrayDir = 'bin/';
+const stingrayExe = 'stingray_win64_dev_x64.exe';
+
+// Config file for workshop uploader tool
+const cfgFile = 'itemV' + gameNumber + '.cfg';
+
+
+/* EXECUTION */
+
+runTask(currentTask, argv, plainArg);
+
+
+///////////////////////////////////
+/// TASK AND METHOD DEFINITIONS ///
+///////////////////////////////////
+
+// Normalizes path after joining
 function join(...args){
 	return path.normalize(path.join(...args));
 }
 
-const defaultTempDir = '.temp';
+// Creates, reads or deletes
+function readScriptConfig(shouldReset) {
 
-const argv = minimist(process.argv);
-const scriptConfigFile = 'config.json';
-
-function readScriptConfig() {
-
-	if(argv.reset && fs.existsSync(scriptConfigFile)){
+	if(shouldReset && fs.existsSync(scriptConfigFile)){
 		console.log(`Deleting ${scriptConfigFile}`);
 		fs.unlinkSync(scriptConfigFile);
 	}
@@ -34,7 +148,7 @@ function readScriptConfig() {
 
 		console.log(`Creating default ${scriptConfigFile}`);
 
-		fs.writeFileSync(scriptConfigFile, 
+		fs.writeFileSync(scriptConfigFile,
 			JSON.stringify({
 				mods_dir: 'mods',
 				temp_dir: '',
@@ -64,94 +178,41 @@ function readScriptConfig() {
 	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
 
-const scriptConfig = readScriptConfig();
-
-let modsDir = scriptConfig.mods_dir || 'mods';
-let tempDir = scriptConfig.temp_dir;
-let gameNumber = scriptConfig.game;
-
-const UNSPECIFIED_TEMP_DIR = !tempDir;
-
-if(UNSPECIFIED_TEMP_DIR) {
-	tempDir = join(modsDir, defaultTempDir);
-}
-
-let earlyOutput = '';
-function earlyLog(line) {
-	if(earlyOutput) {
-		earlyOutput += '\n';
-	}
-	earlyOutput += line;
-}
-setGameNumber(argv);
-setModsDir(argv);
-
-const FALLBACK_TOOLS_DIR = getGameSpecificKey('fallback_tools_dir'),
-      FALLBACK_WORKSHOP_DIR = join(getGameSpecificKey('fallback_workshop_dir'), getGameId()),
-      IGNORED_DIRS = scriptConfig.ignored_dirs || [];
-
-
-/* FOR CREATING */
-
-// These will be replaced in the template mod when running tasks
-const temp = '%%template',
-	tempTitle = '%%title',
-	tempDescription = '%%description';
-
-// Folders with scripts and resources
-const resDir = 'resource_packages';
-const scriptDir = 'scripts/mods';
-const localDir = 'localization';
-const distDir = 'dist';
-const renameDirs = [
-	resDir,
-	scriptDir
-];
-
-// Folders with static files
-const coreSrc = [
-	join(temp, '/core/**/*'),
-	join(temp, 'item_preview.jpg')
-];
-
-// Folders with mod specific files
-const modSrc = [
-	join(temp, resDir, temp, temp + '.package'),
-	join(temp, scriptDir, temp, temp + '.lua'),	
-	join(temp, localDir, temp + '.lua'),	
-	join(temp, distDir, temp),	
-	join(temp, temp + '.mod')
-];
-
-
-/* FOR BUILDING */
-
-// Path to workshop uploader tool
-// The tool and all its files should be placed in ./ugc_tool folder as paths are relative to current directory
-let uploaderDir = 'ugc_uploader/';
-let uploaderExe = 'ugc_tool.exe';
-let uploaderGameConfig = 'steam_appid.txt';
-let stingrayDir = 'bin/';
-let stingrayExe = 'stingray_win64_dev_x64.exe';
-
-// Config file for workshop uploader tool
-const cfgFile = 'itemV' + gameNumber + '.cfg';
-
-
 /* TASKS */
 
-let tasks = {};
 
 function addTask(name, action){
-	gulp.task(name, action);
-	tasks[name] = gulp.task(name);
+	tasks[name] = action;
+}
+
+function getCurrentTask(args) {
+	let plainArg;
+	for(var i = 0; i < args.length; i++){
+		let task = tasks[args[i]];
+		if(task){
+			plainArg = args[i + 1];
+			return {currentTask: task, plainArg};
+		}
+	}
+	return {currentTask: tasks['default'], plainArg};
+}
+
+function runTask(task, args, plainArg) {
+	task(callback, args, plainArg);
+}
+
+function callback(shouldExit = true){
+	taskFinished = true;
+	if (shouldExit) {
+		process.exit(exitCode);
+	}
 }
 
 // All of these have the optional -f param that sets mods directory and -g for setting game number
 
 // Prints all existing commands with params
 // vmb
-addTask('default', callback => {
+function taskDefault(callback, args, plainArg) {
 	console.log(
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
@@ -163,21 +224,20 @@ addTask('default', callback => {
 		'vmb watch     [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]'
 	);
 	callback();
-});
+}
 
 // Sets and/or displayes config file values
 // Limited to non-object values
 // vmb config [--<key1>=<value1> --<key2>=<value2>...]
-addTask('config', callback => {
-
+function taskConfig(callback, args, plainArg) {
 	Object.keys(scriptConfig).forEach((key) => {
-		if(argv[key] !== undefined){
+		if(args[key] !== undefined){
 			if(typeof scriptConfig[key] == 'object'){
 				console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
 				return;
 			}
-			console.log(`Set ${key} to ${argv[key]}`);
-			scriptConfig[key] = argv[key];
+			console.log(`Set ${key} to ${args[key]}`);
+			scriptConfig[key] = args[key];
 		}
 	});
 
@@ -186,19 +246,20 @@ addTask('config', callback => {
 	console.log(scriptConfig);
 
 	callback();
-});
+};
 
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // vmb create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-addTask('create', (callback, plainArg) => {
+function taskCreate(callback, args, plainArg) {
 
-	let config = getWorkshopConfig(argv, plainArg);
+	let config = getWorkshopConfig(args, plainArg);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
 		console.error(`Folder ${modDir} is invalid or already exists`);
+		exitCode = 1;
 		return callback();
 	}
 
@@ -215,29 +276,32 @@ addTask('create', (callback, plainArg) => {
 			return opn(modUrl);
 		})
 		.catch(error => {
-			console.log(error);
+			console.error(error);
+			exitCode = 1;
 			return deleteDirectory(join(modsDir, modName));
 		})
 		.catch(error => {
-			console.log(error);
+			console.error(error);
+			exitCode = 1;
 		})
 		.then(() => callback());
-});
+};
 
 // Builds the mod then uploads it to workshop as a new item
 // vmb publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-addTask('publish', (callback, plainArg) => {
+function taskPublish(callback, args, plainArg) {
 
-	let config = getWorkshopConfig(argv, plainArg);
+	let config = getWorkshopConfig(args, plainArg);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
-	let buildParams = getBuildParams(argv);
+	let buildParams = getBuildParams(args);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		exitCode = 1;
 		return callback();
 	}
-	
+
 	let toolsDir = null;
 	checkIfPublished(modName)
 		.then(cfgExists => {
@@ -269,31 +333,33 @@ addTask('publish', (callback, plainArg) => {
 			return opn(modUrl);
 		})
 		.catch(error => {
-			console.log(error);
+			console.error(error);
+			exitCode = 1;
 		})
 		.then(() => callback());
-});
+};
 
 // Uploads the last built version of the mod to the workshop
 // vmb upload -m <mod_name> [-n <changenote>] [--open] [--skip]
-addTask('upload', (callback, plainArg) => {
+function taskUpload(callback, args, plainArg) {
 
-	let modName = argv.m || argv.mod || plainArg || '';
+	let modName = args.m || args.mod || plainArg || '';
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		exitCode = 1;
 		return callback();
 	}
 
-	let changenote = argv.n || argv.note || argv.changenote || '';
+	let changenote = args.n || args.note || args.changenote || '';
 	if(typeof changenote != 'string') {
 		changenote = '';
 	}
 
-	let openUrl = argv.o || argv.open || false;
+	let openUrl = args.o || args.open || false;
 
-	let skip = argv.s || argv.skip;
+	let skip = args.s || args.skip;
 
 	getModToolsDir()
 		.then(toolsDir => uploadMod(toolsDir, modName, changenote, skip))
@@ -310,31 +376,38 @@ addTask('upload', (callback, plainArg) => {
 			}
 		})
 		.catch(error => {
-			console.log(error);
+			console.error(error);
+			exitCode = 1;
 		})
 		.then(() => callback());
-});
+};
 
 // Opens mod's workshop page
 // vmb open -m <mod_name> [--id <item_id>]
-addTask('open', (callback, plainArg) => {
+function taskOpen(callback, args, plainArg) {
 
-	let modName = argv.m || argv.mod || plainArg || '';
+	let modName = args.m || args.mod || plainArg || '';
 	let modDir = join(modsDir, modName);
-	let modId = argv.id || null;
+	let modId = args.id || null;
 
 	if(!modId && (!validModName(modName) || !fs.existsSync(modDir + '/'))) {
 		console.error(`Folder ${modDir} doesn't exist`);
+		exitCode = 1;
 		return callback();
 	}
 
 	(modId ? Promise.resolve(modId) : getModId(modName))
-		.then(modId => opn(formUrl(modId)))
+		.then(modId => {
+			let url = formUrl(modId);
+			console.log('Opening', url);
+			return opn(url);
+		})
 		.catch(error => {
-			console.log(error);
+			console.error(error);
+			exitCode = 1;
 		})
 		.then(() => callback());
-});
+};
 
 // Builds specified mods and copies the bundles to the game workshop folder
 // vmb build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
@@ -342,58 +415,63 @@ addTask('open', (callback, plainArg) => {
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
-addTask('build', (callback, plainArg) => {
+function taskBuild (callback, args, plainArg) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(argv, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArg);
 
 	console.log('Mods to build:');
-	modNames.forEach(modName => console.log('- ' + modName));
-	console.log();
+	modNames.forEach(modName => console.log('  ' + modName));
 
 	getModToolsDir().then(toolsDir => {
+		console.log();
 
-		let promise = Promise.resolve();	
+		let promise = Promise.resolve();
 		forEachMod(modNames, noWorkshopCopy, modName => {
 			promise = promise.then(() => {
 				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-					console.log(error);
+					console.error(error);
+					exitCode = 1;
 				});
 			});
 		});
 		return promise;
 	}).catch(error => {
-		console.log(error);
+		console.error(error);
+		exitCode = 1;
 	})
 	.then(() => callback());
-});
+};
 
 // Watches for changes in specified mods and builds them whenever they occur
 // vmb watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
-addTask('watch', (callback, plainArg) => {
+function taskWatch (callback, args, plainArg) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(argv, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArg);
 
 	getModToolsDir().then(toolsDir => {
+		console.log();
+
 		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
 			console.log('Watching ', modName, '...');
 
 			let src = [
-				modDir, 
-				'!' + modsDir + '/' + modName + '/*.tmp', 
+				modDir,
+				'!' + modsDir + '/' + modName + '/*.tmp',
 				'!' + modsDir + '/' + modName + '/' + distDir + '/*'
 			];
-			
+
 			gulp.watch(src, () => {
 				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-	    			console.log(error);
+	    			console.error(error);
 	    		});
 			});
 		});
-		return callback();
+		return callback(false);
 	}).catch(error => {
-		console.log(error);
+		console.error(error);
+		callback();
 	});
-});
+};
 
 
 /* CONFIG METHODS */
@@ -415,31 +493,31 @@ function getToolsId(){
 	return getGameSpecificKey('tools_id');
 }
 
-function setModsDir(argv) {
+function setModsDir(args) {
 
-	let newModsDir = argv.f || argv.folder;
+	let newModsDir = args.f || args.folder;
 
 	if(!newModsDir) {
-		earlyLog(`Using mods folder '${modsDir}'`);
-		earlyLog(`Using temp folder '${tempDir}'`);
+		console.log(`Using mods folder '${modsDir}'`);
+		console.log(`Using temp folder '${tempDir}'`);
 		return;
 	}
 
 	if(typeof newModsDir == 'string') {
-		earlyLog(`Using mods folder '${newModsDir}'`);
+		console.log(`Using mods folder '${newModsDir}'`);
 		modsDir = newModsDir;
 		if(UNSPECIFIED_TEMP_DIR) {
 			tempDir = join(modsDir, defaultTempDir);
 		}
 	}
 	else {
-		earlyLog(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
+		console.warn(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
 	}
-	earlyLog(`Using temp folder '${tempDir}'`);
+	console.log(`Using temp folder '${tempDir}'`);
 }
 
-function setGameNumber(argv) {
-	let newGameNumber = argv.g || argv.game;
+function setGameNumber(args) {
+	let newGameNumber = args.g || args.game;
 
 	if(newGameNumber !== undefined){
 		gameNumber = newGameNumber;
@@ -450,7 +528,7 @@ function setGameNumber(argv) {
 		process.exit(1);
 	}
 
-	earlyLog('Game is Vermintide ' + gameNumber);
+	console.log('Game is Vermintide ' + gameNumber);
 }
 
 /* SHARED METHODS */
@@ -483,22 +561,21 @@ function getModToolsDir(){
 		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + getToolsId() + '"';
 		let value = '"InstallLocation"';
 
-		let toolsDir = FALLBACK_TOOLS_DIR;
+		let toolsDir = fallbackToolsDir;
 		let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
 		getRegistryValue(sdkKey, value)
 			.catch(err => {
-				console.log(errorMsg);
+				console.error(errorMsg);
 			})
 			.then(appPath => {
 				if(appPath) {
 					toolsDir = appPath;
 				}
 				else {
-					console.log(errorMsg);
+					console.error(errorMsg);
 				}
 				toolsDir = path.normalize(toolsDir);
 				console.log('Modding tools dir:', toolsDir);
-				console.log();
 				resolve(toolsDir);
 			});
 	});
@@ -507,18 +584,18 @@ function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
-function getWorkshopConfig(argv, plainArg) {
+function getWorkshopConfig(args, plainArg) {
 
-	let modName = argv.m || argv.mod || plainArg || '';
-	let modTitle = argv.t || argv.title || modName;
+	let modName = args.m || args.mod || plainArg || '';
+	let modTitle = args.t || args.title || modName;
 
 	return {
 		name: modName,
 		title: modTitle,
-		description: argv.d || argv.desc || argv.description || modTitle + ' description',
-		language: argv.l || argv.language || 'english',
-		visibility: argv.v || argv.visibility || 'private',
-		verbose: argv.verbose
+		description: args.d || args.desc || args.description || modTitle + ' description',
+		language: args.l || args.language || 'english',
+		visibility: args.v || args.visibility || 'private',
+		verbose: args.verbose
 	};
 }
 
@@ -536,7 +613,7 @@ function copyTemplate(config) {
 			.pipe(gulp.dest(modDir))
 			.on('error', reject)
 			.on('end', () => {
-				renameDirs.forEach(dir => {				
+				renameDirs.forEach(dir => {
 					fs.renameSync(join(modDir, dir, temp), join(modDir, dir, modName));
 				});
 				gulp.src(coreSrc, {base: temp})
@@ -555,7 +632,7 @@ function createCfgFile(config) {
 					`language = "${config.language}";\n` +
 					`visibility = "${config.visibility}";\n`;
 	console.log(`${cfgFile}:`);
-	console.log(configText);
+	console.log('  ' + rmn(configText).replace(/\n/g, '\n  '));
 	return writeFile(join(modsDir, config.name, cfgFile), configText);
 }
 
@@ -575,14 +652,15 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 			uploaderParams.push('"' + changenote + '"');
 		}
 
-		if(skip) {			
+		if(skip) {
 			uploaderParams.push('-s');
 		}
 
+		console.log(`\nRunning uploader with steam app id ${getGameId()}`);
 		fs.writeFileSync(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
 		let uploader = child_process.spawn(
-			uploaderExe, 
-			uploaderParams, 
+			uploaderExe,
+			uploaderParams,
 			{
 				cwd: join(toolsDir, uploaderDir),
 				windowsVerbatimArguments: true
@@ -605,7 +683,7 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 
 		uploader.on('close', code => {
 			if(code) {
-				reject('Uploader exited with code: ' + code);
+				reject('Uploader exited with error code: ' + code);
 			}
 			else {
 				resolve(modId);
@@ -639,7 +717,9 @@ function checkIfPublished(modName) {
 function forEachMod(modNames, noWorkshopCopy, action) {
 	modNames.forEach(modName => {
 
-		if(!modName) return;
+		if(!modName) {
+			return;
+		}
 		let modDir = join(modsDir, modName);
 
 		if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
@@ -647,13 +727,14 @@ function forEachMod(modNames, noWorkshopCopy, action) {
 		}
 		else {
 			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it.`);
+			exitCode = 1;
 		}
 	});
 }
 
 // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
 function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
-	console.log('Building ', modName);
+	console.log('\nBuilding ', modName);
 
 	let modDir = join(modsDir, modName);
 
@@ -721,7 +802,7 @@ function getWorkshopDir() {
 		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
 		let value = '"InstallLocation"';
 
-		let workshopDir = FALLBACK_WORKSHOP_DIR;
+		let workshopDir = fallbackWorkshopDir;
 		let errorMsg = 'Vermintide workshop directory not found, using fallback.';
 		getRegistryValue(appKey, value)
 			.catch(err => {
@@ -736,7 +817,7 @@ function getWorkshopDir() {
 
 					if(!neededPart){
 						console.error(errorMsg);
-						workshopDir = FALLBACK_WORKSHOP_DIR;
+						workshopDir = fallbackWorkshopDir;
 					}
 					else{
 						workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
@@ -753,21 +834,21 @@ function getWorkshopDir() {
 }
 
 // Returns [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-function getBuildParams(argv, plainArg) {
+function getBuildParams(args, plainArg) {
 
-	let verbose = argv.verbose || false;
-	let shouldRemoveTemp = argv.t || argv.temp || false;
-	let modNames = argv.m || argv.mod || argv.mods || plainArg || '';
+	let verbose = args.verbose || false;
+	let shouldRemoveTemp = args.t || args.temp || false;
+	let modNames = args.m || args.mod || args.mods || plainArg || '';
 
 	if(!modNames || typeof modNames != 'string') {
-		modNames = getFolders(modsDir, IGNORED_DIRS);
+		modNames = getFolders(modsDir, ignoredDirs);
 	}
 	else{
 		modNames = modNames.split(/;+\s*/);
 	}
-	let modId = modNames.length == 1 ? argv.id : null;
-	let noWorkshopCopy = argv.dist || false;
-	let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || scriptConfig.ignore_build_errors;
+	let modId = modNames.length == 1 ? args.id : null;
+	let noWorkshopCopy = args.dist || false;
+	let ignoreBuildErrors = args.e || args['ignore-errors'] || args['ignore-build-errors'] || scriptConfig.ignore_build_errors;
 	return {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors};
 }
 
@@ -781,7 +862,7 @@ function checkTempFolder(modName, shouldRemove) {
 				if(error){
 					return reject(error + '\nFailed to delete temp folder');
 				}
-				console.log('Removed ', tempPath);	
+				console.log('Removed ', tempPath);
 				return resolve();
 			});
 		}
@@ -816,12 +897,12 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 		];
 
 		let stingray = child_process.spawn(
-			stingrayExe, 
-			stingrayParams, 
+			stingrayExe,
+			stingrayParams,
 			{
 				cwd: join(toolsDir, stingrayDir),
 				windowsVerbatimArguments: true
-			} 
+			}
 		);
 
 		stingray.stdout.on('data', data => {
@@ -843,7 +924,7 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
 	if(code){
-		console.error('Stingray exited with code: ' + code + '. Please check your scripts for syntax errors.');
+		console.error('Stingray exited with error code: ' + code + '. Please check your scripts for syntax errors.');
 	}
 
 	return readFile(join(dataDir, 'processed_bundles.csv'), 'utf8')
@@ -876,9 +957,11 @@ function outputFailedBundles(data, modName) {
 			console.log(`Incorrect processed_bundles.csv string`, bundle);
 			return;
 		}
+		/* jshint ignore:start */
 		if(bundle[3] == 0) {
 			console.log('Failed to build %s/%s/%s.%s', modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
 		}
+		/* jshint ignore:end */
 	});
 }
 
@@ -901,7 +984,7 @@ function moveMod(modName, buildDir, modWorkshopDir) {
 	return new Promise((resolve, reject) => {
 		let modDistDir = join(modsDir, modName, distDir);
 		let gulpStream = gulp.src([
-				buildDir + '/*([0-f])', 
+				buildDir + '/*([0-f])',
 				'!' + buildDir + '/dlc'
 			], {base: buildDir})
 			.pipe(rename(p => {
@@ -918,7 +1001,7 @@ function moveMod(modName, buildDir, modWorkshopDir) {
 		}
 
 		gulpStream.on('end', () => {
-			resolve('Successfully built ' + modName + '\n');
+			resolve('Successfully built ' + modName);
 		});
 	});
 }
@@ -1008,29 +1091,3 @@ function rmn(str) {
 		return str;
 	}
 }
-
-
-/* EXECUTION */
-
-let startTime = Date.now();
-function callback(task){
-	if(task != 'watch'){
-		// console.log('Finished in %ss', (Date.now() - startTime)/1000);
-	}
-}
-
-function runTask(args) {
-	for(var i = 0; i < args.length; i++){
-		let task = tasks[args[i]];
-		if(task){
-			if(task != 'config' && task != 'default'){
-				console.log(earlyOutput);
-			}
-			task(callback.bind(null, args[i]), args[i + 1]);
-			return;
-		}
-	}
-	tasks['default'](callback.bind(null, 'default'));
-}
-
-runTask(argv._);
