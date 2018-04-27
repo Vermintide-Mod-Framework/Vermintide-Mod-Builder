@@ -20,13 +20,7 @@ const readFile = util.promisify(fs.readFile),
 
 let exitCode = 0;
 let taskFinished = false;
-setupCleanup(code => {
-	// Callback wasn't called from current task
-	if(!taskFinished) {
-		console.error(`\nProgram exited prematurely`);
-		process.exit(2);
-	}
-});
+setupCleanup(checkTaskFinished);
 
 // Commandline arguments
 const argv = minimist(process.argv);
@@ -85,9 +79,9 @@ const ignoredDirs = scriptConfig.ignored_dirs || [];
 /* FOR CREATING */
 
 // These will be replaced in the template mod when running tasks
-const temp = '%%template',
-	tempTitle = '%%title',
-	tempDescription = '%%description';
+const temp = '%%template';
+const tempTitle = '%%title';
+const tempDescription = '%%description';
 
 // Folders with scripts and resources
 const resDir = 'resource_packages';
@@ -131,6 +125,7 @@ const cfgFile = 'itemV' + gameNumber + '.cfg';
 /* EXECUTION */
 
 runTask(currentTask, argv, plainArg);
+
 
 
 ///////////////////////////////////
@@ -188,6 +183,7 @@ function readScriptConfig(shouldReset) {
 	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
 
+
 /* TASKS */
 
 // Adds a task to the tasks object
@@ -218,6 +214,14 @@ function callback(shouldExit = true){
 	taskFinished = true;
 	if (shouldExit) {
 		process.exit(exitCode);
+	}
+}
+
+// Checks if the callback function has been called from a task and exits if it hasn't
+function checkTaskFinished(code) {
+	if(!taskFinished) {
+		console.error(`\nProgram exited prematurely`);
+		process.exit(2);
 	}
 }
 
@@ -448,7 +452,7 @@ function taskBuild (callback, args, plainArg) {
 						exitCode = 1;
 					});
 				});
-			}, 
+			},
 			() => {
 				console.log();
 			}
