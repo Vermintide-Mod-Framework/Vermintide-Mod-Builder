@@ -133,11 +133,18 @@ const cfgFile = 'itemV' + gameNumber + '.cfg';
 
 /* TASKS */
 
+let tasks = {};
+
+function addTask(name, action){
+	gulp.task(name, action);
+	tasks[name] = gulp.task(name);
+}
+
 // All of these have the optional -f param that sets mods directory and -g for setting game number
 
 // Prints all existing commands with params
 // gulp
-gulp.task('default', callback => {
+addTask('default', callback => {
 	console.log(
 		'    gulp <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'    gulp config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
@@ -154,7 +161,7 @@ gulp.task('default', callback => {
 // Sets and/or displayes config file values
 // Limited to non-object values
 // gulp config [--<key1>=<value1> --<key2>=<value2>...]
-gulp.task('config', callback => {
+addTask('config', callback => {
 
 	Object.keys(scriptConfig).forEach((key) => {
 		if(argv[key] !== undefined){
@@ -177,9 +184,9 @@ gulp.task('config', callback => {
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // gulp create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-gulp.task('create', callback => {
+addTask('create', (callback, plainArg) => {
 
-	let config = getWorkshopConfig(argv);
+	let config = getWorkshopConfig(argv, plainArg);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -212,9 +219,9 @@ gulp.task('create', callback => {
 
 // Builds the mod then uploads it to workshop as a new item
 // gulp publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-gulp.task('publish', callback => {
+addTask('publish', (callback, plainArg) => {
 
-	let config = getWorkshopConfig(argv);
+	let config = getWorkshopConfig(argv, plainArg);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -253,7 +260,7 @@ gulp.task('publish', callback => {
 
 // Uploads the last built version of the mod to the workshop
 // gulp upload -m <mod_name> [-n <changenote>] [--open] [--skip]
-gulp.task('upload', callback => {
+addTask('upload', callback => {
 
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
@@ -294,7 +301,7 @@ gulp.task('upload', callback => {
 
 // Opens mod's workshop page
 // gulp open -m <mod_name> [--id <item_id>]
-gulp.task('open', callback => {
+addTask('open', callback => {
 
 	let modName = argv.m || argv.mod || '';
 	let modDir = join(modsDir, modName);
@@ -319,9 +326,9 @@ gulp.task('open', callback => {
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
-gulp.task('build', callback => {
+addTask('build', (callback, plainArg) => {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv, plainArg);
 
 	console.log('Mods to build:');
 	modNames.forEach(modName => console.log('- ' + modName));
@@ -346,9 +353,9 @@ gulp.task('build', callback => {
 
 // Watches for changes in specified mods and builds them whenever they occur
 // gulp watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
-gulp.task('watch', callback => {
+addTask('watch', (callback, plainArg) => {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv, plainArg);
 
 	getModToolsDir().then(toolsDir => {
 		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
@@ -484,10 +491,10 @@ function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
-function getWorkshopConfig(argv) {
+function getWorkshopConfig(argv, plainArg) {
 
 	let modName = argv.m || argv.mod || '';
-	let modTitle = argv.t || argv.title || modName;
+	let modTitle = argv.t || argv.title || modName || plainArg;
 
 	return {
 		name: modName,
@@ -710,7 +717,7 @@ function getWorkshopDir() {
 					appPath = path.normalize(appPath);
 					let parts = appPath.split(path.sep);
 					let neededPart = parts[parts.length - 2];
-					
+
 					if(!neededPart){
 						console.error(errorMsg);
 						workshopDir = FALLBACK_WORKSHOP_DIR;
@@ -730,10 +737,12 @@ function getWorkshopDir() {
 }
 
 // Returns [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-function getBuildParams(argv) {
+function getBuildParams(argv, plainArg) {
+
 	let verbose = argv.verbose || false;
 	let shouldRemoveTemp = argv.t || argv.temp || false;
-	let modNames = argv.m || argv.mod || argv.mods || '';
+	let modNames = argv.m || argv.mod || argv.mods || plainArg || '';
+
 	if(!modNames || typeof modNames != 'string') {
 		modNames = getFolders(modsDir, IGNORED_DIRS);
 	}
@@ -975,3 +984,26 @@ function rmn(str) {
 		return str;
 	}
 }
+
+
+/* EXECUTION */
+
+let startTime = Date.now();
+function callback(task){
+	if(task != 'watch'){
+		console.log('Finished in %ss', (Date.now() - startTime)/1000);
+	}
+}
+
+function runTask(args) {
+	for(var i = 0; i < args.length; i++){
+		let task = tasks[args[i]];
+		if(task){
+			task(callback.bind(null, args[i]), args[i + 1]);
+			return;
+		}
+	}
+	tasks['default'](callback.bind(null, 'default'));
+}
+
+runTask(argv._);
