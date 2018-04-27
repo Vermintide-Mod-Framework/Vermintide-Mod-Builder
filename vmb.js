@@ -156,11 +156,11 @@ addTask('default', callback => {
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
 		'vmb create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
-		'vmb publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]\n' +
+		'vmb publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]\n' +
 		'vmb upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
 		'vmb open      {-m <mod_name> | --id <item_id>}\n' +
-		'vmb build     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
-		'vmb watch     [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]'
+		'vmb build     [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
+		'vmb watch     [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]'
 	);
 	callback();
 });
@@ -231,6 +231,7 @@ addTask('publish', (callback, plainArg) => {
 	let config = getWorkshopConfig(argv, plainArg);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
+	let buildParams = getBuildParams(argv);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
 		console.error(`Folder ${modDir} is invalid or doesn't exist`);
@@ -249,7 +250,15 @@ addTask('publish', (callback, plainArg) => {
 		.then((dir) => {
 			toolsDir = dir;
 		})
-		.then(() => buildMod(toolsDir, modName, false, true, config.verbose, null))
+		.then(() => buildMod(
+			toolsDir,
+			modName,
+			buildParams.shouldRemoveTemp,
+			true,
+			config.verbose,
+			buildParams.ignoreBuildErrors,
+			null
+		))
 		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modDir, 'item_preview', '.jpg'))
 		.then(() => uploadMod(toolsDir, modName))
 		.then(() => getModId(modName))
@@ -335,7 +344,7 @@ addTask('open', (callback, plainArg) => {
 // --dist - doesn't copy to workshop folder
 addTask('build', (callback, plainArg) => {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(argv, plainArg);
 
 	console.log('Mods to build:');
 	modNames.forEach(modName => console.log('- ' + modName));
@@ -346,7 +355,7 @@ addTask('build', (callback, plainArg) => {
 		let promise = Promise.resolve();	
 		forEachMod(modNames, noWorkshopCopy, modName => {
 			promise = promise.then(() => {
-				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
 					console.log(error);
 				});
 			});
@@ -362,7 +371,7 @@ addTask('build', (callback, plainArg) => {
 // vmb watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 addTask('watch', (callback, plainArg) => {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy} = getBuildParams(argv, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(argv, plainArg);
 
 	getModToolsDir().then(toolsDir => {
 		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
@@ -375,7 +384,7 @@ addTask('watch', (callback, plainArg) => {
 			];
 			
 			gulp.watch(src, () => {
-				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId).catch(error => {
+				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
 	    			console.log(error);
 	    		});
 			});
@@ -643,7 +652,7 @@ function forEachMod(modNames, noWorkshopCopy, action) {
 }
 
 // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
-function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, modId) {
+function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
 	console.log('Building ', modName);
 
 	let modDir = join(modsDir, modName);
@@ -657,7 +666,7 @@ function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, 
 			return modId || noWorkshopCopy ? Promise.resolve() : readFile(join(modDir, cfgFile), 'utf8');
 		})
 		.then(() => runStingray(toolsDir, modDir, dataDir, buildDir, verbose))
-		.then(code => readProcessedBundles(modName, dataDir, code))
+		.then(code => processStingrayOutput(modName, dataDir, code, ignoreBuildErrors))
 		.then(() => {
 			return noWorkshopCopy ? Promise.resolve() : getModWorkshopDir(modName, modId);
 		})
@@ -758,7 +767,8 @@ function getBuildParams(argv, plainArg) {
 	}
 	let modId = modNames.length == 1 ? argv.id : null;
 	let noWorkshopCopy = argv.dist || false;
-	return {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy};
+	let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || scriptConfig.ignore_build_errors;
+	return {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors};
 }
 
 // Checks if temp folder exists, optionally removes it
@@ -830,21 +840,28 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 }
 
 // Reads and outputs processed_bundles.csv
-function readProcessedBundles(modName, dataDir, code) {
+function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
+
+	if(code){
+		console.error('Stingray exited with code: ' + code + '. Please check your scripts for syntax errors.');
+	}
+
 	return readFile(join(dataDir, 'processed_bundles.csv'), 'utf8')
 		.catch(error => {
-			console.log(error + '\nFailed to read processed_bundles.csv');
+			console.error(error + '\nFailed to read processed_bundles.csv');
 		})
 		.then(data => {
 			return new Promise((resolve, reject) => {
+
 				if(data) {
 					outputFailedBundles(data, modName);
 				}
-				if(code) {
-					console.log('Stingray exited with code: ' + code + '. Please check your scripts for syntax errors.');
-					return resolve();
+
+				if(ignoreBuildErrors) {
+					console.log('Ignoring build errors');
 				}
-				resolve();
+
+				return !code && data || ignoreBuildErrors ? resolve() : reject('Failed to build ' + modName);
 			});
 		});
 }
@@ -1006,7 +1023,9 @@ function runTask(args) {
 	for(var i = 0; i < args.length; i++){
 		let task = tasks[args[i]];
 		if(task){
-			console.log(earlyOutput);
+			if(task != 'config' && task != 'default'){
+				console.log(earlyOutput);
+			}
 			task(callback.bind(null, args[i]), args[i + 1]);
 			return;
 		}
