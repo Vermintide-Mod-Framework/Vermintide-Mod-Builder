@@ -9,7 +9,8 @@ const fs = require('fs'),
       child_process = require('child_process'),
       util = require('util'),
 	  opn = require('opn'),
-	  setupCleanup = require('node-cleanup');
+	  setupCleanup = require('node-cleanup'),
+	  normalizePath = require('normalize-path');
 
 const readFile = util.promisify(fs.readFile),
       writeFile = util.promisify(fs.writeFile);
@@ -22,7 +23,7 @@ let taskFinished = false;
 setupCleanup(code => {
 	// Callback wasn't called from current task
 	if(!taskFinished) {
-		console.error(`\nCommand didn't finish correctly`);
+		console.error(`\nProgram exited prematurely`);
 		process.exit(2);
 	}
 });
@@ -53,17 +54,21 @@ const scriptConfig = readScriptConfig(argv.reset);
 // Early execution and exit for certain tasks
 if(currentTask == taskDefault || currentTask == taskConfig) {
 	runTask(currentTask, argv, plainArg);
-	process.exit(0);
+	process.exit(exitCode);
 }
 
 // Mods directory and game number
-let modsDir = scriptConfig.mods_dir || 'mods';
+let modsDir = scriptConfig.mods_dir;
+modsDir = (typeof modsDir == 'string' && modsDir !== '') ? normalize(modsDir) : 'mods';
+
 let tempDir = scriptConfig.temp_dir;
+tempDir = (typeof tempDir == 'string' && tempDir !== '') ? normalize(tempDir) : '';
+
 let gameNumber = scriptConfig.game;
 
-const UNSPECIFIED_TEMP_DIR = !tempDir;
+const unspecifiedTempDir = !tempDir;
 
-if(UNSPECIFIED_TEMP_DIR) {
+if(unspecifiedTempDir) {
 	tempDir = join(modsDir, defaultTempDir);
 }
 
@@ -132,9 +137,13 @@ runTask(currentTask, argv, plainArg);
 /// TASK AND METHOD DEFINITIONS ///
 ///////////////////////////////////
 
+function normalize(pth) {
+	return normalizePath(path.normalize(pth));
+}
+
 // Normalizes path after joining
-function join(...args){
-	return path.normalize(path.join(...args));
+function join(...args) {
+	return normalize(path.join(...args));
 }
 
 // Creates, reads or deletes
@@ -250,7 +259,7 @@ function taskConfig(callback, args, plainArg) {
 	console.log(scriptConfig);
 
 	callback();
-};
+}
 
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
@@ -289,7 +298,7 @@ function taskCreate(callback, args, plainArg) {
 			exitCode = 1;
 		})
 		.then(() => callback());
-};
+}
 
 // Builds the mod then uploads it to workshop as a new item
 // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
@@ -341,7 +350,7 @@ function taskPublish(callback, args, plainArg) {
 			exitCode = 1;
 		})
 		.then(() => callback());
-};
+}
 
 // Uploads the last built version of the mod to the workshop
 // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
@@ -384,7 +393,7 @@ function taskUpload(callback, args, plainArg) {
 			exitCode = 1;
 		})
 		.then(() => callback());
-};
+}
 
 // Opens mod's workshop page
 // vmb open <mod_name> [--id <item_id>]
@@ -411,7 +420,7 @@ function taskOpen(callback, args, plainArg) {
 			exitCode = 1;
 		})
 		.then(() => callback());
-};
+}
 
 // Builds specified mods and copies the bundles to the game workshop folder
 // vmb build ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
@@ -427,24 +436,30 @@ function taskBuild (callback, args, plainArg) {
 	modNames.forEach(modName => console.log('  ' + modName));
 
 	getModToolsDir().then(toolsDir => {
-		console.log();
 
 		let promise = Promise.resolve();
-		forEachMod(modNames, noWorkshopCopy, modName => {
-			promise = promise.then(() => {
-				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-					console.error(error);
-					exitCode = 1;
+		forEachMod(
+			modNames,
+			noWorkshopCopy,
+			modName => {
+				promise = promise.then(() => {
+					return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
+						console.error(error);
+						exitCode = 1;
+					});
 				});
-			});
-		});
+			}, 
+			() => {
+				console.log();
+			}
+		);
 		return promise;
 	}).catch(error => {
 		console.error(error);
 		exitCode = 1;
 	})
 	.then(() => callback());
-};
+}
 
 // Watches for changes in specified mods and builds them whenever they occur
 // vmb watch ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
@@ -455,27 +470,31 @@ function taskWatch (callback, args, plainArg) {
 	getModToolsDir().then(toolsDir => {
 		console.log();
 
-		forEachMod(modNames, noWorkshopCopy, (modName, modDir) => {
-			console.log('Watching ', modName, '...');
+		forEachMod(
+			modNames,
+			noWorkshopCopy,
+			(modName, modDir) => {
+				console.log(`Watching ${modName}...`);
 
-			let src = [
-				modDir,
-				'!' + modsDir + '/' + modName + '/*.tmp',
-				'!' + modsDir + '/' + modName + '/' + distDir + '/*'
-			];
+				let src = [
+					modDir,
+					'!' + modsDir + '/' + modName + '/*.tmp',
+					'!' + modsDir + '/' + modName + '/' + distDir + '/*'
+				];
 
-			gulp.watch(src, () => {
-				return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-	    			console.error(error);
-	    		});
-			});
-		});
+				gulp.watch(src, () => {
+					return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
+		    			console.error(error);
+		    		});
+				});
+			}
+		);
 		return callback(false);
 	}).catch(error => {
 		console.error(error);
 		callback();
 	});
-};
+}
 
 
 /* CONFIG METHODS */
@@ -484,7 +503,7 @@ function getGameSpecificKey(key){
 	let id = scriptConfig[key + gameNumber];
 	if(typeof id != 'string'){
 		console.error(`Failed to find '${key + gameNumber}' in ${scriptConfigFile}.`);
-		process.exit(1);
+		process.exit();
 	}
 	return id;
 }
@@ -509,8 +528,8 @@ function setModsDir(args) {
 
 	if(typeof newModsDir == 'string') {
 		console.log(`Using mods folder '${newModsDir}'`);
-		modsDir = newModsDir;
-		if(UNSPECIFIED_TEMP_DIR) {
+		modsDir = normalize(newModsDir);
+		if(unspecifiedTempDir) {
 			tempDir = join(modsDir, defaultTempDir);
 		}
 	}
@@ -527,12 +546,14 @@ function setGameNumber(args) {
 		gameNumber = newGameNumber;
 	}
 
+	gameNumber = Number(gameNumber);
+
 	if(gameNumber !== 1 && gameNumber !== 2){
 		console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${scriptConfigFile}.`);
-		process.exit(1);
+		process.exit();
 	}
 
-	console.log('Game is Vermintide ' + gameNumber);
+	console.log('Game: Vermintide ' + gameNumber);
 }
 
 /* SHARED METHODS */
@@ -578,7 +599,7 @@ function getModToolsDir(){
 				else {
 					console.error(errorMsg);
 				}
-				toolsDir = path.normalize(toolsDir);
+				toolsDir = normalize(toolsDir);
 				console.log('Modding tools dir:', toolsDir);
 				resolve(toolsDir);
 			});
@@ -712,7 +733,7 @@ function checkIfPublished(modName) {
 	}
 	return readFile(modCfg, 'utf8').then(data => {
 		if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
-			return Promise.reject('Mod has already been published, use gulp upload instead.');
+			return Promise.reject(`Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`);
 		}
 		else {
 			return Promise.resolve(true);
@@ -723,7 +744,7 @@ function checkIfPublished(modName) {
 
 /* BUILD METHODS */
 
-function forEachMod(modNames, noWorkshopCopy, action) {
+function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 	modNames.forEach(modName => {
 
 		if(!modName) {
@@ -735,6 +756,9 @@ function forEachMod(modNames, noWorkshopCopy, action) {
 			action(modName, modDir);
 		}
 		else {
+			if(typeof noAction == 'function'){
+				noAction();
+			}
 			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it.`);
 			exitCode = 1;
 		}
@@ -820,8 +844,8 @@ function getWorkshopDir() {
 			.then(appPath => {
 				if(appPath && typeof appPath == 'string') {
 
-					appPath = path.normalize(appPath);
-					let parts = appPath.split(path.sep);
+					appPath = normalize(appPath);
+					let parts = appPath.split('/');
 					let neededPart = parts[parts.length - 2];
 
 					if(!neededPart){
