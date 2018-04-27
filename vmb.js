@@ -77,8 +77,8 @@ setGameNumber(argv);
 setModsDir(argv);
 
 // Other config params
-const fallbackToolsDir = getGameSpecificKey('fallback_tools_dir');
-const fallbackWorkshopDir = join(getGameSpecificKey('fallback_workshop_dir'), getGameId());
+const fallbackToolsDir = normalize(getGameSpecificKey('fallback_tools_dir') || '');
+const fallbackWorkshopDir = join(getGameSpecificKey('fallback_workshop_dir') || '', getGameId());
 const ignoredDirs = scriptConfig.ignored_dirs || [];
 
 
