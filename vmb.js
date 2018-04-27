@@ -17,10 +17,10 @@ const readFile = util.promisify(fs.readFile),
 
 /* SETUP */
 
-// Callback wasn't called from current task
 let exitCode = 0;
 let taskFinished = false;
 setupCleanup(code => {
+	// Callback wasn't called from current task
 	if(!taskFinished) {
 		console.error(`\nCommand didn't finish correctly`);
 		process.exit(2);
@@ -67,6 +67,7 @@ if(UNSPECIFIED_TEMP_DIR) {
 	tempDir = join(modsDir, defaultTempDir);
 }
 
+// Set temporary config options
 setGameNumber(argv);
 setModsDir(argv);
 
@@ -180,11 +181,12 @@ function readScriptConfig(shouldReset) {
 
 /* TASKS */
 
-
+// Adds a task to the tasks object
 function addTask(name, action){
 	tasks[name] = action;
 }
 
+// Returns first task specified in commandline arguments
 function getCurrentTask(args) {
 	let plainArg;
 	for(var i = 0; i < args.length; i++){
@@ -197,10 +199,12 @@ function getCurrentTask(args) {
 	return {currentTask: tasks['default'], plainArg};
 }
 
+// Runs specified task
 function runTask(task, args, plainArg) {
 	task(callback, args, plainArg);
 }
 
+// This will be called at the end of tasks
 function callback(shouldExit = true){
 	taskFinished = true;
 	if (shouldExit) {
@@ -216,12 +220,12 @@ function taskDefault(callback, args, plainArg) {
 	console.log(
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
-		'vmb create    -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
-		'vmb publish   -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]\n' +
-		'vmb upload    -m <mod_name> [-n <changenote>] [--open] [--skip]\n' +
-		'vmb open      {-m <mod_name> | --id <item_id>}\n' +
-		'vmb build     [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
-		'vmb watch     [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]'
+		'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
+		'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]\n' +
+		'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
+		'vmb open      {<mod_name> | --id <item_id>}\n' +
+		'vmb build     ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
+		'vmb watch     ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]'
 	);
 	callback();
 }
@@ -250,7 +254,7 @@ function taskConfig(callback, args, plainArg) {
 
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
-// vmb create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+// vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 function taskCreate(callback, args, plainArg) {
 
 	let config = getWorkshopConfig(args, plainArg);
@@ -288,7 +292,7 @@ function taskCreate(callback, args, plainArg) {
 };
 
 // Builds the mod then uploads it to workshop as a new item
-// vmb publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
+// vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 function taskPublish(callback, args, plainArg) {
 
 	let config = getWorkshopConfig(args, plainArg);
@@ -340,7 +344,7 @@ function taskPublish(callback, args, plainArg) {
 };
 
 // Uploads the last built version of the mod to the workshop
-// vmb upload -m <mod_name> [-n <changenote>] [--open] [--skip]
+// vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
 function taskUpload(callback, args, plainArg) {
 
 	let modName = args.m || args.mod || plainArg || '';
@@ -383,7 +387,7 @@ function taskUpload(callback, args, plainArg) {
 };
 
 // Opens mod's workshop page
-// vmb open -m <mod_name> [--id <item_id>]
+// vmb open <mod_name> [--id <item_id>]
 function taskOpen(callback, args, plainArg) {
 
 	let modName = args.m || args.mod || plainArg || '';
@@ -410,7 +414,7 @@ function taskOpen(callback, args, plainArg) {
 };
 
 // Builds specified mods and copies the bundles to the game workshop folder
-// vmb build [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
+// vmb build ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 // --verbose - prints stingray console output even on successful build
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
@@ -443,7 +447,7 @@ function taskBuild (callback, args, plainArg) {
 };
 
 // Watches for changes in specified mods and builds them whenever they occur
-// vmb watch [-m "<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
+// vmb watch ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
 function taskWatch (callback, args, plainArg) {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArg);
@@ -584,6 +588,7 @@ function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
+// Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 function getWorkshopConfig(args, plainArg) {
 
 	let modName = args.m || args.mod || plainArg || '';
@@ -599,6 +604,7 @@ function getWorkshopConfig(args, plainArg) {
 	};
 }
 
+// Copies and renames mod template from %%template folder
 function copyTemplate(config) {
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
@@ -624,6 +630,7 @@ function copyTemplate(config) {
 	});
 }
 
+// Creates item.cfg file
 function createCfgFile(config) {
 	let configText = `title = "${config.title}";\n` +
 					`description = "${config.description}";\n` +
@@ -692,10 +699,12 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 	});
 }
 
+// Returns steam workshop url for mod
 function formUrl(modId) {
 	return 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
 }
 
+// Checks if the mod has published_id in its item.cfg
 function checkIfPublished(modName) {
 	let modCfg = join(modsDir, modName, cfgFile);
 	if(!fs.existsSync(modCfg)){
@@ -833,7 +842,7 @@ function getWorkshopDir() {
 	});
 }
 
-// Returns [-m "<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
+// Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
 function getBuildParams(args, plainArg) {
 
 	let verbose = args.verbose || false;
@@ -1017,6 +1026,7 @@ function getFolders(dir, except) {
 		});
 }
 
+// Safely deletes file or directory
 function deleteFile(dir, file) {
     return new Promise((resolve, reject) => {
         let filePath = join(dir, file);
@@ -1038,6 +1048,7 @@ function deleteFile(dir, file) {
     });
 }
 
+// Recursively and safely deletes directory
 function deleteDirectory(dir) {
     return new Promise((resolve, reject) => {
         fs.access(dir, err => {
@@ -1063,6 +1074,7 @@ function deleteDirectory(dir) {
     });
 }
 
+// A super convoluted way to copy filePath/fileName to dest/destBase.destExt if it doesn't exist
 function copyIfDoesntExist(filePath, fileName, base, dest, destBase, destExt) {
 	return new Promise((resolve, reject) => {
 		if(fs.existsSync(join(dest, destBase + destExt))) {

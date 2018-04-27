@@ -23,8 +23,8 @@ This script works for both Vermintide 1 and 2.
 
 	vmb <command> [command-specific params] [-f <folder>] [-g <game_number>] [--reset]
 
-`-f <folder>` or `--folder <folder>` - temporally sets current mods folder  
-`-g <game_number>` or `--game <game_number>` - temporary sets which game should the mods be built/uploaded for  
+`-f <folder>` or `--folder <folder>` - temporarily sets current mods folder  
+`-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for  
 `--reset` - resets config.json before executing the command  
 
 Run without command to see a list of commands with parameters.
@@ -32,21 +32,21 @@ Run without command to see a list of commands with parameters.
 
 #### Create a mod from template:
 
-	vmb create -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 
 This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the config.json) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish -m <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
 
 #### Upload a new version of a mod to Steam Workshop:  
 
-	vmb upload -m <mod_name> [-n <changenote>] [--open] [--skip]  
+	vmb upload <mod_name> [-n <changenote>] [--open] [--skip]  
 
 This will use `itemV1.cfg` or `itemV2.cfg` in the mod's folder and upload the last built version. Seems to only update the mod if the content has changed.  
 `--changenote` or `-n`- list of changes made  
@@ -56,17 +56,17 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Open an existing mod's page on Steam Workshop:  
 
-	vmb open {-m <mod_name> | --id <item_id>}  
+	vmb open {<mod_name> | --id <item_id>}  
 
 #### Build all or specified mods from current directory:
 	
-	vmb build [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist] 
+	vmb build ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist] 
 
 #### Automatically build all or specified mods from current directory:
 
-	vmb watch [-m "<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist]
+	vmb watch ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist]
 
-Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. 
+Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output.  
 `--ignore-errors` or `--ignore-build-errors` or `-e` - ignores stingray executable errors and tries to copy the built bundle anyway.
