@@ -211,12 +211,12 @@ function taskDefault(callback, args, plainArgs) {
 	console.log(
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
-		'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]\n' +
-		'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]\n' +
+		'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
+		'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]\n' +
 		'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
 		'vmb open      {<mod_name> | --id <item_id>}\n' +
-		'vmb build     ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]\n' +
-		'vmb watch     ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [-t] [--id <item_id>] [--dist]'
+		'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
+		'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]'
 	);
 	callback();
 }
