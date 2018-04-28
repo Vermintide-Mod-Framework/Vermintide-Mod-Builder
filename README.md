@@ -12,10 +12,11 @@ This script works for both Vermintide 1 and 2.
 ### Installation  
 
 1. Download and export **[the latest commit](https://github.com/Vermintide-Modders/VMF-Build-Script/archive/master.zip)**.  
-2. Place your existing mods in the `mods` folder or specify alternative path in config.json `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
-3. Set `game` in config.json to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
-3. Set `fallback_tools_dir` and `fallback_workshop_dir` in config.json for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or set them to empty string but do not delete the options themselves.  
-4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in config.json.   
+2. Run vmb.exe to create default .vmbrc config file.  
+2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
+3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
+3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or set them to empty string but do not delete the options themselves.  
+4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in .vmbrc.   
 5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.  
 
 
@@ -25,7 +26,7 @@ This script works for both Vermintide 1 and 2.
 
 `-f <folder>` or `--folder <folder>` - temporarily sets current mods folder  
 `-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for  
-`--reset` - resets config.json before executing the command  
+`--reset` - resets .vmbrc before executing the command  
 
 Run without command to see a list of commands with parameters.
 
@@ -34,12 +35,12 @@ Run without command to see a list of commands with parameters.
 
 	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 
-This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the config.json) in the new mod folder and open a browser window for you to subscribe to the mod.  
+This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [-e] [--verbose] [--temp]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
@@ -60,26 +61,26 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	vmb build ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist] 
+	vmb build ["<mod1>; <mod2>; <mod3>;..."] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist] 
 
 #### Automatically build all or specified mods from current directory:
 
-	vmb watch ["<mod1>; <mod2>; <mod3>;..."] [-e] [--verbose] [--temp] [--id <item_id>] [--dist]
+	vmb watch ["<mod1>; <mod2>; <mod3>;..."] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output.  
 `--ignore-errors` or `--ignore-build-errors` or `-e` - ignores stingray executable errors and tries to copy the built bundle anyway.
-You can also enable this param by default by adding `ignore_build_errors` to config.json and setting it to true.  
+You can also enable this param by default by adding `ignore_build_errors` to .vmbrc and setting it to true.  
 `--temp` or `-t` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
 
-#### To quickly change options in config.json 
+#### To quickly change options in .vmbrc 
 	
 	vmb config [--<key1>=<value1> --<key2>=<value2>...]
 
-This will also print the contents of the config.json file.  
+This will also print the contents of the .vmbrc file.  
 Note that you cannot set `ignored_dirs` this way.
 
 ### Compiling VMB executable

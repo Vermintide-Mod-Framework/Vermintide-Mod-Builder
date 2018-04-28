@@ -42,7 +42,7 @@ const {currentTask, plainArg} = getCurrentTask(argv._);
 /* CONFIG */
 
 const defaultTempDir = '.temp';
-const scriptConfigFile = 'config.json';
+const scriptConfigFile = '.vmbrc';
 const scriptConfig = readScriptConfig(argv.reset);
 
 // Early execution and exit for certain tasks
