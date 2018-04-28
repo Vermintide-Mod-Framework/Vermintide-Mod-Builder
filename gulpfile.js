@@ -7,7 +7,8 @@ gulp.task('compile', function (callback) {
         .then(() => {
             gulp.src(
                 [
-                    '%%template/**/*',
+                    'template/**/*',
+                    'template-vmf/**/*',
                     'vmb.exe',
                     'mods/'
                 ],
