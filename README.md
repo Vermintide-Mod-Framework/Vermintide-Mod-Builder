@@ -61,11 +61,11 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	vmb build ["<mod1>; <mod2>; <mod3>;..."] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist] 
+	vmb build [<mod1> <mod2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist] 
 
 #### Automatically build all or specified mods from current directory:
 
-	vmb watch ["<mod1>; <mod2>; <mod3>;..."] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]
+	vmb watch [<mod1> <mod2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]
 
 Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  

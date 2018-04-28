@@ -36,7 +36,7 @@ addTask('open', taskOpen);
 addTask('build', taskBuild);
 addTask('watch', taskWatch);
 
-const {currentTask, plainArg} = getCurrentTask(argv._);
+const {currentTask, plainArgs} = getCurrentTask(argv._);
 
 
 /* CONFIG */
@@ -47,7 +47,7 @@ const scriptConfig = readScriptConfig(argv.reset);
 
 // Early execution and exit for certain tasks
 if(currentTask == taskDefault || currentTask == taskConfig) {
-	runTask(currentTask, argv, plainArg);
+	runTask(currentTask, argv, plainArgs);
 	process.exit(exitCode);
 }
 
@@ -124,7 +124,7 @@ const cfgFile = 'itemV' + gameNumber + '.cfg';
 
 /* EXECUTION */
 
-runTask(currentTask, argv, plainArg);
+runTask(currentTask, argv, plainArgs);
 
 
 
@@ -195,20 +195,22 @@ function addTask(name, action){
 
 // Returns first task specified in commandline arguments
 function getCurrentTask(args) {
-	let plainArg;
+	let plainArgs = [];
 	for(var i = 0; i < args.length; i++){
 		let task = tasks[args[i]];
 		if(task){
-			plainArg = args[i + 1];
-			return {currentTask: task, plainArg};
+			for (var k = i + 1; k < args.length; k++){
+				plainArgs.push(args[k]);
+			}
+			return {currentTask: task, plainArgs};
 		}
 	}
-	return {currentTask: tasks['default'], plainArg};
+	return {currentTask: tasks['default'], plainArgs};
 }
 
 // Runs specified task
-function runTask(task, args, plainArg) {
-	task(callback, args, plainArg);
+function runTask(task, args, plainArgs) {
+	task(callback, args, plainArgs);
 }
 
 // This will be called at the end of tasks
@@ -231,7 +233,7 @@ function checkTaskFinished(code) {
 
 // Prints all existing commands with params
 // vmb
-function taskDefault(callback, args, plainArg) {
+function taskDefault(callback, args, plainArgs) {
 	console.log(
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
 		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
@@ -248,7 +250,7 @@ function taskDefault(callback, args, plainArg) {
 // Sets and/or displayes config file values
 // Limited to non-object values
 // vmb config [--<key1>=<value1> --<key2>=<value2>...]
-function taskConfig(callback, args, plainArg) {
+function taskConfig(callback, args, plainArgs) {
 	Object.keys(scriptConfig).forEach((key) => {
 		if(args[key] !== undefined){
 			if(typeof scriptConfig[key] == 'object'){
@@ -270,9 +272,9 @@ function taskConfig(callback, args, plainArg) {
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-function taskCreate(callback, args, plainArg) {
+function taskCreate(callback, args, plainArgs) {
 
-	let config = getWorkshopConfig(args, plainArg);
+	let config = getWorkshopConfig(args, plainArgs);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -308,9 +310,9 @@ function taskCreate(callback, args, plainArg) {
 
 // Builds the mod then uploads it to workshop as a new item
 // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-function taskPublish(callback, args, plainArg) {
+function taskPublish(callback, args, plainArgs) {
 
-	let config = getWorkshopConfig(args, plainArg);
+	let config = getWorkshopConfig(args, plainArgs);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 	let buildParams = getBuildParams(args);
@@ -360,9 +362,9 @@ function taskPublish(callback, args, plainArg) {
 
 // Uploads the last built version of the mod to the workshop
 // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
-function taskUpload(callback, args, plainArg) {
+function taskUpload(callback, args, plainArgs) {
 
-	let modName = args.m || args.mod || plainArg || '';
+	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
@@ -403,9 +405,9 @@ function taskUpload(callback, args, plainArg) {
 
 // Opens mod's workshop page
 // vmb open <mod_name> [--id <item_id>]
-function taskOpen(callback, args, plainArg) {
+function taskOpen(callback, args, plainArgs) {
 
-	let modName = args.m || args.mod || plainArg || '';
+	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modDir = join(modsDir, modName);
 	let modId = args.id || null;
 
@@ -429,14 +431,14 @@ function taskOpen(callback, args, plainArg) {
 }
 
 // Builds specified mods and copies the bundles to the game workshop folder
-// vmb build ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
+// vmb build [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
 // --verbose - prints stingray console output even on successful build
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
-function taskBuild (callback, args, plainArg) {
+function taskBuild (callback, args, plainArgs) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
 
 	console.log('Mods to build:');
 	modNames.forEach(modName => console.log('  ' + modName));
@@ -468,10 +470,10 @@ function taskBuild (callback, args, plainArg) {
 }
 
 // Watches for changes in specified mods and builds them whenever they occur
-// vmb watch ["<mod1>; <mod2>; <mod3>;..."] [--verbose] [-t] [--id <item_id>] [--dist]
-function taskWatch (callback, args, plainArg) {
+// vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
+function taskWatch (callback, args, plainArgs) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArg);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
 
 	getModToolsDir().then(toolsDir => {
 		console.log();
@@ -621,9 +623,9 @@ function getModToolsDir(){
 /* CREATE AND UPLOAD METHODS */
 
 // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-function getWorkshopConfig(args, plainArg) {
+function getWorkshopConfig(args, plainArgs) {
 
-	let modName = args.m || args.mod || plainArg || '';
+	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modTitle = args.t || args.title || modName;
 
 	return {
@@ -878,18 +880,16 @@ function getWorkshopDir() {
 }
 
 // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-function getBuildParams(args, plainArg) {
+function getBuildParams(args, plainArgs) {
 
 	let verbose = args.verbose || false;
 	let shouldRemoveTemp = args.t || args.temp || false;
-	let modNames = args.m || args.mod || args.mods || plainArg || '';
+	let modNames = plainArgs;
 
-	if(!modNames || typeof modNames != 'string') {
+	if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
 		modNames = getFolders(modsDir, ignoredDirs);
 	}
-	else{
-		modNames = modNames.split(/;+\s*/);
-	}
+
 	let modId = modNames.length == 1 ? args.id : null;
 	let noWorkshopCopy = args.dist || false;
 	let ignoreBuildErrors = args.e || args['ignore-errors'] || args['ignore-build-errors'] || scriptConfig.ignore_build_errors;
