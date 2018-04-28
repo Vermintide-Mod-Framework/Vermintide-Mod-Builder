@@ -11,7 +11,7 @@ This script works for both Vermintide 1 and 2.
 
 ### Installation  
 
-1. Download and export **[the latest commit](https://github.com/Vermintide-Modders/VMF-Build-Script/archive/master.zip)**.  
+1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
 2. Run vmb.exe to create default .vmbrc config file.  
 2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
@@ -89,4 +89,4 @@ Note that you cannot set `ignored_dirs` this way.
 	npm run compile
 
 The compiler will say that some file needs to be distributed with the executable, but that is only relevant for non-win platforms and I'm pretty sure this script doesn't work under anything but Windows anyway.  
-
+Along with the executable, a zip archive will be created with template and mods folders included.
