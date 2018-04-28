@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "node vmb.js",
-    "setup": "npm i pkg -g | npm i",
+    "setup": "npm i",
     "compile": "gulp compile"
   },
   "repository": {
