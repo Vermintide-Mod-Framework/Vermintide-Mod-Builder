@@ -1,5 +1,5 @@
 const gulp = require('gulp'),
-      zip = require('gulp-vinyl-zip'),
+      zip = require('gulp-vinyl-zip').zip,
       pkg = require('pkg').exec;
 
 gulp.task('compile', function (callback) {

@@ -613,8 +613,13 @@ function getModToolsDir(){
 					console.error(errorMsg);
 				}
 				toolsDir = normalize(toolsDir);
-				console.log('Modding tools dir:', toolsDir);
-				resolve(toolsDir);
+				if (fs.existsSync(join(toolsDir, stingrayDir, stingrayExe))){
+					console.log('Modding tools dir:', toolsDir);
+					resolve(toolsDir);
+				}
+				else {
+					reject('Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.');
+				}
 			});
 	});
 }
@@ -724,7 +729,10 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 
 		uploader.on('close', code => {
 			if(code) {
-				reject('Uploader exited with error code: ' + code);
+				reject(
+					'Uploader exited with error code: ' + code +
+					(code == 3221225477 ? `\nCheck if Steam is running` : '')
+				);
 			}
 			else {
 				resolve(modId);
