@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "pkg": "^4.3.1",
-    "gulp-zip": "^4.1.0"
+    "gulp-vinyl-zip": "^2.1.0"
   },
   "scripts": {
     "start": "node vmb.js",

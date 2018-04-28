@@ -1,5 +1,5 @@
 const gulp = require('gulp'),
-      zip = require('gulp-zip'),
+      zip = require('gulp-vinyl-zip'),
       pkg = require('pkg').exec;
 
 gulp.task('compile', function (callback) {
@@ -13,7 +13,7 @@ gulp.task('compile', function (callback) {
                 ],
                 { base: '.' }
             )
-            .pipe(zip('vmb.zip'))
+            .pipe(zip.dest('vmb.zip'))
             .pipe(gulp.dest('.'))
             .on('end', () => callback())
             .on('error', (err) =>{
