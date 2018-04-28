@@ -1,0 +1,12 @@
+mod =  [
+	"%%name"
+]
+
+package = [
+	"resource_packages/%%name/%%name"
+]
+
+lua = [
+	"localization/*"
+	"scripts/mods/%%name/*"
+]

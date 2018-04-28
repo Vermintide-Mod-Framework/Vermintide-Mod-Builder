@@ -46,29 +46,14 @@ const scriptConfigFile = '.vmbrc';
 const scriptConfig = readScriptConfig(argv.reset);
 
 // Early execution and exit for certain tasks
-if(currentTask == taskDefault || currentTask == taskConfig) {
+if (currentTask == taskDefault || currentTask == taskConfig) {
 	runTask(currentTask, argv, plainArgs);
 	process.exit(exitCode);
 }
 
 // Mods directory and game number
-let modsDir = scriptConfig.mods_dir;
-modsDir = (typeof modsDir == 'string' && modsDir !== '') ? normalize(modsDir) : 'mods';
-
-let tempDir = scriptConfig.temp_dir;
-tempDir = (typeof tempDir == 'string' && tempDir !== '') ? normalize(tempDir) : '';
-
-let gameNumber = scriptConfig.game;
-
-const unspecifiedTempDir = !tempDir;
-
-if(unspecifiedTempDir) {
-	tempDir = join(modsDir, defaultTempDir);
-}
-
-// Set temporary config options
-setGameNumber(argv);
-setModsDir(argv);
+const { modsDir, tempDir } = getModsDir(scriptConfig.mods_dir, scriptConfig.temp_dir, argv);
+const gameNumber = getGameNumber(scriptConfig.game, argv);
 
 // Other config params
 const fallbackToolsDir = normalize(getGameSpecificKey('fallback_tools_dir') || '');
@@ -79,34 +64,16 @@ const ignoredDirs = scriptConfig.ignored_dirs || [];
 /* FOR CREATING */
 
 // These will be replaced in the template mod when running tasks
-const temp = '%%template';
-const tempTitle = '%%title';
-const tempDescription = '%%description';
+const templateDir = getTemplateDir(scriptConfig.template_dir || 'template', argv);
+const templateName = '%%name';
+const templateTitle = '%%title';
+const templateDescription = '%%description';
 
-// Folders with scripts and resources
-const resDir = 'resource_packages';
-const scriptDir = 'scripts/mods';
-const localDir = 'localization';
+// Folder in which the built bundle is gonna be stored before being copied to workshop folder
 const distDir = 'dist';
-const renameDirs = [
-	resDir,
-	scriptDir
-];
 
-// Folders with static files
-const coreSrc = [
-	join(temp, '/core/**/*'),
-	join(temp, 'item_preview.jpg')
-];
-
-// Folders with mod specific files
-const modSrc = [
-	join(temp, resDir, temp, temp + '.package'),
-	join(temp, scriptDir, temp, temp + '.lua'),
-	join(temp, localDir, temp + '.lua'),
-	join(temp, distDir, temp),
-	join(temp, temp + '.mod')
-];
+// Files in template
+const { coreSrc, modSrc } = getTemplateSrc(scriptConfig.template_core_files, templateDir);
 
 
 /* FOR BUILDING */
@@ -171,6 +138,13 @@ function readScriptConfig(shouldReset) {
 
 				fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
 				fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
+
+				template_dir: "template-vmf",
+
+				template_core_files: [
+					'core/**',
+					'item_preview.jpg'
+				],
 
 				ignored_dirs: [
 					'.git',
@@ -279,12 +253,12 @@ function taskCreate(callback, args, plainArgs) {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
-		console.error(`Folder ${modDir} is invalid or already exists`);
+		console.error(`Folder "${modDir}" is invalid or already exists`);
 		exitCode = 1;
 		return callback();
 	}
 
-	console.log('Copying template');
+	console.log(`Copying template from "${templateDir}"`);
 
 	copyTemplate(config)
 		.then(() => createCfgFile(config))
@@ -299,7 +273,12 @@ function taskCreate(callback, args, plainArgs) {
 		.catch(error => {
 			console.error(error);
 			exitCode = 1;
-			return deleteDirectory(join(modsDir, modName));
+
+			// Cleanup directory if it has been created
+			let modDir = join(modsDir, modName);
+			if (fs.existsSync(modDir)){
+				return deleteDirectory();
+			}
 		})
 		.catch(error => {
 			console.error(error);
@@ -318,7 +297,7 @@ function taskPublish(callback, args, plainArgs) {
 	let buildParams = getBuildParams(args);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		console.error(`Folder "${modDir}" is invalid or doesn't exist`);
 		exitCode = 1;
 		return callback();
 	}
@@ -344,7 +323,7 @@ function taskPublish(callback, args, plainArgs) {
 			buildParams.ignoreBuildErrors,
 			null
 		))
-		.then(() => copyIfDoesntExist(temp, 'item_preview.jpg', temp, modDir, 'item_preview', '.jpg'))
+		.then(() => copyIfDoesntExist(templateDir, 'item_preview.jpg', templateDir, modDir, 'item_preview', '.jpg'))
 		.then(() => uploadMod(toolsDir, modName))
 		.then(() => getModId(modName))
 		.then(modId => {
@@ -368,7 +347,7 @@ function taskUpload(callback, args, plainArgs) {
 	let modDir = join(modsDir, modName);
 
 	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		console.error(`Folder ${modDir} is invalid or doesn't exist`);
+		console.error(`Folder "${modDir}" is invalid or doesn't exist`);
 		exitCode = 1;
 		return callback();
 	}
@@ -412,7 +391,7 @@ function taskOpen(callback, args, plainArgs) {
 	let modId = args.id || null;
 
 	if(!modId && (!validModName(modName) || !fs.existsSync(modDir + '/'))) {
-		console.error(`Folder ${modDir} doesn't exist`);
+		console.error(`Folder "${modDir}" doesn't exist`);
 		exitCode = 1;
 		return callback();
 	}
@@ -524,35 +503,45 @@ function getToolsId(){
 	return getGameSpecificKey('tools_id');
 }
 
-function setModsDir(args) {
+function getModsDir(modsDir, tempDir, args) {
+
+	modsDir = (typeof modsDir == 'string' && modsDir !== '') ? normalize(modsDir) : 'mods';
+	tempDir = (typeof tempDir == 'string' && tempDir !== '') ? normalize(tempDir) : '';
+
+	let unspecifiedTempDir = !tempDir;
+	if (unspecifiedTempDir) {
+		tempDir = join(modsDir, defaultTempDir);
+	}
 
 	let newModsDir = args.f || args.folder;
 
 	if(!newModsDir) {
-		console.log(`Using mods folder '${modsDir}'`);
-		console.log(`Using temp folder '${tempDir}'`);
+		console.log(`Using mods folder "${modsDir}"`);
+		console.log(`Using temp folder "${tempDir}"`);
 	}
 	else {
 		if (typeof newModsDir == 'string') {
-			console.log(`Using mods folder '${newModsDir}'`);
+			console.log(`Using mods folder "${newModsDir}"`);
 			modsDir = normalize(newModsDir);
 			if (unspecifiedTempDir) {
 				tempDir = join(modsDir, defaultTempDir);
 			}
 		}
 		else {
-			console.warn(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
+			console.warn(`Couldn't set mods folder "${newModsDir}", using default "${modsDir}"`);
 		}
-		console.log(`Using temp folder '${tempDir}'`);
+		console.log(`Using temp folder "${tempDir}"`);
 	}
 
 	if (!fs.existsSync(modsDir + '/')) {
-		console.error(`Mods folder '${modsDir}' doesn't exist`);
+		console.error(`Mods folder "${modsDir}" doesn't exist`);
 		process.exit();
 	}
+
+	return {modsDir, tempDir};
 }
 
-function setGameNumber(args) {
+function getGameNumber(gameNumber, args) {
 	let newGameNumber = args.g || args.game;
 
 	if(newGameNumber !== undefined){
@@ -567,12 +556,48 @@ function setGameNumber(args) {
 	}
 
 	console.log('Game: Vermintide ' + gameNumber);
+
+	return gameNumber;
 }
+
+function getTemplateDir(templateDir, args) {
+	let newTemplateDir = args.template || '';
+
+	if(newTemplateDir && typeof newTemplateDir == 'string'){
+		return newTemplateDir;
+	}
+
+	return templateDir;
+}
+
+function getTemplateSrc(configCoreSrc, templateDir) {
+
+	// Static files from config
+	let coreSrc = [];
+	if (Array.isArray(configCoreSrc)) {
+		configCoreSrc.forEach(src => {
+			coreSrc.push(join(templateDir, src));
+		});
+	}
+
+	// Folders with mod specific files
+	let modSrc = [
+		templateDir + '/**'
+	];
+
+	// Exclude core files from being altered
+	coreSrc.forEach(src => {
+		modSrc.push('!' + src);
+	});
+
+	return {coreSrc, modSrc}
+}
+
 
 /* SHARED METHODS */
 
 function validModName(modName) {
-	return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- ]+$/);
+	return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- %]+$/);
 }
 
 function getModId(modName) {
@@ -614,7 +639,7 @@ function getModToolsDir(){
 				}
 				toolsDir = normalize(toolsDir);
 				if (fs.existsSync(join(toolsDir, stingrayDir, stingrayExe))){
-					console.log('Modding tools dir:', toolsDir);
+					console.log(`Mod tools folder "${toolsDir}"`);
 					resolve(toolsDir);
 				}
 				else {
@@ -645,26 +670,41 @@ function getWorkshopConfig(args, plainArgs) {
 
 // Copies and renames mod template from %%template folder
 function copyTemplate(config) {
+
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
+
 	return new Promise((resolve, reject) => {
-		gulp.src(modSrc, {base: temp})
-			.pipe(replace(temp, modName))
-			.pipe(replace(tempTitle, config.title))
-			.pipe(replace(tempDescription, config.description))
+
+		if (!fs.existsSync(templateDir)) {
+			reject(`Template folder "${templateDir}" doesn't exist.`);
+			return;
+		}
+
+		let regexName = new RegExp(templateName, 'g');
+		let regexTitle = new RegExp(templateTitle, 'g');
+		let regexDescription = new RegExp(templateDescription, 'g');
+		gulp.src(modSrc, { base: templateDir })
+			.pipe(replace(regexName, modName))
+			.pipe(replace(regexTitle, config.title))
+			.pipe(replace(regexDescription, config.description))
 			.pipe(rename(p => {
-				p.basename = p.basename.replace(temp, modName);
+				p.dirname = p.dirname.replace(regexName, modName);
+				p.basename = p.basename.replace(regexName, modName);
 			}))
 			.pipe(gulp.dest(modDir))
 			.on('error', reject)
 			.on('end', () => {
-				renameDirs.forEach(dir => {
-					fs.renameSync(join(modDir, dir, temp), join(modDir, dir, modName));
-				});
-				gulp.src(coreSrc, {base: temp})
-					.pipe(gulp.dest(modDir))
-					.on('error', reject)
-					.on('end', resolve);
+
+				if(coreSrc.length > 0){
+					gulp.src(coreSrc, { base: templateDir})
+						.pipe(gulp.dest(modDir))
+						.on('error', reject)
+						.on('end', resolve);
+				}
+				else{
+					resolve();
+				}
 			});
 	});
 }
@@ -780,7 +820,7 @@ function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 			if(typeof noAction == 'function'){
 				noAction();
 			}
-			console.error(`Folder ${modDir} doesn\'t exist, invalid or doesn\'t have ${cfgFile} in it.`);
+			console.error(`Folder "${modDir}" doesn't exist, invalid or doesn't have ${cfgFile} in it.`);
 			exitCode = 1;
 		}
 	});
@@ -891,7 +931,7 @@ function getWorkshopDir() {
 function getBuildParams(args, plainArgs) {
 
 	let verbose = args.verbose || false;
-	let shouldRemoveTemp = args.t || args.temp || false;
+	let shouldRemoveTemp = args.temp || false;
 	let modNames = plainArgs;
 
 	if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {

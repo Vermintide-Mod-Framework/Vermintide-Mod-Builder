@@ -1,4 +1,4 @@
-local mod = get_mod("%%template")
+local mod = get_mod("%%name")
 
 local mod_data = {}
 
@@ -27,16 +27,16 @@ mod:initialize_data(mod_data)
 
 --[[
 	Functions
---]] 
+--]]
 
 
 
 --[[
 	Hooks
---]] 
+--]]
 
 mod:hook("", function (func, ...)
-	
+
 	-- Original function
 	local result = func(...)
 	return result
@@ -44,7 +44,7 @@ end)
 
 --[[
 	Callback
---]] 
+--]]
 
 -- Call on every update to mods
 mod.update = function(dt)
@@ -79,6 +79,6 @@ end
 
 --[[
 	Execution
---]] 
+--]]
 
 

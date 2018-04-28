@@ -13,7 +13,7 @@ This script works for both Vermintide 1 and 2.
 
 1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
 2. Run vmb.exe to create default .vmbrc config file.  
-2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
+2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc -> `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
 3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or set them to empty string but do not delete the options themselves.  
 4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in .vmbrc.   
@@ -33,9 +33,9 @@ Run without command to see a list of commands with parameters.
 
 #### Create a mod from template:
 
-	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]
 
-This will copy the template from `%%template` folder to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
+This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.
 
 #### Publish an existing mod to Steam Workshop:  
@@ -72,7 +72,7 @@ Two of the commands above will build and copy the bundle to the dist folder, as 
 `--verbose` - prints stingray executable console output.  
 `--ignore-errors` or `--ignore-build-errors` or `-e` - ignores stingray executable errors and tries to copy the built bundle anyway.
 You can also enable this parameter by default by setting `ignore_build_errors` in .vmbrc to true.  
-`--temp` or `-t` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
+`--temp` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
 
@@ -80,8 +80,17 @@ You can also enable this parameter by default by setting `ignore_build_errors` i
 	
 	vmb config [--<key1>=<value1> --<key2>=<value2>...]
 
-This will also print the contents of the .vmbrc file.  
-Note that you cannot set `ignored_dirs` this way.
+This will also print the contents of the .vmbrc file.
+Note that you cannot set non-string or non-number options this way.
+
+### Mod templates  
+When creating a mod, a template folder will be copied to act as a boilerplate for your mod.
+You can customize this template or create your own.  
+
+* The template folder is determined by `template_dir` in .vmbrc. This path can be relative or absolute.  
+* Certain strings will be replaced with their corresponding values when creating a new mod.
+These are `%%name`, `%%title` and `%%description` for content of files and `%%name%` for names of files and folders.  
+* Files which should be excluded from such alteration can be specified in `template_core_files`. They will simply be copied over.  
 
 ### Compiling VMB executable
 
