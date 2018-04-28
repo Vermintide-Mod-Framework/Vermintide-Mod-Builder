@@ -11,7 +11,7 @@ This script works for both Vermintide 1 and 2.
 
 ### Installation  
 
-1. Download and export [the latest release](https://github.com/Vermintide-Modders/VMF-Build-Script/releases/latest).  
+1. Download and export **[the latest commit](https://github.com/Vermintide-Modders/VMF-Build-Script/archive/master.zip)**.  
 2. Place your existing mods in the `mods` folder or specify alternative path in config.json. This path can be relative or absolute. To use current folder put `.` as the path.  
 3. Set `game` in config.json to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
 3. Set `fallback_tools_dir` and `fallback_workshop_dir` in config.json for both games. These paths will be used if the script fails to find them in the registry.  
