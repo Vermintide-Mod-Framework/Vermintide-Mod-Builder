@@ -89,7 +89,7 @@ You can customize this template or create your own.
 
 * The template folder is determined by `template_dir` in .vmbrc. This path can be relative or absolute.  
 * Certain strings will be replaced with their corresponding values when creating a new mod.
-These are `%%name`, `%%title` and `%%description` for content of files and `%%name%` for names of files and folders.  
+These are `%%name`, `%%title` and `%%description` for content of files and `%%name` for names of files and folders.  
 * Files which should be excluded from such alteration can be specified in `template_core_files`. They will simply be copied over.  
 
 ### Compiling VMB executable
