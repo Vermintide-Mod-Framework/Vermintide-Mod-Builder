@@ -166,16 +166,18 @@ function readScriptConfig(shouldReset) {
 				tools_id1: '718610',
 				tools_id2: '718610',
 
-				fallback_tools_dir1: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-				fallback_tools_dir2: 'E:/SteamLibrary/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+				fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+				fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
 
-				fallback_workshop_dir1: 'E:/SteamLibrary/SteamApps/workshop/content/',
-				fallback_workshop_dir2: 'E:/SteamLibrary/SteamApps/workshop/content/',
+				fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
+				fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
 
 				ignored_dirs: [
 					'.git',
 					defaultTempDir
-				]
+				],
+
+				ignore_build_errors: false
 			}, null, '\t')
 		);
 	}

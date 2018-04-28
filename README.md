@@ -71,7 +71,7 @@ Two of the commands above will build and copy the bundle to the dist folder, as 
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints stingray executable console output.  
 `--ignore-errors` or `--ignore-build-errors` or `-e` - ignores stingray executable errors and tries to copy the built bundle anyway.
-You can also enable this param by default by adding `ignore_build_errors` to .vmbrc and setting it to true.  
+You can also enable this parameter by default by setting `ignore_build_errors` in .vmbrc to true.  
 `--temp` or `-t` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--dist` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
