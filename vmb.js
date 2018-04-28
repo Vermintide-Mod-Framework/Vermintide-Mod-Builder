@@ -527,20 +527,25 @@ function setModsDir(args) {
 	if(!newModsDir) {
 		console.log(`Using mods folder '${modsDir}'`);
 		console.log(`Using temp folder '${tempDir}'`);
-		return;
-	}
-
-	if(typeof newModsDir == 'string') {
-		console.log(`Using mods folder '${newModsDir}'`);
-		modsDir = normalize(newModsDir);
-		if(unspecifiedTempDir) {
-			tempDir = join(modsDir, defaultTempDir);
-		}
 	}
 	else {
-		console.warn(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
+		if (typeof newModsDir == 'string') {
+			console.log(`Using mods folder '${newModsDir}'`);
+			modsDir = normalize(newModsDir);
+			if (unspecifiedTempDir) {
+				tempDir = join(modsDir, defaultTempDir);
+			}
+		}
+		else {
+			console.warn(`Couldn't set mods folder '${newModsDir}', using default '${modsDir}'`);
+		}
+		console.log(`Using temp folder '${tempDir}'`);
 	}
-	console.log(`Using temp folder '${tempDir}'`);
+
+	if (!fs.existsSync(modsDir + '/')) {
+		console.error(`Mods folder '${modsDir}' doesn't exist`);
+		process.exit();
+	}
 }
 
 function setGameNumber(args) {

@@ -2,6 +2,7 @@
 
 !.gitignore
 !vmb.js
+!vmb.exe
 !package.json
 !package-lock.json
 !README.md
