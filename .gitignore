@@ -2,7 +2,7 @@
 
 !.gitignore
 !vmb.js
-!vmb.exe
+!gulpfile.js
 !package.json
 !package-lock.json
 !README.md
