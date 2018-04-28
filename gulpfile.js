@@ -13,7 +13,7 @@ gulp.task('compile', function (callback) {
                 ],
                 { base: '.' }
             )
-            .pipe(zip.dest('vmb.zip'))
+            .pipe(zip('vmb.zip'))
             .pipe(gulp.dest('.'))
             .on('end', () => callback())
             .on('error', (err) =>{
