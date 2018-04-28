@@ -92,6 +92,8 @@ You can customize this template or create your own.
 These are `%%name`, `%%title` and `%%description` for content of files and `%%name` for names of files and folders.  
 * Files which should be excluded from such alteration can be specified in `template_core_files`. They will simply be copied over.  
 
+Every template must have `item_preview.jpg` in it as that is used for the mod preview picture.  
+
 ### Compiling VMB executable
 
 	npm run setup   

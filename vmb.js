@@ -68,6 +68,7 @@ const templateDir = getTemplateDir(scriptConfig.template_dir || 'template', argv
 const templateName = '%%name';
 const templateTitle = '%%title';
 const templateDescription = '%%description';
+const itemPreview = 'item_preview.jpg'
 
 // Folder in which the built bundle is gonna be stored before being copied to workshop folder
 const distDir = 'dist';
@@ -142,8 +143,7 @@ function readScriptConfig(shouldReset) {
 				template_dir: "template-vmf",
 
 				template_core_files: [
-					'core/**',
-					'item_preview.jpg'
+					'core/**'
 				],
 
 				ignored_dirs: [
@@ -302,6 +302,12 @@ function taskPublish(callback, args, plainArgs) {
 		return callback();
 	}
 
+	if (!templateIsValid(templateDir)) {
+		console.error(`Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`);
+		exitCode = 1;
+		return callback();
+	}
+
 	let toolsDir = null;
 	checkIfPublished(modName)
 		.then(cfgExists => {
@@ -323,7 +329,7 @@ function taskPublish(callback, args, plainArgs) {
 			buildParams.ignoreBuildErrors,
 			null
 		))
-		.then(() => copyIfDoesntExist(templateDir, 'item_preview.jpg', templateDir, modDir, 'item_preview', '.jpg'))
+		.then(() => copyIfDoesntExist(join(templateDir, itemPreview), join(modDir, itemPreview)))
 		.then(() => uploadMod(toolsDir, modName))
 		.then(() => getModId(modName))
 		.then(modId => {
@@ -573,7 +579,9 @@ function getTemplateDir(templateDir, args) {
 function getTemplateSrc(configCoreSrc, templateDir) {
 
 	// Static files from config
-	let coreSrc = [];
+	let coreSrc = [
+		join(templateDir, itemPreview)
+	];
 	if (Array.isArray(configCoreSrc)) {
 		configCoreSrc.forEach(src => {
 			coreSrc.push(join(templateDir, src));
@@ -652,6 +660,10 @@ function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
+function templateIsValid(templateDir) {
+	return fs.existsSync(templateDir) && fs.existsSync(join(templateDir, itemPreview));
+}
+
 // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 function getWorkshopConfig(args, plainArgs) {
 
@@ -676,8 +688,8 @@ function copyTemplate(config) {
 
 	return new Promise((resolve, reject) => {
 
-		if (!fs.existsSync(templateDir)) {
-			reject(`Template folder "${templateDir}" doesn't exist.`);
+		if (!templateIsValid(templateDir)) {
+			reject(`Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`);
 			return;
 		}
 
@@ -713,7 +725,7 @@ function copyTemplate(config) {
 function createCfgFile(config) {
 	let configText = `title = "${config.title}";\n` +
 					`description = "${config.description}";\n` +
-					`preview = "item_preview.jpg";\n` +
+					`preview = "${itemPreview}";\n` +
 					`content = "dist";\n` +
 					`language = "${config.language}";\n` +
 					`visibility = "${config.visibility}";\n`;
@@ -1157,19 +1169,21 @@ function deleteDirectory(dir) {
     });
 }
 
-// A super convoluted way to copy filePath/fileName to dest/destBase.destExt if it doesn't exist
-function copyIfDoesntExist(filePath, fileName, base, dest, destBase, destExt) {
+// Copy sourceFile to destFile if it doesn't exist
+function copyIfDoesntExist(sourceFile, destFile) {
+	let sourcePath = path.parse(sourceFile);
+	let destPath = path.parse(destFile);
 	return new Promise((resolve, reject) => {
-		if(fs.existsSync(join(dest, destBase + destExt))) {
+		if (fs.existsSync(destFile)) {
 			resolve();
 		}
 		else{
-			gulp.src(join(filePath, fileName), {base: base})
+			gulp.src(sourceFile, { base: sourcePath.dir })
 				.pipe(rename(p => {
-					p.basename = destBase;
-					p.extname = destExt;
+					p.basename = destPath.name;
+					p.extname = destPath.ext;
 				}))
-				.pipe(gulp.dest(dest))
+				.pipe(gulp.dest(destPath.dir))
 				.on('error', reject)
 				.on('end', resolve);
 		}
