@@ -1,14 +1,11 @@
 return {
 
-	run = function()
-
+    run = function()
+        return dofile("scripts/mods/%%name/%%name")
 	end,
-
-	update = function()
-
-	end,
-
-	packages = {
-		"resource_packages/%%name/%%name"
-	}
+	
+    packages = {
+        "resource_packages/%%name/%%name"
+	},
+	
 }

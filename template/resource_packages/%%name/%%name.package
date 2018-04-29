@@ -7,4 +7,5 @@ package = [
 ]
 
 lua = [
+	"scripts/mods/%%name/*"
 ]
