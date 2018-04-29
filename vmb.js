@@ -250,9 +250,9 @@ function taskConfig(callback, args, plainArgs) {
 // Creates a copy of the template mod and renames it to the provided name
 // Uploads an empty mod file to the workshop to create an id
 // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-function taskCreate(callback, args, plainArgs) {
+async function taskCreate(callback, args, plainArgs) {
 
-	let config = getWorkshopConfig(args, plainArgs);
+	let config = getWorkshopParams(args, plainArgs);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
@@ -264,38 +264,41 @@ function taskCreate(callback, args, plainArgs) {
 
 	console.log(`Copying template from "${templateDir}"`);
 
-	copyTemplate(config)
-		.then(() => createCfgFile(config))
-		.then(() => getModToolsDir())
-		.then(toolsDir => uploadMod(toolsDir, modName))
-		.then(modId => {
-			let modUrl = formUrl(modId);
-			console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
-			console.log('Opening url...');
-			return opn(modUrl);
-		})
-		.catch(error => {
-			console.error(error);
-			exitCode = 1;
+	try {
+		await copyTemplate(config);
+		await createCfgFile(config);
 
-			// Cleanup directory if it has been created
-			let modDir = join(modsDir, modName);
-			if (fs.existsSync(modDir)){
-				return deleteDirectory();
+		let modId = await uploadMod(await getModToolsDir(), modName);
+
+		let modUrl = formUrl(modId);
+		console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
+		console.log('Opening url...');
+		await opn(modUrl);
+	}
+	catch(error) {
+		console.error(error);
+		exitCode = 1;
+
+		// Cleanup directory if it has been created
+		let modDir = join(modsDir, modName);
+		if (fs.existsSync(modDir)) {
+			try {
+				await deleteDirectory();
 			}
-		})
-		.catch(error => {
-			console.error(error);
-			exitCode = 1;
-		})
-		.then(() => callback());
+			catch(error) {
+				console.error(error);
+			}
+		}
+	}
+
+	callback();
 }
 
 // Builds the mod then uploads it to workshop as a new item
 // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 async function taskPublish(callback, args, plainArgs) {
 
-	let config = getWorkshopConfig(args, plainArgs);
+	let config = getWorkshopParams(args, plainArgs);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 	let buildParams = getBuildParams(args);
@@ -363,9 +366,7 @@ async function taskUpload(callback, args, plainArgs) {
 	let skip = args.s || args.skip;
 
 	try {
-		let toolsDir = await getModToolsDir();
-
-		await uploadMod(toolsDir, modName, changenote, skip);
+		await uploadMod(await getModToolsDir(), modName, changenote, skip);
 
 		let modId = await getModId(modName);
 		let modUrl = formUrl(modId);
@@ -411,6 +412,7 @@ async function taskOpen(callback, args, plainArgs) {
 		console.error(error);
 		exitCode = 1;
 	}
+
 	callback();
 }
 
@@ -452,6 +454,7 @@ async function taskBuild (callback, args, plainArgs) {
 			}
 		);
 	}
+
 	callback();
 }
 
@@ -492,6 +495,7 @@ async function taskWatch (callback, args, plainArgs) {
 			}
 		);
 	}
+
 	callback(false);
 }
 
@@ -664,7 +668,7 @@ function templateIsValid(templateDir) {
 }
 
 // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-function getWorkshopConfig(args, plainArgs) {
+function getWorkshopParams(args, plainArgs) {
 
 	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modTitle = args.t || args.title || modName;
@@ -720,7 +724,7 @@ function copyTemplate(config) {
 }
 
 // Creates item.cfg file
-function createCfgFile(config) {
+async function createCfgFile(config) {
 	let configText = `title = "${config.title}";\n` +
 					`description = "${config.description}";\n` +
 					`preview = "${itemPreview}";\n` +
@@ -729,11 +733,11 @@ function createCfgFile(config) {
 					`visibility = "${config.visibility}";\n`;
 	console.log(`${cfgFile}:`);
 	console.log('  ' + rmn(configText).replace(/\n/g, '\n  '));
-	return writeFile(join(modsDir, config.name, cfgFile), configText);
+	return await writeFile(join(modsDir, config.name, cfgFile), configText);
 }
 
 // Uploads mod to the workshop
-function uploadMod(toolsDir, modName, changenote, skip) {
+async function uploadMod(toolsDir, modName, changenote, skip) {
 
 	let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
 
@@ -777,7 +781,7 @@ function uploadMod(toolsDir, modName, changenote, skip) {
 		}
 	});
 
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 		uploader.on('error', error => reject(error));
 
 		uploader.on('close', code => {
@@ -868,7 +872,7 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, ver
 }
 
 // Returns a promise with specified registry entry value
-function getRegistryValue(key, value) {
+async function getRegistryValue(key, value) {
 
 	let spawn = child_process.spawn(
 		'REG',
@@ -882,7 +886,7 @@ function getRegistryValue(key, value) {
 		result += String(data);
 	});
 
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 
 		spawn.on('error', err => {
 			reject(err);
@@ -898,8 +902,8 @@ function getRegistryValue(key, value) {
 			try{
 				result = result.split('\r\n')[2].split('    ')[3];
 			}
-			catch(e){
-				reject();
+			catch(err){
+				reject('Unexpected REG QUERY output');
 			}
 
 			resolve(result);
@@ -961,12 +965,12 @@ function getBuildParams(args, plainArgs) {
 }
 
 // Checks if temp folder exists, optionally removes it
-function checkTempFolder(modName, shouldRemove) {
+async function checkTempFolder(modName, shouldRemove) {
 	let tempPath = join(tempDir, modName);
 	let tempExists = fs.existsSync(tempPath);
 
 	if (tempExists && shouldRemove) {
-		return new Promise((resolve, reject) => {
+		return await new Promise((resolve, reject) => {
 			child_process.exec('rmdir /s /q "' + tempPath + '"', error => {
 
 				if(error){
@@ -984,7 +988,7 @@ function checkTempFolder(modName, shouldRemove) {
 }
 
 // Builds the mod
-function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
+async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 
 	if (!path.isAbsolute(modDir)) {
 		modDir = join(process.cwd(), modDir);
@@ -1018,7 +1022,7 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 		}
 	});
 
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 		stingray.on('error', error => reject(error));
 
 		stingray.on('close', code => {
@@ -1091,8 +1095,8 @@ async function getModWorkshopDir(modName, modId) {
 }
 
 // Copies the mod to the modsDir and modName/dist
-function moveMod(modName, buildDir, modWorkshopDir) {
-	return new Promise((resolve, reject) => {
+async function moveMod(modName, buildDir, modWorkshopDir) {
+	return await new Promise((resolve, reject) => {
 
 		let modDistDir = join(modsDir, modName, distDir);
 
@@ -1131,8 +1135,8 @@ function getFolders(dir, except) {
 }
 
 // Safely deletes file or directory
-function deleteFile(dir, file) {
-    return new Promise((resolve, reject) => {
+async function deleteFile(dir, file) {
+    return await new Promise((resolve, reject) => {
         let filePath = join(dir, file);
         fs.lstat(filePath, (err, stats) => {
             if (err) {
@@ -1153,8 +1157,8 @@ function deleteFile(dir, file) {
 }
 
 // Recursively and safely deletes directory
-function deleteDirectory(dir) {
-    return new Promise((resolve, reject) => {
+async function deleteDirectory(dir) {
+    return await new Promise((resolve, reject) => {
         fs.access(dir, err => {
             if (err) {
                 return reject(err);
@@ -1179,7 +1183,7 @@ function deleteDirectory(dir) {
 }
 
 // Copy sourceFile to destFile if it doesn't exist
-function copyIfDoesntExist(sourceFile, destFile) {
+async function copyIfDoesntExist(sourceFile, destFile) {
 	let sourcePath = path.parse(sourceFile);
 	let destPath = path.parse(destFile);
 
@@ -1187,7 +1191,7 @@ function copyIfDoesntExist(sourceFile, destFile) {
 		return;
 	}
 
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 		gulp.src(sourceFile, { base: sourcePath.dir })
 			.pipe(rename(p => {
 				p.basename = destPath.name;
