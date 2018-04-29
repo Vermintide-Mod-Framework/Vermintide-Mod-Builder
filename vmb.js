@@ -225,16 +225,20 @@ function taskDefault(callback, args, plainArgs) {
 // Limited to non-object values
 // vmb config [--<key1>=<value1> --<key2>=<value2>...]
 function taskConfig(callback, args, plainArgs) {
-	Object.keys(scriptConfig).forEach((key) => {
-		if(args[key] !== undefined){
-			if(typeof scriptConfig[key] == 'object'){
-				console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
-				return;
-			}
-			console.log(`Set ${key} to ${args[key]}`);
-			scriptConfig[key] = args[key];
+	for(let key of Object.keys(scriptConfig)){
+
+		if(args[key] === undefined){
+			continue;
 		}
-	});
+
+		if(typeof scriptConfig[key] == 'object'){
+			console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
+			return;
+		}
+
+		console.log(`Set ${key} to ${args[key]}`);
+		scriptConfig[key] = args[key];
+	};
 
 	fs.writeFileSync(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
 
@@ -289,7 +293,7 @@ function taskCreate(callback, args, plainArgs) {
 
 // Builds the mod then uploads it to workshop as a new item
 // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-function taskPublish(callback, args, plainArgs) {
+async function taskPublish(callback, args, plainArgs) {
 
 	let config = getWorkshopConfig(args, plainArgs);
 	let modName = config.name;
@@ -308,46 +312,37 @@ function taskPublish(callback, args, plainArgs) {
 		return callback();
 	}
 
-	let toolsDir = null;
-	checkIfPublished(modName)
-		.then(cfgExists => {
-			if(cfgExists) {
-				console.log(`Using existing ${cfgFile}`);
-			}
-			return cfgExists ? Promise.resolve() : createCfgFile(config);
-		})
-		.then(() => getModToolsDir())
-		.then((dir) => {
-			toolsDir = dir;
-		})
-		.then(() => buildMod(
-			toolsDir,
-			modName,
-			buildParams.shouldRemoveTemp,
-			true,
-			config.verbose,
-			buildParams.ignoreBuildErrors,
-			null
-		))
-		.then(() => copyIfDoesntExist(join(templateDir, itemPreview), join(modDir, itemPreview)))
-		.then(() => uploadMod(toolsDir, modName))
-		.then(() => getModId(modName))
-		.then(modId => {
-			let modUrl = formUrl(modId);
-			console.log('Uploaded to ' + modUrl);
-			console.log('Opening url...');
-			return opn(modUrl);
-		})
-		.catch(error => {
-			console.error(error);
-			exitCode = 1;
-		})
-		.then(() => callback());
+	try {
+		let cfgExists = await checkIfCfgExists(modName);
+
+		if (cfgExists) {
+			console.log(`Using existing ${cfgFile}`);
+		}
+		else{
+			await createCfgFile(config);
+		}
+
+		let toolsDir = await getModToolsDir();
+		await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, true, config.verbose, buildParams.ignoreBuildErrors, null);
+		await copyIfDoesntExist(join(templateDir, itemPreview), join(modDir, itemPreview));
+		await uploadMod(toolsDir, modName);
+
+		let modId = await getModId(modName);
+		let modUrl = formUrl(modId);
+		console.log('Uploaded to ' + modUrl);
+		console.log('Opening url...');
+		await opn(modUrl);
+	}
+	catch (error) {
+		console.error(error);
+		exitCode = 1;
+	}
+	callback();
 }
 
 // Uploads the last built version of the mod to the workshop
 // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
-function taskUpload(callback, args, plainArgs) {
+async function taskUpload(callback, args, plainArgs) {
 
 	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modDir = join(modsDir, modName);
@@ -367,30 +362,30 @@ function taskUpload(callback, args, plainArgs) {
 
 	let skip = args.s || args.skip;
 
-	getModToolsDir()
-		.then(toolsDir => uploadMod(toolsDir, modName, changenote, skip))
-		.then(() => getModId(modName))
-		.then(modId => {
-			let modUrl = formUrl(modId);
-			console.log('Uploaded to ' + modUrl);
-			if(openUrl){
-				console.log('Opening url...');
-				return opn(modUrl);
-			}
-			else{
-				return Promise.resolve();
-			}
-		})
-		.catch(error => {
-			console.error(error);
-			exitCode = 1;
-		})
-		.then(() => callback());
+	try {
+		let toolsDir = await getModToolsDir();
+
+		await uploadMod(toolsDir, modName, changenote, skip);
+
+		let modId = await getModId(modName);
+		let modUrl = formUrl(modId);
+		console.log('Uploaded to ' + modUrl);
+		if(openUrl){
+			console.log('Opening url...');
+			await opn(modUrl);
+		}
+	}
+	catch(error) {
+		console.error(error);
+		exitCode = 1;
+	}
+
+	callback();
 }
 
 // Opens mod's workshop page
 // vmb open <mod_name> [--id <item_id>]
-function taskOpen(callback, args, plainArgs) {
+async function taskOpen(callback, args, plainArgs) {
 
 	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modDir = join(modsDir, modName);
@@ -402,17 +397,21 @@ function taskOpen(callback, args, plainArgs) {
 		return callback();
 	}
 
-	(modId ? Promise.resolve(modId) : getModId(modName))
-		.then(modId => {
-			let url = formUrl(modId);
-			console.log('Opening', url);
-			return opn(url);
-		})
-		.catch(error => {
-			console.error(error);
-			exitCode = 1;
-		})
-		.then(() => callback());
+	try {
+
+		if(!modId) {
+			modId = await getModId(modName);
+		}
+
+		let url = formUrl(modId);
+		console.log('Opening', url);
+		await opn(url);
+	}
+	catch(error) {
+		console.error(error);
+		exitCode = 1;
+	}
+	callback();
 }
 
 // Builds specified mods and copies the bundles to the game workshop folder
@@ -421,49 +420,56 @@ function taskOpen(callback, args, plainArgs) {
 // -t - doesn't delete temp folder before building
 // --id - forces item id. can only be passed if building one mod
 // --dist - doesn't copy to workshop folder
-function taskBuild (callback, args, plainArgs) {
+async function taskBuild (callback, args, plainArgs) {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
 
 	console.log('Mods to build:');
-	modNames.forEach(modName => console.log('  ' + modName));
+	for(let modName of modNames) {
+		console.log('  ' + modName);
+	}
 
-	getModToolsDir().then(toolsDir => {
+	let toolsDir = await getModToolsDir().catch((error) => {
+		exitCode = 1;
+		console.error(error);
+	});
 
-		let promise = Promise.resolve();
-		forEachMod(
+	if (toolsDir) {
+		await forEachMod(
 			modNames,
 			noWorkshopCopy,
-			modName => {
-				promise = promise.then(() => {
-					return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-						console.error(error);
-						exitCode = 1;
-					});
-				});
+			async modName => {
+				try{
+					await buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId);
+				}
+				catch(error) {
+					console.error(error);
+					exitCode = 1;
+				}
 			},
 			() => {
 				console.log();
 			}
 		);
-		return promise;
-	}).catch(error => {
-		console.error(error);
-		exitCode = 1;
-	})
-	.then(() => callback());
+	}
+	callback();
 }
 
 // Watches for changes in specified mods and builds them whenever they occur
 // vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
-function taskWatch (callback, args, plainArgs) {
+async function taskWatch (callback, args, plainArgs) {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
 
-	getModToolsDir().then(toolsDir => {
+	let toolsDir = await getModToolsDir().catch((error) => {
+		console.error(error);
+		exitCode = 1;
+	});
+
+	if (toolsDir) {
 		console.log();
 
-		forEachMod(
+		await forEachMod(
 			modNames,
 			noWorkshopCopy,
 			(modName, modDir) => {
@@ -475,18 +481,18 @@ function taskWatch (callback, args, plainArgs) {
 					'!' + modsDir + '/' + modName + '/' + distDir + '/*'
 				];
 
-				gulp.watch(src, () => {
-					return buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId).catch(error => {
-		    			console.error(error);
-		    		});
+				gulp.watch(src, async () => {
+					try{
+						await buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId);
+					}
+					catch(error) {
+						console.error(error);
+					};
 				});
 			}
 		);
-		return callback(false);
-	}).catch(error => {
-		console.error(error);
-		callback();
-	});
+	}
+	callback(false);
 }
 
 
@@ -583,9 +589,9 @@ function getTemplateSrc(configCoreSrc, templateDir) {
 		join(templateDir, itemPreview)
 	];
 	if (Array.isArray(configCoreSrc)) {
-		configCoreSrc.forEach(src => {
+		for(let src of configCoreSrc) {
 			coreSrc.push(join(templateDir, src));
-		});
+		};
 	}
 
 	// Folders with mod specific files
@@ -594,9 +600,9 @@ function getTemplateSrc(configCoreSrc, templateDir) {
 	];
 
 	// Exclude core files from being altered
-	coreSrc.forEach(src => {
+	for(let src of coreSrc) {
 		modSrc.push('!' + src);
-	});
+	};
 
 	return {coreSrc, modSrc}
 }
@@ -608,53 +614,46 @@ function validModName(modName) {
 	return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- %]+$/);
 }
 
-function getModId(modName) {
-	return readFile(join(modsDir, modName, cfgFile), 'utf8')
-		.then(data => {
-			let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
-			modId = modId && modId[1];
-			if(modId) {
-				return Promise.resolve(modId);
-			}
-			else {
-				return Promise.reject(
-					`Item ID not found in ${cfgFile} file.\n` +
-					`You need to publish your mod to workshop before you can build/view it.\n` +
-					`Alternatively you can specify the workshop item id with --id param.`
-				);
-			}
-		});
+async function getModId(modName) {
+	let data = await readFile(join(modsDir, modName, cfgFile), 'utf8');
+	let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
+	modId = modId && modId[1];
+
+	if(!modId) {
+		throw (
+			`Item ID not found in ${cfgFile} file.\n` +
+			`You need to publish your mod to workshop before you can build/view it.\n` +
+			`Alternatively you can specify the workshop item id with --id param.`
+		);
+	}
+
+	return modId;
 }
 
 // Gets mod tools placement from Vermintide Mod Tools install location
-function getModToolsDir(){
-	return new Promise((resolve, reject) => {
-		let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + getToolsId() + '"';
-		let value = '"InstallLocation"';
+async function getModToolsDir(){
+	let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + getToolsId() + '"';
+	let value = '"InstallLocation"';
 
-		let toolsDir = fallbackToolsDir;
-		let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
-		getRegistryValue(sdkKey, value)
-			.catch(err => {
-				console.error(errorMsg);
-			})
-			.then(appPath => {
-				if(appPath) {
-					toolsDir = appPath;
-				}
-				else {
-					console.error(errorMsg);
-				}
-				toolsDir = normalize(toolsDir);
-				if (fs.existsSync(join(toolsDir, stingrayDir, stingrayExe))){
-					console.log(`Mod tools folder "${toolsDir}"`);
-					resolve(toolsDir);
-				}
-				else {
-					reject('Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.');
-				}
-			});
+	let toolsDir = fallbackToolsDir;
+	let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
+	let appPath = await getRegistryValue(sdkKey, value).catch(err => {
+		console.error(err);
 	});
+
+	if(appPath) {
+		toolsDir = appPath;
+	}
+	else {
+		console.error(errorMsg);
+	}
+
+	toolsDir = normalize(toolsDir);
+	if (!fs.existsSync(join(toolsDir, stingrayDir, stingrayExe))){
+		throw 'Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.';
+	}
+	console.log(`Mod tools folder "${toolsDir}"`);
+	return toolsDir;
 }
 
 
@@ -686,12 +685,11 @@ function copyTemplate(config) {
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
-	return new Promise((resolve, reject) => {
+	if (!templateIsValid(templateDir)) {
+		throw `Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`;
+	}
 
-		if (!templateIsValid(templateDir)) {
-			reject(`Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`);
-			return;
-		}
+	return new Promise((resolve, reject) => {
 
 		let regexName = new RegExp(templateName, 'g');
 		let regexTitle = new RegExp(templateTitle, 'g');
@@ -736,47 +734,50 @@ function createCfgFile(config) {
 
 // Uploads mod to the workshop
 function uploadMod(toolsDir, modName, changenote, skip) {
+
+	let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
+
+	if (!path.isAbsolute(modsDir)) {
+		configPath = join(process.cwd(), configPath);
+	}
+	let uploaderParams = [
+		'-c', '"' + configPath + '"'
+	];
+
+	if (changenote) {
+		uploaderParams.push('-n');
+		uploaderParams.push('"' + changenote + '"');
+	}
+
+	if (skip) {
+		uploaderParams.push('-s');
+	}
+
+	console.log(`\nRunning uploader with steam app id ${getGameId()}`);
+
+	fs.writeFileSync(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
+	let uploader = child_process.spawn(
+		uploaderExe,
+		uploaderParams,
+		{
+			cwd: join(toolsDir, uploaderDir),
+			windowsVerbatimArguments: true
+		}
+	);
+
+	let modId = '';
+	uploader.stdout.on('data', data => {
+		console.log(rmn(data));
+		data = String(data);
+		if (data.includes('publisher_id')) {
+			try {
+				modId = data.match(/publisher_id: (\d*)/)[1];
+			}
+			catch (err) { }
+		}
+	});
+
 	return new Promise((resolve, reject) => {
-		let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
-		if(!path.isAbsolute(modsDir)){
-			configPath = join(process.cwd(), configPath);
-		}
-		let uploaderParams = [
-			'-c', '"' + configPath + '"'
-		];
-
-		if(changenote) {
-			uploaderParams.push('-n');
-			uploaderParams.push('"' + changenote + '"');
-		}
-
-		if(skip) {
-			uploaderParams.push('-s');
-		}
-
-		console.log(`\nRunning uploader with steam app id ${getGameId()}`);
-		fs.writeFileSync(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
-		let uploader = child_process.spawn(
-			uploaderExe,
-			uploaderParams,
-			{
-				cwd: join(toolsDir, uploaderDir),
-				windowsVerbatimArguments: true
-			}
-		);
-
-		let modId = '';
-		uploader.stdout.on('data', data => {
-			console.log(rmn(data));
-			data = String(data);
-			if (data.includes('publisher_id')){
-				try {
-					modId = data.match(/publisher_id: (\d*)/)[1];
-				}
-				catch(err) {}
-			}
-		});
-
 		uploader.on('error', error => reject(error));
 
 		uploader.on('close', code => {
@@ -799,47 +800,50 @@ function formUrl(modId) {
 }
 
 // Checks if the mod has published_id in its item.cfg
-function checkIfPublished(modName) {
+async function checkIfCfgExists(modName) {
+
 	let modCfg = join(modsDir, modName, cfgFile);
+
 	if(!fs.existsSync(modCfg)){
-		return Promise.resolve(false);
+		return false;
 	}
-	return readFile(modCfg, 'utf8').then(data => {
-		if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
-			return Promise.reject(`Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`);
-		}
-		else {
-			return Promise.resolve(true);
-		}
-	});
+
+	let data = await readFile(modCfg, 'utf8')
+
+	if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
+		throw `Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`;
+	}
+
+	return true;
 }
 
 
 /* BUILD METHODS */
 
-function forEachMod(modNames, noWorkshopCopy, action, noAction) {
-	modNames.forEach(modName => {
+async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
+	for(let modName of modNames){
 
 		if(!modName) {
 			return;
 		}
+
 		let modDir = join(modsDir, modName);
 
 		if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
-			action(modName, modDir);
+			await action(modName, modDir);
 		}
 		else {
 			if(typeof noAction == 'function'){
-				noAction();
+				await noAction();
 			}
-			console.error(`Folder "${modDir}" doesn't exist, invalid or doesn't have ${cfgFile} in it.`);
 			exitCode = 1;
+			console.error(`Folder "${modDir}" doesn't exist, invalid or doesn't have ${cfgFile} in it.`);
 		}
-	});
+	};
 }
 
 // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
-function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
+async function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
 	console.log('\nBuilding ', modName);
 
 	let modDir = join(modsDir, modName);
@@ -848,95 +852,95 @@ function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, 
 	let dataDir = join(modTempDir, 'compile');
 	let buildDir = join(modTempDir, 'bundle');
 
-	return checkTempFolder(modName, shouldRemoveTemp)
-		.then(() => {
-			return modId || noWorkshopCopy ? Promise.resolve() : readFile(join(modDir, cfgFile), 'utf8');
-		})
-		.then(() => runStingray(toolsDir, modDir, dataDir, buildDir, verbose))
-		.then(code => processStingrayOutput(modName, dataDir, code, ignoreBuildErrors))
-		.then(() => {
-			return noWorkshopCopy ? Promise.resolve() : getModWorkshopDir(modName, modId);
-		})
-		.then(modWorkshopDir => moveMod(modName, buildDir, modWorkshopDir))
-		.then(success => {
-			console.log(success);
-			return Promise.resolve();
-		});
+	await checkTempFolder(modName, shouldRemoveTemp);
+
+	if (!modId && !noWorkshopCopy && !fs.existsSync(join(modDir, cfgFile))){
+		throw `Mod folder doesn't have ${cfgFile}`;
+	}
+
+	let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
+	await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
+
+	let modWorkshopDir = !noWorkshopCopy && await getModWorkshopDir(modName, modId);
+	await moveMod(modName, buildDir, modWorkshopDir);
+
+	console.log('Successfully built ' + modName);
 }
 
 // Returns a promise with specified registry entry value
 function getRegistryValue(key, value) {
 
+	let spawn = child_process.spawn(
+		'REG',
+		['QUERY', key, '/v', value],
+		{ windowsVerbatimArguments: true }
+	);
+
+	let result = '';
+
+	spawn.stdout.on('data', data => {
+		result += String(data);
+	});
+
 	return new Promise((resolve, reject) => {
-
-		let spawn = child_process.spawn(
-			'REG',
-			['QUERY', key, '/v', value],
-			{windowsVerbatimArguments: true}
-		);
-
-		let result = '';
-
-		spawn.stdout.on('data', data => {
-			result += String(data);
-		});
 
 		spawn.on('error', err => {
 			reject(err);
 		});
 
 		spawn.on('close', code => {
+
 			if(code || !result){
 				reject(code);
 				return;
 			}
+
 			try{
 				result = result.split('\r\n')[2].split('    ')[3];
 			}
 			catch(e){
 				reject();
 			}
+
 			resolve(result);
 		});
 	});
 }
 
 // Gets the steam workshop folder from vermintide's install location
-function getWorkshopDir() {
-	return new Promise((resolve, reject) => {
-		let gameId = getGameId();
-		let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
-		let value = '"InstallLocation"';
+async function getWorkshopDir() {
+	let gameId = getGameId();
+	let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
+	let value = '"InstallLocation"';
 
-		let workshopDir = fallbackWorkshopDir;
-		let errorMsg = 'Vermintide workshop directory not found, using fallback.';
-		getRegistryValue(appKey, value)
-			.catch(err => {
-				console.error(errorMsg);
-			})
-			.then(appPath => {
-				if(appPath && typeof appPath == 'string') {
+	let workshopDir = fallbackWorkshopDir;
+	let errorMsg = 'Vermintide workshop directory not found, using fallback.';
 
-					appPath = normalize(appPath);
-					let parts = appPath.split('/');
-					let neededPart = parts[parts.length - 2];
-
-					if(!neededPart){
-						console.error(errorMsg);
-						workshopDir = fallbackWorkshopDir;
-					}
-					else{
-						workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
-						workshopDir = join(workshopDir, 'workshop/content', gameId);
-					}
-				}
-				else {
-					console.error(errorMsg);
-				}
-				console.log('Workshop folder:', workshopDir);
-				resolve(workshopDir);
-			});
+	let appPath = await	getRegistryValue(appKey, value).catch(err => {
+		console.error(err);
 	});
+
+	if(appPath && typeof appPath == 'string') {
+
+		appPath = normalize(appPath);
+		let parts = appPath.split('/');
+		let neededPart = parts[parts.length - 2];
+
+		if(!neededPart){
+			console.error(errorMsg);
+			workshopDir = fallbackWorkshopDir;
+		}
+		else{
+			workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
+			workshopDir = join(workshopDir, 'workshop/content', gameId);
+		}
+	}
+	else {
+		console.error(errorMsg);
+	}
+
+	console.log('Workshop folder:', workshopDir);
+	return workshopDir;
 }
 
 // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
@@ -958,63 +962,63 @@ function getBuildParams(args, plainArgs) {
 
 // Checks if temp folder exists, optionally removes it
 function checkTempFolder(modName, shouldRemove) {
-	return new Promise((resolve, reject) => {
-		let tempPath = join(tempDir, modName);
-		let tempExists = fs.existsSync(tempPath);
-		if(tempExists && shouldRemove) {
+	let tempPath = join(tempDir, modName);
+	let tempExists = fs.existsSync(tempPath);
+
+	if (tempExists && shouldRemove) {
+		return new Promise((resolve, reject) => {
 			child_process.exec('rmdir /s /q "' + tempPath + '"', error => {
+
 				if(error){
 					return reject(error + '\nFailed to delete temp folder');
 				}
+
 				console.log('Removed ', tempPath);
 				return resolve();
 			});
-		}
-		else{
-			if(tempExists) {
-				console.log('Overwriting temp folder');
-			}
-			return resolve();
-		}
-	});
+		});
+	}
+	else if (tempExists) {
+		console.log('Overwriting temp folder');
+	}
 }
 
 // Builds the mod
 function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
+
+	if (!path.isAbsolute(modDir)) {
+		modDir = join(process.cwd(), modDir);
+	}
+	if (!path.isAbsolute(dataDir)) {
+		dataDir = join(process.cwd(), dataDir);
+	}
+	if (!path.isAbsolute(buildDir)) {
+		buildDir = join(process.cwd(), buildDir);
+	}
+
+	let stingrayParams = [
+		`--compile-for win32`,
+		`--source-dir "${modDir}"`,
+		`--data-dir "${dataDir}"`,
+		`--bundle-dir "${buildDir}"`
+	];
+
+	let stingray = child_process.spawn(
+		stingrayExe,
+		stingrayParams,
+		{
+			cwd: join(toolsDir, stingrayDir),
+			windowsVerbatimArguments: true
+		}
+	);
+
+	stingray.stdout.on('data', data => {
+		if (verbose) {
+			console.log(rmn(data));
+		}
+	});
+
 	return new Promise((resolve, reject) => {
-
-		if(!path.isAbsolute(modDir)){
-			modDir = join(process.cwd(), modDir);
-		}
-		if(!path.isAbsolute(dataDir)){
-			dataDir = join(process.cwd(), dataDir);
-		}
-		if(!path.isAbsolute(buildDir)){
-			buildDir = join(process.cwd(), buildDir);
-		}
-
-		let stingrayParams = [
-			`--compile-for win32`,
-			`--source-dir "${modDir}"`,
-			`--data-dir "${dataDir}"`,
-			`--bundle-dir "${buildDir}"`
-		];
-
-		let stingray = child_process.spawn(
-			stingrayExe,
-			stingrayParams,
-			{
-				cwd: join(toolsDir, stingrayDir),
-				windowsVerbatimArguments: true
-			}
-		);
-
-		stingray.stdout.on('data', data => {
-			if(verbose){
-			    console.log(rmn(data));
-			}
-		});
-
 		stingray.on('error', error => reject(error));
 
 		stingray.on('close', code => {
@@ -1025,68 +1029,73 @@ function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 }
 
 // Reads and outputs processed_bundles.csv
-function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
+async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
 	if(code){
 		console.error('Stingray exited with error code: ' + code + '. Please check your scripts for syntax errors.');
 	}
 
-	return readFile(join(dataDir, 'processed_bundles.csv'), 'utf8')
-		.catch(error => {
-			console.error(error + '\nFailed to read processed_bundles.csv');
-		})
-		.then(data => {
-			return new Promise((resolve, reject) => {
+	let data = await readFile(join(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
+		console.error(error + '\nFailed to read processed_bundles.csv');
+	});
 
-				if(data) {
-					outputFailedBundles(data, modName);
-				}
 
-				if(ignoreBuildErrors) {
-					console.log('Ignoring build errors');
-				}
+	if(data) {
+		outputFailedBundles(data, modName);
+	}
 
-				return !code && data || ignoreBuildErrors ? resolve() : reject('Failed to build ' + modName);
-			});
-		});
+	if(ignoreBuildErrors) {
+		console.log('Ignoring build errors');
+	}
+
+	if (!ignoreBuildErrors && (code || !data)) {
+		throw `Failed to build ${modName}`;
+	}
 }
 
 // Outputs built files which are empty
 function outputFailedBundles(data, modName) {
 	let bundles = rmn(data).split('\n');
 	bundles.splice(0, 1);
-	bundles.forEach(line => {
+
+	for(let line of bundles) {
 		let bundle = line.split(', ');
+
 		if(bundle.length < 4){
 			console.log(`Incorrect processed_bundles.csv string`, bundle);
 			return;
 		}
+
 		/* jshint ignore:start */
 		if(bundle[3] == 0) {
 			console.log('Failed to build %s/%s/%s.%s', modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
 		}
 		/* jshint ignore:end */
-	});
+	};
 }
 
 // Returns mod's directory in workshop folder
-function getModWorkshopDir(modName, modId) {
+async function getModWorkshopDir(modName, modId) {
 	if(modId) {
 		console.log('Using specified item ID');
 	}
-	let promise = modId ? Promise.resolve(modId) : getModId(modName);
-	return promise.then(modId => {
-		console.log('Item ID:', modId);
-		return getWorkshopDir().then(workshopDir => {
-			return Promise.resolve(join(workshopDir, String(modId)));
-		});
-	});
+
+	if(!modId) {
+		modId = await getModId(modName);
+	}
+	console.log('Item ID:', modId);
+
+	let workshopDir = await getWorkshopDir();
+
+	return join(workshopDir, String(modId));
 }
 
 // Copies the mod to the modsDir and modName/dist
 function moveMod(modName, buildDir, modWorkshopDir) {
 	return new Promise((resolve, reject) => {
+
 		let modDistDir = join(modsDir, modName, distDir);
+
 		let gulpStream = gulp.src([
 				buildDir + '/*([0-f])',
 				'!' + buildDir + '/dlc'
@@ -1105,7 +1114,7 @@ function moveMod(modName, buildDir, modWorkshopDir) {
 		}
 
 		gulpStream.on('end', () => {
-			resolve('Successfully built ' + modName);
+			resolve();
 		});
 	});
 }
@@ -1173,20 +1182,20 @@ function deleteDirectory(dir) {
 function copyIfDoesntExist(sourceFile, destFile) {
 	let sourcePath = path.parse(sourceFile);
 	let destPath = path.parse(destFile);
+
+	if (fs.existsSync(destFile)) {
+		return;
+	}
+
 	return new Promise((resolve, reject) => {
-		if (fs.existsSync(destFile)) {
-			resolve();
-		}
-		else{
-			gulp.src(sourceFile, { base: sourcePath.dir })
-				.pipe(rename(p => {
-					p.basename = destPath.name;
-					p.extname = destPath.ext;
-				}))
-				.pipe(gulp.dest(destPath.dir))
-				.on('error', reject)
-				.on('end', resolve);
-		}
+		gulp.src(sourceFile, { base: sourcePath.dir })
+			.pipe(rename(p => {
+				p.basename = destPath.name;
+				p.extname = destPath.ext;
+			}))
+			.pipe(gulp.dest(destPath.dir))
+			.on('error', reject)
+			.on('end', resolve);
 	});
 }
 

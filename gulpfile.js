@@ -2,28 +2,34 @@ const gulp = require('gulp'),
       zip = require('gulp-vinyl-zip').zip,
       pkg = require('pkg').exec;
 
-gulp.task('compile', function (callback) {
-    pkg(['vmb.js', '--target', 'node8-win-x64'])
-        .then(() => {
-            gulp.src(
-                [
-                    'template/**/*',
-                    'template-vmf/**/*',
-                    'vmb.exe',
-                    'mods/'
-                ],
-                { base: '.' }
-            )
+gulp.task('compile', async function(callback) {
+    try {
+        await pkg(['vmb.js', '--target', 'node8-win-x64']);
+        await zipVmb();
+    }
+    catch(err) {
+        console.error(err);
+    }
+    callback();
+});
+
+function zipVmb() {
+    return new Promise((resolve, reject) => {
+        gulp.src(
+            [
+                'template/**/*',
+                'template-vmf/**/*',
+                'vmb.exe',
+                'mods/'
+            ],
+            { base: '.' }
+        )
             .pipe(zip('vmb.zip'))
             .pipe(gulp.dest('.'))
-            .on('end', () => callback())
-            .on('error', (err) =>{
+            .on('end', () => resolve())
+            .on('error', (err) => {
                 console.log(err);
-                callback();
+                reject();
             })
-        })
-        .catch((err) => {
-            console.log(err);
-            callback();
-        });
-});
+    });
+}
