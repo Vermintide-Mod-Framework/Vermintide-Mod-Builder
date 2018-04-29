@@ -1,8 +1,7 @@
 (async function(){
 'use strict';
 
-const promisify = require("promisify-node"),
-	  fs = promisify('fs'),
+const pfs = require('promise-fs'),
       path = require('path'),
       gulp = require('gulp'),
       minimist = require('minimist'),
@@ -224,7 +223,7 @@ async function taskConfig(callback, args, plainArgs) {
 	};
 
 	try {
-		await fs.writeFile(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
+		await pfs.writeFile(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
 	}
 	catch(err){
 		console.error(err);
@@ -281,7 +280,7 @@ async function taskCreate(callback, args, plainArgs) {
 		// Cleanup directory if it has been created
 		let modDir = join(modsDir, modName);
 		try {
-			await fs.access(modDir);
+			await pfs.access(modDir);
 			await deleteDirectory(modDir);
 		}
 		catch(error) {
@@ -535,7 +534,7 @@ async function readScriptConfig(shouldReset) {
 	if (shouldReset && await exists(scriptConfigFile)){
 		try {
 			console.log(`Deleting ${scriptConfigFile}`);
-			await fs.unlink(scriptConfigFile);
+			await pfs.unlink(scriptConfigFile);
 		}
 		catch(err) {
 			console.error(err);
@@ -546,7 +545,7 @@ async function readScriptConfig(shouldReset) {
 	if(!await exists(scriptConfigFile)){
 		try {
 			console.log(`Creating default ${scriptConfigFile}`);
-			await fs.writeFile(scriptConfigFile, JSON.stringify(defaultConfig, null, '\t'));
+			await pfs.writeFile(scriptConfigFile, JSON.stringify(defaultConfig, null, '\t'));
 		}
 		catch(err) {
 			console.error(err);
@@ -555,7 +554,9 @@ async function readScriptConfig(shouldReset) {
 	}
 
 	try {
-		return JSON.parse(await fs.readFile(scriptConfigFile, 'utf8'));
+		let contents = await pfs.readFile(scriptConfigFile, 'utf8');
+		console.log(contents);
+		return JSON.parse(contents);
 	}
 	catch(err) {
 		console.error(err);
@@ -681,7 +682,7 @@ function validModName(modName) {
 }
 
 async function getModId(modName) {
-	let data = await fs.readFile(join(modsDir, modName, cfgFile), 'utf8');
+	let data = await pfs.readFile(join(modsDir, modName, cfgFile), 'utf8');
 	let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
 	modId = modId && modId[1];
 
@@ -795,7 +796,7 @@ async function createCfgFile(config) {
 					`visibility = "${config.visibility}";\n`;
 	console.log(`${cfgFile}:`);
 	console.log('  ' + rmn(configText).replace(/\n/g, '\n  '));
-	return await fs.writeFile(join(modsDir, config.name, cfgFile), configText);
+	return await pfs.writeFile(join(modsDir, config.name, cfgFile), configText);
 }
 
 // Uploads mod to the workshop
@@ -821,7 +822,7 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 
 	console.log(`\nRunning uploader with steam app id ${getGameId()}`);
 
-	await fs.writeFile(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
+	await pfs.writeFile(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
 	let uploader = child_process.spawn(
 		uploaderExe,
 		uploaderParams,
@@ -877,7 +878,7 @@ async function checkIfCfgExists(modName) {
 		return false;
 	}
 
-	let data = await fs.readFile(modCfg, 'utf8')
+	let data = await pfs.readFile(modCfg, 'utf8')
 
 	if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
 		throw `Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`;
@@ -1109,7 +1110,7 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
 		console.error('Stingray exited with error code: ' + code + '. Please check your scripts for syntax errors.');
 	}
 
-	let data = await fs.readFile(join(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
+	let data = await pfs.readFile(join(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
 		console.error(error + '\nFailed to read processed_bundles.csv');
 	});
 
@@ -1201,13 +1202,13 @@ async function getModDirs(dir, except) {
 	let dirs = [];
 
 	try{
-		for (let fileName of await fs.readdir(dir)){
+		for (let fileName of await pfs.readdir(dir)){
 
 			if (except && except.includes(fileName)) {
 				continue;
 			}
 
-			let fileStats = await fs.stat(join(dir, fileName));
+			let fileStats = await pfs.stat(join(dir, fileName));
 
 			if (fileStats.isDirectory()) {
 				dirs.push(fileName);
@@ -1224,7 +1225,7 @@ async function getModDirs(dir, except) {
 
 async function exists(file) {
 	try {
-		await fs.access(file);
+		await pfs.access(file);
 		return true;
 	}
 	catch(err) {
@@ -1235,23 +1236,23 @@ async function exists(file) {
 // Safely deletes file or directory
 async function deleteFile(dir, file) {
 	let filePath = join(dir, file);
-	let stats = await fs.lstat(filePath);
+	let stats = await pfs.lstat(filePath);
 	if (stats.isDirectory()) {
 		return deleteDirectory(filePath);
 	} else try {
-		await fs.unlink(filePath);
+		await pfs.unlink(filePath);
 	}
 	catch(err) {}
 }
 
 // Recursively and safely deletes directory
 async function deleteDirectory(dir) {
-	await fs.access(dir)
-	let files = await fs.readdir(dir)
+	await pfs.access(dir)
+	let files = await pfs.readdir(dir)
 	await Promise.all(files.map(file => {
 		return deleteFile(dir, file);
 	}));
-	await fs.rmdir(dir);
+	await pfs.rmdir(dir);
 }
 
 // Copy sourceFile to destFile if it doesn't exist
