@@ -10,5 +10,5 @@
 /mods/*
 !/mods/.gitkeep
 
-!/template
-!/template-vmf
+!/.template
+!/.template-vmf
