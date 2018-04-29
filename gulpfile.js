@@ -30,6 +30,6 @@ function zipVmb() {
             .on('error', (err) => {
                 console.log(err);
                 reject();
-            })
+            });
     });
 }

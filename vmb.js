@@ -57,7 +57,7 @@ const defaultConfig = {
 	fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
 	fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
 
-	template_dir: "template-vmf",
+	template_dir: ".template-vmf",
 
 	template_core_files: [
 		'core/**'
@@ -69,7 +69,7 @@ const defaultConfig = {
 	],
 
 	ignore_build_errors: false
-}
+};
 const scriptConfigFile = '.vmbrc';
 const scriptConfig = await readScriptConfig(argv.reset);
 
@@ -96,11 +96,11 @@ const ignoredDirs = scriptConfig.ignored_dirs || [];
 /* FOR CREATING */
 
 // These will be replaced in the template mod when running tasks
-const templateDir = getTemplateDir(scriptConfig.template_dir || 'template', argv);
+const templateDir = getTemplateDir(scriptConfig.template_dir || '.template-vmf', argv);
 const templateName = '%%name';
 const templateTitle = '%%title';
 const templateDescription = '%%description';
-const itemPreview = 'item_preview.jpg'
+const itemPreview = 'item_preview.jpg';
 
 // Folder in which the built bundle is gonna be stored before being copied to workshop folder
 const distDir = 'dist';
@@ -215,7 +215,7 @@ async function taskConfig(callback, args, plainArgs) {
 
 		if(typeof scriptConfig[key] == 'object'){
 			console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
-			return;
+			continue;
 		}
 
 		console.log(`Set ${key} to ${args[key]}`);
@@ -279,14 +279,14 @@ async function taskCreate(callback, args, plainArgs) {
 
 		// Cleanup directory if it has been created
 		let modDir = join(modsDir, modName);
-		try {
-			await pfs.access(modDir);
-			await deleteDirectory(modDir);
+		if(await exists(modDir)){
+			try {
+				await deleteDirectory(modDir);
+			}
+			catch(error) {
+				console.error(error);
+			}
 		}
-		catch(error) {
-			console.error(error);
-		}
-
 	}
 
 	callback();
@@ -307,9 +307,7 @@ async function taskPublish(callback, args, plainArgs) {
 		error = `Folder name "${modDir}" is invalid`;
 	}
 
-	if (!await templateIsValid(templateDir)) {
-		error = `Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`;
-	}
+	await validateTemplate(templateDir);
 
 	if (!await exists(modDir + '/')) {
 		error = `Folder "${modDir}" doesn't exist`;
@@ -322,9 +320,7 @@ async function taskPublish(callback, args, plainArgs) {
 	}
 
 	try {
-		let cfgExists = await checkIfCfgExists(modName);
-
-		if (cfgExists) {
+		if (await cfgExists(modName)) {
 			console.log(`Using existing ${cfgFile}`);
 		}
 		else{
@@ -554,9 +550,7 @@ async function readScriptConfig(shouldReset) {
 	}
 
 	try {
-		let contents = await pfs.readFile(scriptConfigFile, 'utf8');
-		console.log(contents);
-		return JSON.parse(contents);
+		return JSON.parse(await pfs.readFile(scriptConfigFile, 'utf8'));
 	}
 	catch(err) {
 		console.error(err);
@@ -671,7 +665,7 @@ function getTemplateSrc(configCoreSrc, templateDir) {
 		modSrc.push('!' + src);
 	};
 
-	return {coreSrc, modSrc}
+	return {coreSrc, modSrc};
 }
 
 
@@ -726,8 +720,14 @@ async function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
-async function templateIsValid(templateDir) {
-	return await exists(templateDir) && await exists(join(templateDir, itemPreview));
+async function validateTemplate(templateDir) {
+	if (!await exists(templateDir)) {
+		throw `Template folder "${templateDir}" doesn't exist.`;
+	}
+
+	if (!await exists(join(templateDir, itemPreview))) {
+		throw `Template folder "${templateDir}" doesn't have "${itemPreview}" in it.`;
+	}
 }
 
 // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
@@ -747,16 +747,14 @@ function getWorkshopParams(args, plainArgs) {
 }
 
 // Copies and renames mod template from %%template folder
-function copyTemplate(config) {
+async function copyTemplate(config) {
 
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
-	if (!templateIsValid(templateDir)) {
-		throw `Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`;
-	}
+	await validateTemplate(templateDir);
 
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 
 		let regexName = new RegExp(templateName, 'g');
 		let regexTitle = new RegExp(templateTitle, 'g');
@@ -870,7 +868,7 @@ function formUrl(modId) {
 }
 
 // Checks if the mod has published_id in its item.cfg
-async function checkIfCfgExists(modName) {
+async function cfgExists(modName) {
 
 	let modCfg = join(modsDir, modName, cfgFile);
 
@@ -878,7 +876,7 @@ async function checkIfCfgExists(modName) {
 		return false;
 	}
 
-	let data = await pfs.readFile(modCfg, 'utf8')
+	let data = await pfs.readFile(modCfg, 'utf8');
 
 	if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
 		throw `Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`;
@@ -894,7 +892,7 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 	for(let modName of modNames){
 
 		if(!modName) {
-			return;
+			continue;
 		}
 
 		let modDir = join(modsDir, modName);
@@ -1138,7 +1136,7 @@ function outputFailedBundles(data, modName) {
 
 		if(bundle.length < 4){
 			console.log(`Incorrect processed_bundles.csv string`, bundle);
-			return;
+			continue;
 		}
 
 		/* jshint ignore:start */
@@ -1154,8 +1152,7 @@ async function getModWorkshopDir(modName, modId) {
 	if(modId) {
 		console.log('Using specified item ID');
 	}
-
-	if(!modId) {
+	else {
 		modId = await getModId(modName);
 	}
 	console.log('Item ID:', modId);
@@ -1247,8 +1244,8 @@ async function deleteFile(dir, file) {
 
 // Recursively and safely deletes directory
 async function deleteDirectory(dir) {
-	await pfs.access(dir)
-	let files = await pfs.readdir(dir)
+	await pfs.access(dir);
+	let files = await pfs.readdir(dir);
 	await Promise.all(files.map(file => {
 		return deleteFile(dir, file);
 	}));
