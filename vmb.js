@@ -444,9 +444,15 @@ async function taskBuild (callback, args, plainArgs) {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = await getBuildParams(args, plainArgs);
 
-	console.log('Mods to build:');
-	for(let modName of modNames) {
-		console.log('  ' + modName);
+	if(modNames.length > 0){
+		console.log('Mods to build:');
+		for(let modName of modNames) {
+			console.log('  ' + modName);
+		}
+	}
+	else {
+		console.log('No mods to build');
+		return callback();
 	}
 
 	let toolsDir = await getModToolsDir().catch((error) => {
@@ -481,6 +487,11 @@ async function taskBuild (callback, args, plainArgs) {
 async function taskWatch (callback, args, plainArgs) {
 
 	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = await getBuildParams(args, plainArgs);
+
+	if (modNames.length === 0) {
+		console.log('No mods to watch');
+		return callback();
+	}
 
 	let toolsDir = await getModToolsDir().catch((error) => {
 		console.error(error);
