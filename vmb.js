@@ -125,7 +125,6 @@ const cfgFile = 'itemV' + gameNumber + '.cfg';
 /* EXECUTION */
 
 await runTask(currentTask, argv, plainArgs);
-process.exit();
 
 
 ///////////////////////////////////
@@ -249,8 +248,7 @@ async function taskCreate(callback, args, plainArgs) {
 	if (!validModName(modName)) {
 		error = `Folder name "${modDir}" is invalid`;
 	}
-
-	if(await exists(modDir + '/')){
+	else if(await exists(modDir + '/')){
 		error = `Folder "${modDir}" already exists`;
 	}
 
@@ -306,11 +304,11 @@ async function taskPublish(callback, args, plainArgs) {
 	if (!validModName(modName)) {
 		error = `Folder name "${modDir}" is invalid`;
 	}
-
-	await validateTemplate(templateDir);
-
-	if (!await exists(modDir + '/')) {
+	else if (!await exists(modDir + '/')) {
 		error = `Folder "${modDir}" doesn't exist`;
+	}
+	else{
+		await validateTemplate(templateDir);
 	}
 
 	if (error) {
@@ -356,8 +354,7 @@ async function taskUpload(callback, args, plainArgs) {
 	if (!validModName(modName)) {
 		error = `Folder name "${modDir}" is invalid`;
 	}
-
-	if (!await exists(modDir + '/')) {
+	else if (!await exists(modDir + '/')) {
 		error = `Folder "${modDir}" doesn't exist`;
 	}
 
@@ -408,8 +405,7 @@ async function taskOpen(callback, args, plainArgs) {
 		if (!validModName(modName)) {
 			error = `Folder name "${modDir}" is invalid`;
 		}
-
-		if (!await exists(modDir + '/')) {
+		else if (!await exists(modDir + '/')) {
 			error = `Folder "${modDir}" doesn't exist`;
 		}
 
@@ -722,10 +718,12 @@ async function getModToolsDir(){
 
 async function validateTemplate(templateDir) {
 	if (!await exists(templateDir)) {
+		exitCode = 1;
 		throw `Template folder "${templateDir}" doesn't exist.`;
 	}
 
 	if (!await exists(join(templateDir, itemPreview))) {
+		exitCode = 1;
 		throw `Template folder "${templateDir}" doesn't have "${itemPreview}" in it.`;
 	}
 }
@@ -897,16 +895,27 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 
 		let modDir = join(modsDir, modName);
 
-		if (validModName(modName) && await exists(modDir + '/') && (await exists(join(modDir, cfgFile)) || noWorkshopCopy)) {
-			await action(modName, modDir);
+		let error = '';
+		if (!validModName(modName)) {
+			error = `Folder name "${modDir}" is invalid`;
 		}
-		else {
-			if(typeof noAction == 'function'){
+		else if (!await exists(modDir + '/')) {
+			error = `Folder "${modDir}" doesn't exist`;
+		}
+		else if (!await exists(join(modDir, cfgFile)) && !noWorkshopCopy) {
+			error = `Folder "${modDir}" doesn't have ${ cfgFile } in it`;
+		}
+
+		if (error) {
+			if (typeof noAction == 'function') {
 				await noAction();
 			}
+			console.error(error);
 			exitCode = 1;
-			console.error(`Folder "${modDir}" doesn't exist, invalid or doesn't have ${cfgFile} in it.`);
+			continue;
 		}
+
+		await action(modName, modDir);
 	};
 }
 
