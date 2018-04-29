@@ -1,19 +1,17 @@
+(async function(){
 'use strict';
 
-const fs = require('fs'),
+const promisify = require("promisify-node"),
+	  fs = promisify('fs'),
       path = require('path'),
       gulp = require('gulp'),
       minimist = require('minimist'),
       replace = require('gulp-replace'),
       rename = require('gulp-rename'),
       child_process = require('child_process'),
-      util = require('util'),
 	  opn = require('opn'),
 	  setupCleanup = require('node-cleanup'),
 	  normalizePath = require('normalize-path');
-
-const readFile = util.promisify(fs.readFile),
-      writeFile = util.promisify(fs.writeFile);
 
 
 /* SETUP */
@@ -42,17 +40,52 @@ const {currentTask, plainArgs} = getCurrentTask(argv._);
 /* CONFIG */
 
 const defaultTempDir = '.temp';
+const defaultConfig = {
+	mods_dir: 'mods',
+	temp_dir: '',
+
+	game: 1,
+
+	game_id1: '235540',
+	game_id2: '552500',
+
+	tools_id1: '718610',
+	tools_id2: '718610',
+
+	fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+	fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+
+	fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
+	fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
+
+	template_dir: "template-vmf",
+
+	template_core_files: [
+		'core/**'
+	],
+
+	ignored_dirs: [
+		'.git',
+		defaultTempDir
+	],
+
+	ignore_build_errors: false
+}
 const scriptConfigFile = '.vmbrc';
-const scriptConfig = readScriptConfig(argv.reset);
+const scriptConfig = await readScriptConfig(argv.reset);
+
+if(!scriptConfig){
+	process.exit();
+}
 
 // Early execution and exit for certain tasks
 if (currentTask == taskDefault || currentTask == taskConfig) {
-	runTask(currentTask, argv, plainArgs);
-	process.exit(exitCode);
+	await runTask(currentTask, argv, plainArgs);
+	process.exit();
 }
 
 // Mods directory and game number
-const { modsDir, tempDir } = getModsDir(scriptConfig.mods_dir, scriptConfig.temp_dir, argv);
+const { modsDir, tempDir } = await getModsDir(scriptConfig.mods_dir, scriptConfig.temp_dir, argv);
 const gameNumber = getGameNumber(scriptConfig.game, argv);
 
 // Other config params
@@ -92,8 +125,8 @@ const cfgFile = 'itemV' + gameNumber + '.cfg';
 
 /* EXECUTION */
 
-runTask(currentTask, argv, plainArgs);
-
+await runTask(currentTask, argv, plainArgs);
+process.exit();
 
 
 ///////////////////////////////////
@@ -107,56 +140,6 @@ function normalize(pth) {
 // Normalizes path after joining
 function join(...args) {
 	return normalize(path.join(...args));
-}
-
-// Creates, reads or deletes
-function readScriptConfig(shouldReset) {
-
-	if(shouldReset && fs.existsSync(scriptConfigFile)){
-		console.log(`Deleting ${scriptConfigFile}`);
-		fs.unlinkSync(scriptConfigFile);
-	}
-
-	if(!fs.existsSync(scriptConfigFile)) {
-
-		console.log(`Creating default ${scriptConfigFile}`);
-
-		fs.writeFileSync(scriptConfigFile,
-			JSON.stringify({
-				mods_dir: 'mods',
-				temp_dir: '',
-
-				game: 1,
-
-				game_id1: '235540',
-				game_id2: '552500',
-
-				tools_id1: '718610',
-				tools_id2: '718610',
-
-				fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-				fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-
-				fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
-				fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
-
-				template_dir: "template-vmf",
-
-				template_core_files: [
-					'core/**'
-				],
-
-				ignored_dirs: [
-					'.git',
-					defaultTempDir
-				],
-
-				ignore_build_errors: false
-			}, null, '\t')
-		);
-	}
-
-	return JSON.parse(fs.readFileSync(scriptConfigFile, 'utf8'));
 }
 
 
@@ -183,8 +166,8 @@ function getCurrentTask(args) {
 }
 
 // Runs specified task
-function runTask(task, args, plainArgs) {
-	task(callback, args, plainArgs);
+async function runTask(task, args, plainArgs) {
+	await task(callback, args, plainArgs);
 }
 
 // This will be called at the end of tasks
@@ -224,7 +207,7 @@ function taskDefault(callback, args, plainArgs) {
 // Sets and/or displayes config file values
 // Limited to non-object values
 // vmb config [--<key1>=<value1> --<key2>=<value2>...]
-function taskConfig(callback, args, plainArgs) {
+async function taskConfig(callback, args, plainArgs) {
 	for(let key of Object.keys(scriptConfig)){
 
 		if(args[key] === undefined){
@@ -240,7 +223,14 @@ function taskConfig(callback, args, plainArgs) {
 		scriptConfig[key] = args[key];
 	};
 
-	fs.writeFileSync(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
+	try {
+		await fs.writeFile(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
+	}
+	catch(err){
+		console.error(err);
+		console.error(`Couldn't save config`);
+		return callback();
+	}
 
 	console.log(scriptConfig);
 
@@ -256,8 +246,17 @@ async function taskCreate(callback, args, plainArgs) {
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
 
-	if(!validModName(modName) || fs.existsSync(modDir + '/')) {
-		console.error(`Folder "${modDir}" is invalid or already exists`);
+	let error = '';
+	if (!validModName(modName)) {
+		error = `Folder name "${modDir}" is invalid`;
+	}
+
+	if(await exists(modDir + '/')){
+		error = `Folder "${modDir}" already exists`;
+	}
+
+	if(error) {
+		console.error(error);
 		exitCode = 1;
 		return callback();
 	}
@@ -281,14 +280,14 @@ async function taskCreate(callback, args, plainArgs) {
 
 		// Cleanup directory if it has been created
 		let modDir = join(modsDir, modName);
-		if (fs.existsSync(modDir)) {
-			try {
-				await deleteDirectory();
-			}
-			catch(error) {
-				console.error(error);
-			}
+		try {
+			await fs.access(modDir);
+			await deleteDirectory(modDir);
 		}
+		catch(error) {
+			console.error(error);
+		}
+
 	}
 
 	callback();
@@ -301,16 +300,24 @@ async function taskPublish(callback, args, plainArgs) {
 	let config = getWorkshopParams(args, plainArgs);
 	let modName = config.name;
 	let modDir = join(modsDir, modName);
-	let buildParams = getBuildParams(args);
+	let buildParams = await getBuildParams(args);
 
-	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		console.error(`Folder "${modDir}" is invalid or doesn't exist`);
-		exitCode = 1;
-		return callback();
+
+	let error = '';
+	if (!validModName(modName)) {
+		error = `Folder name "${modDir}" is invalid`;
 	}
 
-	if (!templateIsValid(templateDir)) {
-		console.error(`Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`);
+	if (!await templateIsValid(templateDir)) {
+		error = `Template folder "${templateDir}" doesn't exist or doesn't have "${itemPreview}" in it.`;
+	}
+
+	if (!await exists(modDir + '/')) {
+		error = `Folder "${modDir}" doesn't exist`;
+	}
+
+	if (error) {
+		console.error(error);
 		exitCode = 1;
 		return callback();
 	}
@@ -350,8 +357,17 @@ async function taskUpload(callback, args, plainArgs) {
 	let modName = args.m || args.mod || plainArgs[0] || '';
 	let modDir = join(modsDir, modName);
 
-	if(!validModName(modName) || !fs.existsSync(modDir + '/')) {
-		console.error(`Folder "${modDir}" is invalid or doesn't exist`);
+	let error = '';
+	if (!validModName(modName)) {
+		error = `Folder name "${modDir}" is invalid`;
+	}
+
+	if (!await exists(modDir + '/')) {
+		error = `Folder "${modDir}" doesn't exist`;
+	}
+
+	if (error) {
+		console.error(error);
 		exitCode = 1;
 		return callback();
 	}
@@ -392,10 +408,21 @@ async function taskOpen(callback, args, plainArgs) {
 	let modDir = join(modsDir, modName);
 	let modId = args.id || null;
 
-	if(!modId && (!validModName(modName) || !fs.existsSync(modDir + '/'))) {
-		console.error(`Folder "${modDir}" doesn't exist`);
-		exitCode = 1;
-		return callback();
+	if(!modId) {
+		let error = '';
+		if (!validModName(modName)) {
+			error = `Folder name "${modDir}" is invalid`;
+		}
+
+		if (!await exists(modDir + '/')) {
+			error = `Folder "${modDir}" doesn't exist`;
+		}
+
+		if (error) {
+			console.error(error);
+			exitCode = 1;
+			return callback();
+		}
 	}
 
 	try {
@@ -424,7 +451,7 @@ async function taskOpen(callback, args, plainArgs) {
 // --dist - doesn't copy to workshop folder
 async function taskBuild (callback, args, plainArgs) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = await getBuildParams(args, plainArgs);
 
 	console.log('Mods to build:');
 	for(let modName of modNames) {
@@ -462,7 +489,7 @@ async function taskBuild (callback, args, plainArgs) {
 // vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
 async function taskWatch (callback, args, plainArgs) {
 
-	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = getBuildParams(args, plainArgs);
+	let {modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors} = await getBuildParams(args, plainArgs);
 
 	let toolsDir = await getModToolsDir().catch((error) => {
 		console.error(error);
@@ -502,6 +529,41 @@ async function taskWatch (callback, args, plainArgs) {
 
 /* CONFIG METHODS */
 
+// Creates, reads or deletes
+async function readScriptConfig(shouldReset) {
+
+	if (shouldReset && await exists(scriptConfigFile)){
+		try {
+			console.log(`Deleting ${scriptConfigFile}`);
+			await fs.unlink(scriptConfigFile);
+		}
+		catch(err) {
+			console.error(err);
+			console.error(`Couldn't delete config`);
+		}
+	}
+
+	if(!await exists(scriptConfigFile)){
+		try {
+			console.log(`Creating default ${scriptConfigFile}`);
+			await fs.writeFile(scriptConfigFile, JSON.stringify(defaultConfig, null, '\t'));
+		}
+		catch(err) {
+			console.error(err);
+			console.error(`Couldn't create config`);
+		}
+	}
+
+	try {
+		return JSON.parse(await fs.readFile(scriptConfigFile, 'utf8'));
+	}
+	catch(err) {
+		console.error(err);
+		console.error(`Couldn't read config`);
+		return null;
+	}
+}
+
 function getGameSpecificKey(key){
 	let id = scriptConfig[key + gameNumber];
 	if(typeof id != 'string'){
@@ -519,7 +581,7 @@ function getToolsId(){
 	return getGameSpecificKey('tools_id');
 }
 
-function getModsDir(modsDir, tempDir, args) {
+async function getModsDir(modsDir, tempDir, args) {
 
 	modsDir = (typeof modsDir == 'string' && modsDir !== '') ? normalize(modsDir) : 'mods';
 	tempDir = (typeof tempDir == 'string' && tempDir !== '') ? normalize(tempDir) : '';
@@ -549,7 +611,7 @@ function getModsDir(modsDir, tempDir, args) {
 		console.log(`Using temp folder "${tempDir}"`);
 	}
 
-	if (!fs.existsSync(modsDir + '/')) {
+	if (!await exists(modsDir + '/')) {
 		console.error(`Mods folder "${modsDir}" doesn't exist`);
 		process.exit();
 	}
@@ -619,7 +681,7 @@ function validModName(modName) {
 }
 
 async function getModId(modName) {
-	let data = await readFile(join(modsDir, modName, cfgFile), 'utf8');
+	let data = await fs.readFile(join(modsDir, modName, cfgFile), 'utf8');
 	let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
 	modId = modId && modId[1];
 
@@ -653,7 +715,7 @@ async function getModToolsDir(){
 	}
 
 	toolsDir = normalize(toolsDir);
-	if (!fs.existsSync(join(toolsDir, stingrayDir, stingrayExe))){
+	if (!await exists(join(toolsDir, stingrayDir, stingrayExe))){
 		throw 'Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.';
 	}
 	console.log(`Mod tools folder "${toolsDir}"`);
@@ -663,8 +725,8 @@ async function getModToolsDir(){
 
 /* CREATE AND UPLOAD METHODS */
 
-function templateIsValid(templateDir) {
-	return fs.existsSync(templateDir) && fs.existsSync(join(templateDir, itemPreview));
+async function templateIsValid(templateDir) {
+	return await exists(templateDir) && await exists(join(templateDir, itemPreview));
 }
 
 // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
@@ -733,7 +795,7 @@ async function createCfgFile(config) {
 					`visibility = "${config.visibility}";\n`;
 	console.log(`${cfgFile}:`);
 	console.log('  ' + rmn(configText).replace(/\n/g, '\n  '));
-	return await writeFile(join(modsDir, config.name, cfgFile), configText);
+	return await fs.writeFile(join(modsDir, config.name, cfgFile), configText);
 }
 
 // Uploads mod to the workshop
@@ -759,7 +821,7 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 
 	console.log(`\nRunning uploader with steam app id ${getGameId()}`);
 
-	fs.writeFileSync(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
+	await fs.writeFile(join(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
 	let uploader = child_process.spawn(
 		uploaderExe,
 		uploaderParams,
@@ -791,8 +853,11 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 					(code == 3221225477 ? `\nCheck if Steam is running` : '')
 				);
 			}
-			else {
+			else if (modId){
 				resolve(modId);
+			}
+			else{
+				reject(`Uploader failed to return an item id`);
 			}
 		});
 	});
@@ -808,11 +873,11 @@ async function checkIfCfgExists(modName) {
 
 	let modCfg = join(modsDir, modName, cfgFile);
 
-	if(!fs.existsSync(modCfg)){
+	if(!await exists(modCfg)){
 		return false;
 	}
 
-	let data = await readFile(modCfg, 'utf8')
+	let data = await fs.readFile(modCfg, 'utf8')
 
 	if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
 		throw `Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`;
@@ -833,7 +898,7 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 
 		let modDir = join(modsDir, modName);
 
-		if(validModName(modName) && fs.existsSync(modDir + '/') && (fs.existsSync(join(modDir, cfgFile)) || noWorkshopCopy)) {
+		if (validModName(modName) && await exists(modDir + '/') && (await exists(join(modDir, cfgFile)) || noWorkshopCopy)) {
 			await action(modName, modDir);
 		}
 		else {
@@ -858,7 +923,7 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, ver
 
 	await checkTempFolder(modName, shouldRemoveTemp);
 
-	if (!modId && !noWorkshopCopy && !fs.existsSync(join(modDir, cfgFile))){
+	if (!modId && !noWorkshopCopy && !await exists(join(modDir, cfgFile))){
 		throw `Mod folder doesn't have ${cfgFile}`;
 	}
 
@@ -948,14 +1013,19 @@ async function getWorkshopDir() {
 }
 
 // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-function getBuildParams(args, plainArgs) {
+async function getBuildParams(args, plainArgs) {
 
 	let verbose = args.verbose || false;
 	let shouldRemoveTemp = args.temp || false;
 	let modNames = plainArgs;
 
 	if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
-		modNames = getFolders(modsDir, ignoredDirs);
+		try{
+			modNames = await getModDirs(modsDir, ignoredDirs);
+		}
+		catch(err) {
+			console.error(err);
+		}
 	}
 
 	let modId = modNames.length == 1 ? args.id : null;
@@ -967,7 +1037,7 @@ function getBuildParams(args, plainArgs) {
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
 	let tempPath = join(tempDir, modName);
-	let tempExists = fs.existsSync(tempPath);
+	let tempExists = await exists(tempPath);
 
 	if (tempExists && shouldRemove) {
 		return await new Promise((resolve, reject) => {
@@ -1039,7 +1109,7 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
 		console.error('Stingray exited with error code: ' + code + '. Please check your scripts for syntax errors.');
 	}
 
-	let data = await readFile(join(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
+	let data = await fs.readFile(join(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
 		console.error(error + '\nFailed to read processed_bundles.csv');
 	});
 
@@ -1127,59 +1197,61 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
 /* MISC METHODS */
 
 // Returns an array of folders in dir, except the ones in second param
-function getFolders(dir, except) {
-	return fs.readdirSync(dir)
-		.filter(fileName => {
-			return fs.statSync(join(dir, fileName)).isDirectory() && (!except || !except.includes(fileName));
-		});
+async function getModDirs(dir, except) {
+	let dirs = [];
+
+	try{
+		for (let fileName of await fs.readdir(dir)){
+
+			if (except && except.includes(fileName)) {
+				continue;
+			}
+
+			let fileStats = await fs.stat(join(dir, fileName));
+
+			if (fileStats.isDirectory()) {
+				dirs.push(fileName);
+			}
+		}
+	}
+	catch(err){
+		console.error(err);
+		exitCode = 1;
+	}
+
+	return dirs;
+}
+
+async function exists(file) {
+	try {
+		await fs.access(file);
+		return true;
+	}
+	catch(err) {
+		return false;
+	}
 }
 
 // Safely deletes file or directory
 async function deleteFile(dir, file) {
-    return await new Promise((resolve, reject) => {
-        let filePath = join(dir, file);
-        fs.lstat(filePath, (err, stats) => {
-            if (err) {
-                return reject(err);
-            }
-            if (stats.isDirectory()) {
-                resolve(deleteDirectory(filePath));
-            } else {
-                fs.unlink(filePath, err => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve();
-                });
-            }
-        });
-    });
+	let filePath = join(dir, file);
+	let stats = await fs.lstat(filePath);
+	if (stats.isDirectory()) {
+		return deleteDirectory(filePath);
+	} else try {
+		await fs.unlink(filePath);
+	}
+	catch(err) {}
 }
 
 // Recursively and safely deletes directory
 async function deleteDirectory(dir) {
-    return await new Promise((resolve, reject) => {
-        fs.access(dir, err => {
-            if (err) {
-                return reject(err);
-            }
-            fs.readdir(dir, (err, files) => {
-                if (err) {
-                    return reject(err);
-                }
-                Promise.all(files.map(file => {
-                    return deleteFile(dir, file);
-                })).then(() => {
-                    fs.rmdir(dir, err => {
-                        if (err) {
-                            return reject(err);
-                        }
-                        resolve();
-                    });
-                }).catch(reject);
-            });
-        });
-    });
+	await fs.access(dir)
+	let files = await fs.readdir(dir)
+	await Promise.all(files.map(file => {
+		return deleteFile(dir, file);
+	}));
+	await fs.rmdir(dir);
 }
 
 // Copy sourceFile to destFile if it doesn't exist
@@ -1187,7 +1259,7 @@ async function copyIfDoesntExist(sourceFile, destFile) {
 	let sourcePath = path.parse(sourceFile);
 	let destPath = path.parse(destFile);
 
-	if (fs.existsSync(destFile)) {
+	if (await exists(destFile)) {
 		return;
 	}
 
@@ -1213,3 +1285,4 @@ function rmn(str) {
 		return str;
 	}
 }
+})();
