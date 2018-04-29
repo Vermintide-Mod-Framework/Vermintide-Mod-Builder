@@ -601,8 +601,8 @@ async function getModsDir(modsDir, tempDir, args) {
 	}
 	else {
 		if (typeof newModsDir == 'string') {
-			console.log(`Using mods folder "${newModsDir}"`);
 			modsDir = normalize(newModsDir);
+			console.log(`Using mods folder "${modsDir}"`);
 			if (unspecifiedTempDir) {
 				tempDir = join(modsDir, defaultTempDir);
 			}
