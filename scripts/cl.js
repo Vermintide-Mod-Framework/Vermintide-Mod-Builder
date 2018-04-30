@@ -8,15 +8,16 @@ let argv = {};
 
 let cl = {
     argv: {},
+    plainArgs: [],
 
     init(argv) {
         cl.argv = argv = minimist(argv);
     },
 
     // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-    getWorkshopParams(plainArgs) {
+    getWorkshopParams() {
 
-        let modName = argv.m || argv.mod || plainArgs[0] || '';
+        let modName = argv.m || argv.mod || cl.plainArgs[0] || '';
         let modTitle = argv.t || argv.title || modName;
 
         return {
@@ -30,11 +31,11 @@ let cl = {
     },
 
     // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-    async getBuildParams(plainArgs) {
+    async getBuildParams() {
 
         let verbose = argv.verbose || false;
         let shouldRemoveTemp = argv.temp || false;
-        let modNames = plainArgs;
+        let modNames = cl.plainArgs.slice();
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
             try {

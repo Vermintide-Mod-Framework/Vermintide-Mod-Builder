@@ -30,8 +30,8 @@ let taskManager = {
     },
 
     // Runs specified task
-    async runTask(taskName, plainArgs) {
-        return await taskManager.tasks[taskName](plainArgs);
+    async runTask(taskName) {
+        return await taskManager.tasks[taskName]();
     }
 };
 

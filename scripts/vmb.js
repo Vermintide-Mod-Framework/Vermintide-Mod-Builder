@@ -13,6 +13,7 @@ async function vmb(argv) {
 
     // Get current task from commandline
     const { taskName, plainArgs } = taskManager.getCurrentTask(cl.argv._);
+    cl.plainArgs = plainArgs;
 
     // Init config
     const config = require('./config');
@@ -29,7 +30,7 @@ async function vmb(argv) {
 
     // Early execution and exit for certain tasks
     if (taskName == 'default' || taskName == 'config') {
-        return await taskManager.runTask(taskName, plainArgs);
+        return await taskManager.runTask(taskName);
     }
 
     // Parse config data
@@ -42,7 +43,7 @@ async function vmb(argv) {
     }
 
     // Run task
-    return await taskManager.runTask(taskName, plainArgs);
+    return await taskManager.runTask(taskName);
 }
 
 module.exports = vmb;
