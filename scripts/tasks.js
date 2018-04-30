@@ -14,7 +14,7 @@ let tasks = {
 
     // Prints all existing commands with params
     // vmb
-    default(callback, plainArgs) {
+    default(plainArgs) {
         console.log(
             'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
             'vmb params    [--<key1>=<value1> --<key2>=<value2>...]\n' +
@@ -25,13 +25,13 @@ let tasks = {
             'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
             'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]'
         );
-        return callback();
+        return { exitCode: 0, shouldExit: false };
     },
 
     // Sets and/or displayes params file values
     // Limited to non-object values
     // vmb params [--<key1>=<value1> --<key2>=<value2>...]
-    async config(callback, plainArgs) {
+    async config(plainArgs) {
 
         config.setData(cl.argv);
 
@@ -41,18 +41,18 @@ let tasks = {
         catch (err) {
             console.error(err);
             console.error(`Couldn't save params`);
-            return callback();
+            return { exitCode: 1, shouldExit: false };
         }
 
         console.log(config.data);
 
-        return callback();
+        return { exitCode: 0, shouldExit: false };
     },
 
     // Creates a copy of the template mod and renames it to the provided name
     // Uploads an empty mod file to the workshop to create an id
     // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-    async create(callback, plainArgs) {
+    async create(plainArgs) {
 
         let exitCode = 0;
 
@@ -70,8 +70,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            exitCode = 1;
-            return callback(exitCode);
+            return { exitCode: 1, shouldExit: true };
         }
 
         console.log(`Copying template from "${config.templateDir}"`);
@@ -103,12 +102,12 @@ let tasks = {
             }
         }
 
-        return callback(exitCode);
+        return { exitCode, shouldExit: true };
     },
 
     // Builds the mod then uploads it to workshop as a new item
     // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-    async publish(callback, plainArgs) {
+    async publish(plainArgs) {
 
         let exitCode = 0;
 
@@ -135,8 +134,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            exitCode = 1;
-            return callback(exitCode);
+            return { exitCode: 1, shouldExit: true };
         }
 
         try {
@@ -162,12 +160,13 @@ let tasks = {
             console.error(error);
             exitCode = 1;
         }
-        return callback(exitCode);
+
+        return { exitCode, shouldExit: true };
     },
 
     // Uploads the last built version of the mod to the workshop
     // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
-    async upload(callback, plainArgs) {
+    async upload(plainArgs) {
 
         let exitCode = 0;
 
@@ -184,8 +183,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            exitCode = 1;
-            return callback(exitCode);
+            return { exitCode: 1, shouldExit: true };
         }
 
         let changenote = cl.argv.n || cl.argv.note || cl.argv.changenote || '';
@@ -213,12 +211,12 @@ let tasks = {
             exitCode = 1;
         }
 
-        return callback(exitCode);
+        return { exitCode, shouldExit: true };
     },
 
     // Opens mod's workshop page
     // vmb open <mod_name> [--id <item_id>]
-    async open(callback, plainArgs) {
+    async open(plainArgs) {
 
         let exitCode = 0;
 
@@ -237,8 +235,7 @@ let tasks = {
 
             if (error) {
                 console.error(error);
-                exitCode = 1;
-                return callback(exitCode);
+                return { exitCode: 1, shouldExit: true };
             }
         }
 
@@ -257,7 +254,7 @@ let tasks = {
             exitCode = 1;
         }
 
-        return callback(exitCode);
+        return { exitCode, shouldExit: true };
     },
 
     // Builds specified mods and copies the bundles to the game workshop folder
@@ -266,7 +263,7 @@ let tasks = {
     // -t - doesn't delete temp folder before building
     // --id - forces item id. can only be passed if building one mod
     // --dist - doesn't copy to workshop folder
-    async build(callback, plainArgs) {
+    async build(plainArgs) {
 
         let exitCode = 0;
 
@@ -280,12 +277,12 @@ let tasks = {
         }
         else {
             console.log('No mods to build');
-            return callback(exitCode);
+            return { exitCode, shouldExit: true };
         }
 
         let toolsDir = await modTools.getModToolsDir().catch((error) => {
-            exitCode = 1;
             console.error(error);
+            exitCode = 1;
         });
 
         if (toolsDir) {
@@ -308,12 +305,12 @@ let tasks = {
             );
         }
 
-        return callback(exitCode);
+        return { exitCode, shouldExit: true };
     },
 
     // Watches for changes in specified mods and builds them whenever they occur
     // vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
-    async watch(callback, plainArgs) {
+    async watch(plainArgs) {
 
         let exitCode = 0;
 
@@ -321,7 +318,7 @@ let tasks = {
 
         if (modNames.length === 0) {
             console.log('No mods to watch');
-            return callback(exitCode);
+            return { exitCode, shouldExit: true };
         }
 
         let toolsDir = await modTools.getModToolsDir().catch((error) => {
@@ -360,7 +357,7 @@ let tasks = {
             );
         }
 
-        return callback(exitCode, false);
+        return {exitCode, shouldExit: false};
     }
 
 };

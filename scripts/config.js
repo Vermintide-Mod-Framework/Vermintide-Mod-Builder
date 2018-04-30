@@ -46,6 +46,8 @@ let config = {
         config.modsDir = '';
         config.tempDir = '';
         config.gameNumber = 0;
+        config.gameId = '';
+        config.toolsId = '';
 
         // Other config params
         config.fallbackToolsDir = '';
@@ -80,6 +82,9 @@ let config = {
     async readData(filename, args) {
         config.filename = filename;
         config.data = await readData(config.filename, args.reset);
+        if (!config.data || typeof config.data != 'object') {
+            throw `Invalid config data in ${config.filename}`;
+        }
     },
 
     async parseData(args) {
@@ -90,10 +95,12 @@ let config = {
 
         // Game number
         config.gameNumber = getGameNumber(config.data.game, args);
+        config.gameId = getGameSpecificKey('game_id');
+        config.toolsId = getGameSpecificKey('tools_id');
 
         // Other config params
-        config.fallbackToolsDir = path.fix(config.getGameSpecificKey('fallback_tools_dir') || '');
-        config.fallbackWorkshopDir = path.combine(config.getGameSpecificKey('fallback_workshop_dir') || '', config.getGameId());
+        config.fallbackToolsDir = path.fix(getGameSpecificKey('fallback_tools_dir') || '');
+        config.fallbackWorkshopDir = path.combine(getGameSpecificKey('fallback_workshop_dir') || '', config.gameId);
         config.ignoredDirs = config.data.ignored_dirs || [];
 
         config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
@@ -126,23 +133,6 @@ let config = {
 
     async writeData() {
         await pfs.writeFile(config.filename, JSON.stringify(config.data, null, '\t'));
-    },
-
-    getGameSpecificKey(key){
-        let id = config.data[key + config.gameNumber];
-        if (typeof id != 'string') {
-            console.error(`Failed to find '${key + config.gameNumber}' in ${config.filename}.`);
-            process.exit();
-        }
-        return id;
-    },
-
-    getGameId() {
-        return config.getGameSpecificKey('game_id');
-    },
-
-    getToolsId() {
-        return config.getGameSpecificKey('tools_id');
     }
 };
 
@@ -155,7 +145,7 @@ async function readData(filename, shouldReset) {
         }
         catch (err) {
             console.error(err);
-            console.error(`Couldn't delete config`);
+            throw `Couldn't delete config`;
         }
     }
 
@@ -166,7 +156,7 @@ async function readData(filename, shouldReset) {
         }
         catch (err) {
             console.error(err);
-            console.error(`Couldn't create config`);
+            throw `Couldn't create config`;
         }
     }
 
@@ -175,9 +165,16 @@ async function readData(filename, shouldReset) {
     }
     catch (err) {
         console.error(err);
-        console.error(`Couldn't read config`);
-        return null;
+        throw `Couldn't read config`;
     }
+}
+
+function getGameSpecificKey(key){
+    let id = config.data[key + config.gameNumber];
+    if (typeof id != 'string') {
+        throw `Failed to find '${key + config.gameNumber}' in ${config.filename}.`;
+    }
+    return id;
 }
 
 async function getModsDir(modsDir, tempDir, args) {
@@ -211,8 +208,7 @@ async function getModsDir(modsDir, tempDir, args) {
     }
 
     if (!await pfs.accessible(modsDir + '/')) {
-        console.error(`Mods folder "${modsDir}" doesn't exist`);
-        process.exit();
+        throw `Mods folder "${modsDir}" doesn't exist`;
     }
 
     return { modsDir, tempDir };
@@ -228,8 +224,7 @@ function getGameNumber(gameNumber, args) {
     gameNumber = Number(gameNumber);
 
     if (gameNumber !== 1 && gameNumber !== 2) {
-        console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`);
-        process.exit();
+        throw `Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`;
     }
 
     console.log('Game: Vermintide ' + gameNumber);

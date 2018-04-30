@@ -69,7 +69,7 @@ let builder = {
 
 // Gets the steam workshop folder from vermintide's install location
 async function getWorkshopDir() {
-    let gameId = config.getGameId();
+    let gameId = config.gameId;
     let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
     let value = '"InstallLocation"';
 

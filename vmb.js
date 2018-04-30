@@ -1,3 +1,6 @@
 (async () => {
-    await (require('./scripts/vmb')(process.argv));
+    let { exitCode, shouldExit } = await (require('./scripts/vmb')(process.argv));
+    if (shouldExit) {
+        process.exit(exitCode);
+    }
 })();

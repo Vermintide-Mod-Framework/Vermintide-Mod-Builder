@@ -27,7 +27,7 @@ let modTools = {
 
     // Gets mod tools placement from Vermintide Mod Tools install location
     async getModToolsDir() {
-        let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + config.getToolsId() + '"';
+        let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + config.toolsId + '"';
         let value = '"InstallLocation"';
 
         let toolsDir = config.fallbackToolsDir;

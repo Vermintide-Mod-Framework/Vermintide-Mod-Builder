@@ -91,9 +91,9 @@ let uploader = {
             uploaderParams.push('-s');
         }
 
-        console.log(`\nRunning uploader with steam app id ${config.getGameId()}`);
+        console.log(`\nRunning uploader with steam app id ${config.gameId}`);
 
-        await pfs.writeFile(path.combine(toolsDir, config.uploaderDir, config.uploaderGameConfig), config.getGameId());
+        await pfs.writeFile(path.combine(toolsDir, config.uploaderDir, config.uploaderGameConfig), config.gameId);
         let uploader = child_process.spawn(
             config.uploaderExe,
             uploaderParams,

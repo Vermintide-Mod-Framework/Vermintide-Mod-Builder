@@ -1,13 +1,8 @@
-
-const setupCleanup = require('node-cleanup');
-
 let taskManager = {
 
     init(tasks) {
         taskManager.tasks = {};
-        taskManager.finished = false;
 
-        setupCleanup(checkTaskFinished);
         for(let taskName in tasks) {
             taskManager.addTask(taskName, tasks[taskName]);
         }
@@ -36,24 +31,8 @@ let taskManager = {
 
     // Runs specified task
     async runTask(taskName, plainArgs) {
-        await taskManager.tasks[taskName](callback, plainArgs);
+        return await taskManager.tasks[taskName](plainArgs);
     }
 };
-
- // This will be called at the end of tasks
-function callback(exitCode = 0, shouldExit = true) {
-    taskManager.finished = true;
-    if (shouldExit) {
-        process.exit(exitCode);
-    }
-}
-
-// Checks if the callback function has been called from a task and exits if it hasn't
-function checkTaskFinished(code) {
-    if (!taskManager.finished) {
-        console.error(`\nProgram exited prematurely`);
-        process.exit(2);
-    }
-}
 
 module.exports = taskManager;
