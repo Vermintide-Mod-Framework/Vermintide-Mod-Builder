@@ -1,3 +1,3 @@
 (async () => {
-    await (require('./scripts/vmb')());
+    await (require('./scripts/vmb')(process.argv));
 })();

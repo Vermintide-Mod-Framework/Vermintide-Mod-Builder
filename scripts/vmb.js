@@ -1,10 +1,10 @@
 
 // vmb driver
-async function vmb() {
+async function vmb(argv) {
 
     // Read command line parameters
     const cl = require('./cl');
-    cl.init(process.argv);
+    cl.init(argv);
 
     // Init tasks
     let tasks = require('./tasks');
