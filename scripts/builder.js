@@ -252,7 +252,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
 
         if (modWorkshopDir) {
             console.log('Copying to ', modWorkshopDir);
-            gulpStream.pipe(gulp.dest(modWorkshopDir)).on('error', reject);
+            gulpStream = gulpStream.pipe(gulp.dest(modWorkshopDir)).on('error', reject);
         }
 
         gulpStream.on('end', () => {
