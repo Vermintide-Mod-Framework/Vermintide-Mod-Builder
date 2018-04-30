@@ -24,7 +24,7 @@ setupCleanup(checkTaskFinished);
 // Tasks
 let tasks = {};
 addTask('default', taskDefault);
-addTask('config', taskConfig);
+addTask('params', taskConfig);
 addTask('create', taskCreate);
 addTask('publish', taskPublish);
 addTask('upload', taskUpload);
@@ -37,42 +37,9 @@ const {currentTask, plainArgs} = getCurrentTask(cl.argv._);
 
 /* CONFIG */
 
-const defaultTempDir = '.temp';
-const defaultConfig = {
-	mods_dir: 'mods',
-	temp_dir: '',
+const config = await (require('./scripts/config').init('.vmbrc', cl.argv));
 
-	game: 1,
-
-	game_id1: '235540',
-	game_id2: '552500',
-
-	tools_id1: '718610',
-	tools_id2: '718610',
-
-	fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-	fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-
-	fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
-	fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
-
-	template_dir: ".template-vmf",
-
-	template_core_files: [
-		'core/**'
-	],
-
-	ignored_dirs: [
-		'.git',
-		defaultTempDir
-	],
-
-	ignore_build_errors: false
-};
-const scriptConfigFile = '.vmbrc';
-const scriptConfig = await readScriptConfig(cl.argv.reset);
-
-if(!scriptConfig){
+if(!config.data){
 	process.exit();
 }
 
@@ -81,45 +48,6 @@ if (currentTask == taskDefault || currentTask == taskConfig) {
 	await runTask(currentTask, cl.argv, plainArgs);
 	process.exit();
 }
-
-// Mods directory and game number
-const { modsDir, tempDir } = await getModsDir(scriptConfig.mods_dir, scriptConfig.temp_dir, cl.argv);
-const gameNumber = getGameNumber(scriptConfig.game, cl.argv);
-
-// Other config params
-const fallbackToolsDir = path.fix(getGameSpecificKey('fallback_tools_dir') || '');
-const fallbackWorkshopDir = path.combine(getGameSpecificKey('fallback_workshop_dir') || '', getGameId());
-const ignoredDirs = scriptConfig.ignored_dirs || [];
-
-
-/* FOR CREATING */
-
-// These will be replaced in the template mod when running tasks
-const templateDir = getTemplateDir(scriptConfig.template_dir || '.template-vmf', cl.argv);
-const templateName = '%%name';
-const templateTitle = '%%title';
-const templateDescription = '%%description';
-const itemPreview = 'item_preview.jpg';
-
-// Folder in which the built bundle is gonna be stored before being copied to workshop folder
-const distDir = 'dist';
-
-// Files in template
-const { coreSrc, modSrc } = getTemplateSrc(scriptConfig.template_core_files, templateDir);
-
-
-/* FOR BUILDING */
-
-// Paths to mod tools relative to the mod tools folder
-const uploaderDir = 'ugc_uploader/';
-const uploaderExe = 'ugc_tool.exe';
-const uploaderGameConfig = 'steam_appid.txt';
-const stingrayDir = 'bin/';
-const stingrayExe = 'stingray_win64_dev_x64.exe';
-
-// Config file for workshop uploader tool
-const cfgFile = 'itemV' + gameNumber + '.cfg';
-
 
 /* EXECUTION */
 
@@ -182,7 +110,7 @@ function checkTaskFinished(code) {
 function taskDefault(callback, args, plainArgs) {
 	console.log(
 		'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
-		'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
+		'vmb params    [--<key1>=<value1> --<key2>=<value2>...]\n' +
 		'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
 		'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]\n' +
 		'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
@@ -193,35 +121,23 @@ function taskDefault(callback, args, plainArgs) {
 	callback();
 }
 
-// Sets and/or displayes config file values
+// Sets and/or displayes params file values
 // Limited to non-object values
-// vmb config [--<key1>=<value1> --<key2>=<value2>...]
+// vmb params [--<key1>=<value1> --<key2>=<value2>...]
 async function taskConfig(callback, args, plainArgs) {
-	for(let key of Object.keys(scriptConfig)){
 
-		if(args[key] === undefined){
-			continue;
-		}
-
-		if(typeof scriptConfig[key] == 'object'){
-			console.error(`Cannot set key "${key}" because it is an object. Modify ${scriptConfigFile} directly.`);
-			continue;
-		}
-
-		console.log(`Set ${key} to ${args[key]}`);
-		scriptConfig[key] = args[key];
-	};
+	config.setData(args);
 
 	try {
-		await pfs.writeFile(scriptConfigFile, JSON.stringify(scriptConfig, null, '\t'));
+		await config.writeData();
 	}
 	catch(err){
 		console.error(err);
-		console.error(`Couldn't save config`);
+		console.error(`Couldn't save params`);
 		return callback();
 	}
 
-	console.log(scriptConfig);
+	console.log(config.data);
 
 	callback();
 }
@@ -231,9 +147,9 @@ async function taskConfig(callback, args, plainArgs) {
 // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
 async function taskCreate(callback, args, plainArgs) {
 
-	let config = cl.getWorkshopParams(args, plainArgs);
-	let modName = config.name;
-	let modDir = path.combine(modsDir, modName);
+	let params = cl.getWorkshopParams(args, plainArgs);
+	let modName = params.name;
+	let modDir = path.combine(config.modsDir, modName);
 
 	let error = '';
 	if (!validModName(modName)) {
@@ -249,11 +165,11 @@ async function taskCreate(callback, args, plainArgs) {
 		return callback();
 	}
 
-	console.log(`Copying template from "${templateDir}"`);
+	console.log(`Copying template from "${config.templateDir}"`);
 
 	try {
-		await copyTemplate(config);
-		await createCfgFile(config);
+		await copyTemplate(params);
+		await createCfgFile(params);
 
 		let modId = await uploadMod(await getModToolsDir(), modName);
 
@@ -267,7 +183,7 @@ async function taskCreate(callback, args, plainArgs) {
 		exitCode = 1;
 
 		// Cleanup directory if it has been created
-		let modDir = path.combine(modsDir, modName);
+		let modDir = path.combine(config.modsDir, modName);
 		if(await pfs.accessible(modDir)){
 			try {
 				await pfs.deleteDirectory(modDir);
@@ -285,9 +201,9 @@ async function taskCreate(callback, args, plainArgs) {
 // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
 async function taskPublish(callback, args, plainArgs) {
 
-	let config = cl.getWorkshopParams(args, plainArgs);
-	let modName = config.name;
-	let modDir = path.combine(modsDir, modName);
+	let params = cl.getWorkshopParams(args, plainArgs);
+	let modName = params.name;
+	let modDir = path.combine(config.modsDir, modName);
 	let buildParams = await cl.getBuildParams(args);
 
 
@@ -299,7 +215,7 @@ async function taskPublish(callback, args, plainArgs) {
 		error = `Folder "${modDir}" doesn't exist`;
 	}
 	else{
-		await validateTemplate(templateDir);
+		await validateTemplate(config.templateDir);
 	}
 
 	if (error) {
@@ -310,15 +226,15 @@ async function taskPublish(callback, args, plainArgs) {
 
 	try {
 		if (await cfgExists(modName)) {
-			console.log(`Using existing ${cfgFile}`);
+			console.log(`Using existing ${config.cfgFile}`);
 		}
 		else{
-			await createCfgFile(config);
+			await createCfgFile(params);
 		}
 
 		let toolsDir = await getModToolsDir();
-		await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, true, config.verbose, buildParams.ignoreBuildErrors, null);
-		await pfs.copyIfDoesntExist(path.combine(templateDir, itemPreview), path.combine(modDir, itemPreview));
+		await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, true, params.verbose, buildParams.ignoreBuildErrors, null);
+		await pfs.copyIfDoesntExist(path.combine(config.templateDir, config.itemPreview), path.combine(modDir, config.itemPreview));
 		await uploadMod(toolsDir, modName);
 
 		let modId = await getModId(modName);
@@ -339,7 +255,7 @@ async function taskPublish(callback, args, plainArgs) {
 async function taskUpload(callback, args, plainArgs) {
 
 	let modName = args.m || args.mod || plainArgs[0] || '';
-	let modDir = path.combine(modsDir, modName);
+	let modDir = path.combine(config.modsDir, modName);
 
 	let error = '';
 	if (!validModName(modName)) {
@@ -388,7 +304,7 @@ async function taskUpload(callback, args, plainArgs) {
 async function taskOpen(callback, args, plainArgs) {
 
 	let modName = args.m || args.mod || plainArgs[0] || '';
-	let modDir = path.combine(modsDir, modName);
+	let modDir = path.combine(config.modsDir, modName);
 	let modId = args.id || null;
 
 	if(!modId) {
@@ -500,8 +416,8 @@ async function taskWatch (callback, args, plainArgs) {
 
 				let src = [
 					modDir,
-					'!' + modsDir + '/' + modName + '/*.tmp',
-					'!' + modsDir + '/' + modName + '/' + distDir + '/*'
+					'!' + config.modsDir + '/' + modName + '/*.tmp',
+					'!' + config.modsDir + '/' + modName + '/' + config.distDir + '/*'
 				];
 
 				gulp.watch(src, async () => {
@@ -520,151 +436,12 @@ async function taskWatch (callback, args, plainArgs) {
 }
 
 
-/* CONFIG METHODS */
+/* params METHODS */
 
 // Creates, reads or deletes
-async function readScriptConfig(shouldReset) {
 
-	if (shouldReset && await pfs.accessible(scriptConfigFile)){
-		try {
-			console.log(`Deleting ${scriptConfigFile}`);
-			await pfs.unlink(scriptConfigFile);
-		}
-		catch(err) {
-			console.error(err);
-			console.error(`Couldn't delete config`);
-		}
-	}
 
-	if(!await pfs.accessible(scriptConfigFile)){
-		try {
-			console.log(`Creating default ${scriptConfigFile}`);
-			await pfs.writeFile(scriptConfigFile, JSON.stringify(defaultConfig, null, '\t'));
-		}
-		catch(err) {
-			console.error(err);
-			console.error(`Couldn't create config`);
-		}
-	}
 
-	try {
-		return JSON.parse(await pfs.readFile(scriptConfigFile, 'utf8'));
-	}
-	catch(err) {
-		console.error(err);
-		console.error(`Couldn't read config`);
-		return null;
-	}
-}
-
-function getGameSpecificKey(key){
-	let id = scriptConfig[key + gameNumber];
-	if(typeof id != 'string'){
-		console.error(`Failed to find '${key + gameNumber}' in ${scriptConfigFile}.`);
-		process.exit();
-	}
-	return id;
-}
-
-function getGameId(){
-	return getGameSpecificKey('game_id');
-}
-
-function getToolsId(){
-	return getGameSpecificKey('tools_id');
-}
-
-async function getModsDir(modsDir, tempDir, args) {
-
-	modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
-	tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
-
-	let unspecifiedTempDir = !tempDir;
-	if (unspecifiedTempDir) {
-		tempDir = path.combine(modsDir, defaultTempDir);
-	}
-
-	let newModsDir = args.f || args.folder;
-
-	if(!newModsDir) {
-		console.log(`Using mods folder "${modsDir}"`);
-		console.log(`Using temp folder "${tempDir}"`);
-	}
-	else {
-		if (typeof newModsDir == 'string') {
-			modsDir = path.fix(newModsDir);
-			console.log(`Using mods folder "${modsDir}"`);
-			if (unspecifiedTempDir) {
-				tempDir = path.combine(modsDir, defaultTempDir);
-			}
-		}
-		else {
-			console.warn(`Couldn't set mods folder "${newModsDir}", using default "${modsDir}"`);
-		}
-		console.log(`Using temp folder "${tempDir}"`);
-	}
-
-	if (!await pfs.accessible(modsDir + '/')) {
-		console.error(`Mods folder "${modsDir}" doesn't exist`);
-		process.exit();
-	}
-
-	return {modsDir, tempDir};
-}
-
-function getGameNumber(gameNumber, args) {
-	let newGameNumber = args.g || args.game;
-
-	if(newGameNumber !== undefined){
-		gameNumber = newGameNumber;
-	}
-
-	gameNumber = Number(gameNumber);
-
-	if(gameNumber !== 1 && gameNumber !== 2){
-		console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${scriptConfigFile}.`);
-		process.exit();
-	}
-
-	console.log('Game: Vermintide ' + gameNumber);
-
-	return gameNumber;
-}
-
-function getTemplateDir(templateDir, args) {
-	let newTemplateDir = args.template || '';
-
-	if(newTemplateDir && typeof newTemplateDir == 'string'){
-		return newTemplateDir;
-	}
-
-	return templateDir;
-}
-
-function getTemplateSrc(configCoreSrc, templateDir) {
-
-	// Static files from config
-	let coreSrc = [
-		path.combine(templateDir, itemPreview)
-	];
-	if (Array.isArray(configCoreSrc)) {
-		for(let src of configCoreSrc) {
-			coreSrc.push(path.combine(templateDir, src));
-		};
-	}
-
-	// Folders with mod specific files
-	let modSrc = [
-		templateDir + '/**'
-	];
-
-	// Exclude core files from being altered
-	for(let src of coreSrc) {
-		modSrc.push('!' + src);
-	};
-
-	return {coreSrc, modSrc};
-}
 
 
 /* SHARED METHODS */
@@ -674,13 +451,13 @@ function validModName(modName) {
 }
 
 async function getModId(modName) {
-	let data = await pfs.readFile(path.combine(modsDir, modName, cfgFile), 'utf8');
+	let data = await pfs.readFile(path.combine(config.modsDir, modName, config.cfgFile), 'utf8');
 	let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
 	modId = modId && modId[1];
 
 	if(!modId) {
 		throw (
-			`Item ID not found in ${cfgFile} file.\n` +
+			`Item ID not found in ${config.cfgFile} file.\n` +
 			`You need to publish your mod to workshop before you can build/view it.\n` +
 			`Alternatively you can specify the workshop item id with --id param.`
 		);
@@ -691,10 +468,10 @@ async function getModId(modName) {
 
 // Gets mod tools placement from Vermintide Mod Tools install location
 async function getModToolsDir(){
-	let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + getToolsId() + '"';
+	let sdkKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + config.getToolsId() + '"';
 	let value = '"InstallLocation"';
 
-	let toolsDir = fallbackToolsDir;
+	let toolsDir = config.fallbackToolsDir;
 	let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
 	let appPath = await getRegistryValue(sdkKey, value).catch(err => {
 		console.error(err);
@@ -708,7 +485,7 @@ async function getModToolsDir(){
 	}
 
 	toolsDir = path.fix(toolsDir);
-	if (!await pfs.accessible(path.combine(toolsDir, stingrayDir, stingrayExe))){
+	if (!await pfs.accessible(path.combine(toolsDir, config.stingrayDir, config.stingrayExe))){
 		throw 'Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.';
 	}
 	console.log(`Mod tools folder "${toolsDir}"`);
@@ -724,31 +501,31 @@ async function validateTemplate(templateDir) {
 		throw `Template folder "${templateDir}" doesn't exist.`;
 	}
 
-	if (!await pfs.accessible(path.combine(templateDir, itemPreview))) {
+	if (!await pfs.accessible(path.combine(templateDir, config.itemPreview))) {
 		exitCode = 1;
-		throw `Template folder "${templateDir}" doesn't have "${itemPreview}" in it.`;
+		throw `Template folder "${templateDir}" doesn't have "${config.itemPreview}" in it.`;
 	}
 }
 
 
 
 // Copies and renames mod template from %%template folder
-async function copyTemplate(config) {
+async function copyTemplate(params) {
 
-	let modName = config.name;
-	let modDir = path.combine(modsDir, modName);
+	let modName = params.name;
+	let modDir = path.combine(config.modsDir, modName);
 
-	await validateTemplate(templateDir);
+	await validateTemplate(config.templateDir);
 
 	return await new Promise((resolve, reject) => {
 
-		let regexName = new RegExp(templateName, 'g');
-		let regexTitle = new RegExp(templateTitle, 'g');
-		let regexDescription = new RegExp(templateDescription, 'g');
-		gulp.src(modSrc, { base: templateDir })
+		let regexName = new RegExp(config.templateName, 'g');
+		let regexTitle = new RegExp(config.templateTitle, 'g');
+		let regexDescription = new RegExp(config.templateDescription, 'g');
+		gulp.src(config.modSrc, { base: config.templateDir })
 			.pipe(replace(regexName, modName))
-			.pipe(replace(regexTitle, config.title))
-			.pipe(replace(regexDescription, config.description))
+			.pipe(replace(regexTitle, params.title))
+			.pipe(replace(regexDescription, params.description))
 			.pipe(rename(p => {
 				p.dirname = p.dirname.replace(regexName, modName);
 				p.basename = p.basename.replace(regexName, modName);
@@ -757,8 +534,8 @@ async function copyTemplate(config) {
 			.on('error', reject)
 			.on('end', () => {
 
-				if(coreSrc.length > 0){
-					gulp.src(coreSrc, { base: templateDir})
+				if(config.coreSrc.length > 0){
+					gulp.src(config.coreSrc, { base: config.templateDir})
 						.pipe(gulp.dest(modDir))
 						.on('error', reject)
 						.on('end', resolve);
@@ -771,24 +548,24 @@ async function copyTemplate(config) {
 }
 
 // Creates item.cfg file
-async function createCfgFile(config) {
-	let configText = `title = "${config.title}";\n` +
-					`description = "${config.description}";\n` +
-					`preview = "${itemPreview}";\n` +
+async function createCfgFile(params) {
+	let configText = `title = "${params.title}";\n` +
+					`description = "${params.description}";\n` +
+					`preview = "${config.itemPreview}";\n` +
 					`content = "dist";\n` +
-					`language = "${config.language}";\n` +
-					`visibility = "${config.visibility}";\n`;
-	console.log(`${cfgFile}:`);
+					`language = "${params.language}";\n` +
+					`visibility = "${params.visibility}";\n`;
+	console.log(`${config.cfgFile}:`);
 	console.log('  ' + str.rmn(configText).replace(/\n/g, '\n  '));
-	return await pfs.writeFile(path.combine(modsDir, config.name, cfgFile), configText);
+	return await pfs.writeFile(path.combine(config.modsDir, params.name, config.cfgFile), configText);
 }
 
 // Uploads mod to the workshop
 async function uploadMod(toolsDir, modName, changenote, skip) {
 
-	let configPath = modsDir + '\\' + modName + '\\' + cfgFile;
+	let configPath = config.modsDir + '\\' + modName + '\\' + config.cfgFile;
 
-	if (!path.isAbsolute(modsDir)) {
+	if (!path.isAbsolute(config.modsDir)) {
 		configPath = path.combine(process.cwd(), configPath);
 	}
 	let uploaderParams = [
@@ -804,14 +581,14 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 		uploaderParams.push('-s');
 	}
 
-	console.log(`\nRunning uploader with steam app id ${getGameId()}`);
+	console.log(`\nRunning uploader with steam app id ${config.getGameId()}`);
 
-	await pfs.writeFile(path.combine(toolsDir, uploaderDir, uploaderGameConfig), getGameId());
+	await pfs.writeFile(path.combine(toolsDir, config.uploaderDir, config.uploaderGameConfig), config.getGameId());
 	let uploader = child_process.spawn(
-		uploaderExe,
+		config.uploaderExe,
 		uploaderParams,
 		{
-			cwd: path.combine(toolsDir, uploaderDir),
+			cwd: path.combine(toolsDir, config.uploaderDir),
 			windowsVerbatimArguments: true
 		}
 	);
@@ -856,7 +633,7 @@ function formUrl(modId) {
 // Checks if the mod has published_id in its item.cfg
 async function cfgExists(modName) {
 
-	let modCfg = path.combine(modsDir, modName, cfgFile);
+	let modCfg = path.combine(config.modsDir, modName, config.cfgFile);
 
 	if(!await pfs.accessible(modCfg)){
 		return false;
@@ -865,7 +642,7 @@ async function cfgExists(modName) {
 	let data = await pfs.readFile(modCfg, 'utf8');
 
 	if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
-		throw `Mod has already been published for Vermintide ${gameNumber}, use gulp upload instead.`;
+		throw `Mod has already been published for Vermintide ${config.gameNumber}, use gulp upload instead.`;
 	}
 
 	return true;
@@ -881,7 +658,7 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 			continue;
 		}
 
-		let modDir = path.combine(modsDir, modName);
+		let modDir = path.combine(config.modsDir, modName);
 
 		let error = '';
 		if (!validModName(modName)) {
@@ -890,8 +667,8 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 		else if (!await pfs.accessible(modDir + '/')) {
 			error = `Folder "${modDir}" doesn't exist`;
 		}
-		else if (!await pfs.accessible(path.combine(modDir, cfgFile)) && !noWorkshopCopy) {
-			error = `Folder "${modDir}" doesn't have ${ cfgFile } in it`;
+		else if (!await pfs.accessible(path.combine(modDir, config.cfgFile)) && !noWorkshopCopy) {
+			error = `Folder "${modDir}" doesn't have ${ config.cfgFile } in it`;
 		}
 
 		if (error) {
@@ -911,16 +688,16 @@ async function forEachMod(modNames, noWorkshopCopy, action, noAction) {
 async function buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
 	console.log('\nBuilding ', modName);
 
-	let modDir = path.combine(modsDir, modName);
+	let modDir = path.combine(config.modsDir, modName);
 
-	let modTempDir = path.combine(tempDir, modName);
+	let modTempDir = path.combine(config.tempDir, modName);
 	let dataDir = path.combine(modTempDir, 'compile');
 	let buildDir = path.combine(modTempDir, 'bundle');
 
 	await checkTempFolder(modName, shouldRemoveTemp);
 
-	if (!modId && !noWorkshopCopy && !await pfs.accessible(path.combine(modDir, cfgFile))){
-		throw `Mod folder doesn't have ${cfgFile}`;
+	if (!modId && !noWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))){
+		throw `Mod folder doesn't have ${config.cfgFile}`;
 	}
 
 	let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
@@ -974,11 +751,11 @@ async function getRegistryValue(key, value) {
 
 // Gets the steam workshop folder from vermintide's install location
 async function getWorkshopDir() {
-	let gameId = getGameId();
+	let gameId = config.getGameId();
 	let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
 	let value = '"InstallLocation"';
 
-	let workshopDir = fallbackWorkshopDir;
+	let workshopDir = config.fallbackWorkshopDir;
 	let errorMsg = 'Vermintide workshop directory not found, using fallback.';
 
 	let appPath = await	getRegistryValue(appKey, value).catch(err => {
@@ -993,7 +770,7 @@ async function getWorkshopDir() {
 
 		if(!neededPart){
 			console.error(errorMsg);
-			workshopDir = fallbackWorkshopDir;
+			workshopDir = config.fallbackWorkshopDir;
 		}
 		else{
 			workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
@@ -1012,7 +789,7 @@ async function getWorkshopDir() {
 
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
-	let tempPath = path.combine(tempDir, modName);
+	let tempPath = path.combine(config.tempDir, modName);
 	let tempExists = await pfs.accessible(tempPath);
 
 	if (tempExists && shouldRemove) {
@@ -1054,10 +831,10 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 	];
 
 	let stingray = child_process.spawn(
-		stingrayExe,
+		config.stingrayExe,
 		stingrayParams,
 		{
-			cwd: path.combine(toolsDir, stingrayDir),
+			cwd: path.combine(toolsDir, config.stingrayDir),
 			windowsVerbatimArguments: true
 		}
 	);
@@ -1118,7 +895,7 @@ function outputFailedBundles(data, modName) {
 
 		/* jshint ignore:start */
 		if(bundle[3] == 0) {
-			console.log('Failed to build %s/%s/%s.%s', modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
+			console.log('Failed to build %s/%s/%s.%s', config.modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
 		}
 		/* jshint ignore:end */
 	};
@@ -1139,11 +916,11 @@ async function getModWorkshopDir(modName, modId) {
 	return path.combine(workshopDir, String(modId));
 }
 
-// Copies the mod to the modsDir and modName/dist
+// Copies the mod to the config.modsDir and modName/dist
 async function moveMod(modName, buildDir, modWorkshopDir) {
 	return await new Promise((resolve, reject) => {
 
-		let modDistDir = path.combine(modsDir, modName, distDir);
+		let modDistDir = path.combine(config.modsDir, modName, config.distDir);
 
 		let gulpStream = gulp.src([
 				buildDir + '/*([0-f])',

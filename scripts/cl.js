@@ -32,12 +32,12 @@ module.exports = {
         let modNames = plainArgs;
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
-            modNames = await pfs.getModDirs(modsDir, ignoredDirs);
+            modNames = await pfs.getModDirs(config.modsDir, config.ignoredDirs);
         }
 
         let modId = modNames.length == 1 ? args.id : null;
         let noWorkshopCopy = args.dist || false;
-        let ignoreBuildErrors = args.e || args['ignore-errors'] || args['ignore-build-errors'] || scriptConfig.ignore_build_errors;
+        let ignoreBuildErrors = args.e || args['ignore-errors'] || args['ignore-build-errors'] || config.data.ignore_build_errors;
 
         return { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors };
     }

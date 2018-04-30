@@ -1,4 +1,4 @@
-const pfs = require('promise-fs');
+const pfs = Object.assign(require('promise-fs'), {});
 const path = require('./path');
 const gulp = require('gulp');
 const rename = require('gulp-rename');
@@ -23,6 +23,7 @@ pfs.getModDirs = async function(dir, except) {
     return dirs;
 };
 
+// Returns if file can be accessed
 pfs.accessible = async function (file) {
     try {
         await pfs.access(file);
@@ -39,10 +40,13 @@ pfs.deleteFile = async function (dir, file) {
     let stats = await pfs.lstat(filePath);
     if (stats.isDirectory()) {
         return pfs.deleteDirectory(filePath);
-    } else try {
-        await pfs.unlink(filePath);
     }
-    catch (err) { }
+    else {
+        try {
+            await pfs.unlink(filePath);
+        }
+        catch (err) { }
+    }
 };
 
 // Recursively and safely deletes directory

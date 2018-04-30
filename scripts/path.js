@@ -1,4 +1,4 @@
-const path = require('path');
+const path = Object.assign(require('path'), {});
 const normalizePath = require('normalize-path');
 
 path.fix = function(pth) {
