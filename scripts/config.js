@@ -1,5 +1,5 @@
-const pfs = require('./pfs');
-const path = require('./path');
+const pfs = require('./lib/pfs');
+const path = require('./lib/path');
 
 const defaultTempDir = '.temp';
 
@@ -75,51 +75,72 @@ let config = {
     // Config file for workshop uploader tool
     cfgFile: '',
 
-    async init(filename, args) {
-        this.filename = filename;
-        this.data = await readScriptConfig(this.filename, args.reset);
+    async readData(filename, args) {
+        config.filename = filename;
+        config.data = await readData(config.filename, args.reset);
+    },
 
+    async parseData(args) {
         // Mods directory
-        let { modsDir, tempDir } = await this.getModsDir(this.data.mods_dir, this.data.temp_dir, args);
-        this.modsDir = modsDir;
-        this.tempDir = tempDir;
+        let { modsDir, tempDir } = await config.getModsDir(config.data.mods_dir, config.data.temp_dir, args);
+        config.modsDir = modsDir;
+        config.tempDir = tempDir;
 
         // Game number
-        this.gameNumber = this.getGameNumber(this.data.game, args);
+        config.gameNumber = config.getGameNumber(config.data.game, args);
 
         // Other config params
-        this.fallbackToolsDir = path.fix(this.getGameSpecificKey('fallback_tools_dir') || '');
-        this.fallbackWorkshopDir = path.combine(this.getGameSpecificKey('fallback_workshop_dir') || '', this.getGameId());
-        this.ignoredDirs = this.data.ignored_dirs || [];
+        config.fallbackToolsDir = path.fix(config.getGameSpecificKey('fallback_tools_dir') || '');
+        config.fallbackWorkshopDir = path.combine(config.getGameSpecificKey('fallback_workshop_dir') || '', config.getGameId());
+        config.ignoredDirs = config.data.ignored_dirs || [];
 
-        this.templateDir = this.getTemplateDir(this.data.template_dir || this.defaultData.template_dir, args);
+        config.templateDir = config.getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
 
         // Files in template
-        const { coreSrc, modSrc } = this.getTemplateSrc(this.data.template_core_files, this.templateDir);
-        this.coreSrc = coreSrc;
-        this.modSrc = modSrc;
+        const { coreSrc, modSrc } = config.getTemplateSrc(config.data.template_core_files, config.templateDir);
+        config.coreSrc = coreSrc;
+        config.modSrc = modSrc;
 
         // Config file for workshop uploader tool
-        this.cfgFile = 'itemV' + this.gameNumber + '.cfg';
+        config.cfgFile = 'itemV' + config.gameNumber + '.cfg';
+    },
 
-        return this;
+    setData(args) {
+        for (let key of Object.keys(config.data)) {
+
+            if (args[key] === undefined) {
+                continue;
+            }
+
+            if (typeof config.data[key] == 'object') {
+                console.error(`Cannot set key "${key}" because it is an object. Modify ${config.filename} directly.`);
+                continue;
+            }
+
+            console.log(`Set ${key} to ${args[key]}`);
+            config.data[key] = args[key];
+        };
+    },
+
+    async writeData() {
+        await pfs.writeFile(config.filename, JSON.stringify(config.data, null, '\t'));
     },
 
     getGameSpecificKey(key){
-        let id = this.data[key + this.gameNumber];
+        let id = config.data[key + config.gameNumber];
         if (typeof id != 'string') {
-            console.error(`Failed to find '${key + this.gameNumber}' in ${this.filename}.`);
+            console.error(`Failed to find '${key + config.gameNumber}' in ${config.filename}.`);
             process.exit();
         }
         return id;
     },
 
     getGameId() {
-        return this.getGameSpecificKey('game_id');
+        return config.getGameSpecificKey('game_id');
     },
 
     getToolsId() {
-        return this.getGameSpecificKey('tools_id');
+        return config.getGameSpecificKey('tools_id');
     },
 
     async getModsDir(modsDir, tempDir, args) {
@@ -170,7 +191,7 @@ let config = {
         gameNumber = Number(gameNumber);
 
         if (gameNumber !== 1 && gameNumber !== 2) {
-            console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${this.filename}.`);
+            console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`);
             process.exit();
         }
 
@@ -193,7 +214,7 @@ let config = {
 
         // Static files from config
         let coreSrc = [
-            path.combine(templateDir, this.itemPreview)
+            path.combine(templateDir, config.itemPreview)
         ];
         if (Array.isArray(configCoreSrc)) {
             for (let src of configCoreSrc) {
@@ -212,31 +233,11 @@ let config = {
         };
 
         return { coreSrc, modSrc };
-    },
-
-    setData(args) {
-        for (let key of Object.keys(this.data)) {
-
-            if (args[key] === undefined) {
-                continue;
-            }
-
-            if (typeof this.data[key] == 'object') {
-                console.error(`Cannot set key "${key}" because it is an object. Modify ${this.filename} directly.`);
-                continue;
-            }
-
-            console.log(`Set ${key} to ${args[key]}`);
-            this.data[key] = args[key];
-        };
-    },
-
-    async writeData() {
-        await pfs.writeFile(this.filename, JSON.stringify(this.data, null, '\t'));
     }
+
 };
 
-async function readScriptConfig(filename, shouldReset) {
+async function readData(filename, shouldReset) {
 
     if (shouldReset && await pfs.accessible(filename)) {
         try {

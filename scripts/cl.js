@@ -1,5 +1,5 @@
 
-const pfs = require('./pfs');
+const pfs = require('./lib/pfs');
 const config = require('./config');
 
 // Commandline arguments
@@ -32,7 +32,12 @@ module.exports = {
         let modNames = plainArgs;
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
-            modNames = await pfs.getModDirs(config.modsDir, config.ignoredDirs);
+            try {
+                modNames = await pfs.getDirs(config.modsDir, config.ignoredDirs);
+            }
+            catch(err) {
+                console.error(err);
+            }
         }
 
         let modId = modNames.length == 1 ? args.id : null;

@@ -4,7 +4,7 @@ const gulp = require('gulp');
 const rename = require('gulp-rename');
 
 // Returns an array of folders in dir, except the ones in second param
-pfs.getModDirs = async function(dir, except) {
+pfs.getDirs = async function(dir, except) {
     let dirs = [];
 
     for (let fileName of await pfs.readdir(dir)) {
