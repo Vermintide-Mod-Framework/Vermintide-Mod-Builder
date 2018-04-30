@@ -14,7 +14,7 @@ let tasks = {
 
     // Prints all existing commands with params
     // vmb
-    default(callback, args, plainArgs) {
+    default(callback, plainArgs) {
         console.log(
             'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
             'vmb params    [--<key1>=<value1> --<key2>=<value2>...]\n' +
@@ -31,9 +31,9 @@ let tasks = {
     // Sets and/or displayes params file values
     // Limited to non-object values
     // vmb params [--<key1>=<value1> --<key2>=<value2>...]
-    async config(callback, args, plainArgs) {
+    async config(callback, plainArgs) {
 
-        config.setData(args);
+        config.setData(cl.argv);
 
         try {
             await config.writeData();
@@ -52,11 +52,11 @@ let tasks = {
     // Creates a copy of the template mod and renames it to the provided name
     // Uploads an empty mod file to the workshop to create an id
     // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
-    async create(callback, args, plainArgs) {
+    async create(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let params = cl.getWorkshopParams(args, plainArgs);
+        let params = cl.getWorkshopParams(plainArgs);
         let modName = params.name;
         let modDir = path.combine(config.modsDir, modName);
 
@@ -108,14 +108,14 @@ let tasks = {
 
     // Builds the mod then uploads it to workshop as a new item
     // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-    async publish(callback, args, plainArgs) {
+    async publish(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let params = cl.getWorkshopParams(args, plainArgs);
+        let params = cl.getWorkshopParams(plainArgs);
         let modName = params.name;
         let modDir = path.combine(config.modsDir, modName);
-        let buildParams = await cl.getBuildParams(args);
+        let buildParams = await cl.getBuildParams();
 
         let error = '';
         if (!modTools.validModName(modName)) {
@@ -167,11 +167,11 @@ let tasks = {
 
     // Uploads the last built version of the mod to the workshop
     // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
-    async upload(callback, args, plainArgs) {
+    async upload(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let modName = args.m || args.mod || plainArgs[0] || '';
+        let modName = cl.argv.m || cl.argv.mod || plainArgs[0] || '';
         let modDir = path.combine(config.modsDir, modName);
 
         let error = '';
@@ -188,14 +188,14 @@ let tasks = {
             return callback(exitCode);
         }
 
-        let changenote = args.n || args.note || args.changenote || '';
+        let changenote = cl.argv.n || cl.argv.note || cl.argv.changenote || '';
         if (typeof changenote != 'string') {
             changenote = '';
         }
 
-        let openUrl = args.o || args.open || false;
+        let openUrl = cl.argv.o || cl.argv.open || false;
 
-        let skip = args.s || args.skip;
+        let skip = cl.argv.s || cl.argv.skip;
 
         try {
             await uploader.uploadMod(await modTools.getModToolsDir(), modName, changenote, skip);
@@ -218,13 +218,13 @@ let tasks = {
 
     // Opens mod's workshop page
     // vmb open <mod_name> [--id <item_id>]
-    async open(callback, args, plainArgs) {
+    async open(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let modName = args.m || args.mod || plainArgs[0] || '';
+        let modName = cl.argv.m || cl.argv.mod || plainArgs[0] || '';
         let modDir = path.combine(config.modsDir, modName);
-        let modId = args.id || null;
+        let modId = cl.argv.id || null;
 
         if (!modId) {
             let error = '';
@@ -266,11 +266,11 @@ let tasks = {
     // -t - doesn't delete temp folder before building
     // --id - forces item id. can only be passed if building one mod
     // --dist - doesn't copy to workshop folder
-    async build(callback, args, plainArgs) {
+    async build(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams(args, plainArgs);
+        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams(cl.argv, plainArgs);
 
         if (modNames.length > 0) {
             console.log('Mods to build:');
@@ -312,11 +312,11 @@ let tasks = {
 
     // Watches for changes in specified mods and builds them whenever they occur
     // vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
-    async watch(callback, args, plainArgs) {
+    async watch(callback, plainArgs) {
 
         let exitCode = 0;
 
-        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams(args, plainArgs);
+        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams(cl.argv, plainArgs);
 
         if (modNames.length === 0) {
             console.log('No mods to watch');

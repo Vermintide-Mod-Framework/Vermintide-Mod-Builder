@@ -3,11 +3,10 @@ const setupCleanup = require('node-cleanup');
 
 let taskManager = {
 
-    tasks: {},
-
-    finished: false,
-
     init(tasks) {
+        taskManager.tasks = {};
+        taskManager.finished = false;
+
         setupCleanup(checkTaskFinished);
         for(let taskName in tasks) {
             taskManager.addTask(taskName, tasks[taskName]);
@@ -36,8 +35,8 @@ let taskManager = {
     },
 
     // Runs specified task
-    async runTask(taskName, args, plainArgs) {
-        await taskManager.tasks[taskName](callback, args, plainArgs);
+    async runTask(taskName, plainArgs) {
+        await taskManager.tasks[taskName](callback, plainArgs);
     }
 };
 

@@ -4,6 +4,7 @@ async function vmb() {
 
     // Read command line parameters
     const cl = require('./cl');
+    cl.init(process.argv);
 
     // Init tasks
     let tasks = require('./tasks');
@@ -15,6 +16,7 @@ async function vmb() {
 
     // Read config from file
     const config = require('./config');
+    config.init();
     await config.readData('.vmbrc', cl.argv);
 
     if (!config.data) {
@@ -23,7 +25,7 @@ async function vmb() {
 
     // Early execution and exit for certain tasks
     if (taskName == 'default' || taskName == 'config') {
-        await taskManager.runTask(taskName, cl.argv, plainArgs);
+        await taskManager.runTask(taskName, plainArgs);
         process.exit();
     }
 
@@ -31,7 +33,7 @@ async function vmb() {
     await config.parseData(cl.argv);
 
     // Run task
-    await taskManager.runTask(taskName, cl.argv, plainArgs);
+    await taskManager.runTask(taskName, plainArgs);
 }
 
 module.exports = vmb;

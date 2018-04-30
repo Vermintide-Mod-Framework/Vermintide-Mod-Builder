@@ -38,42 +38,44 @@ let config = {
         ignore_build_errors: false
     },
 
-    filename: '',
+    init() {
+        config.filename = '';
 
-    data: {},
+        config.data = {};
 
-    modsDir: '',
-    tempDir: '',
-    gameNumber: 0,
+        config.modsDir = '';
+        config.tempDir = '';
+        config.gameNumber = 0;
 
-    // Other config params
-    fallbackToolsDir: '',
-    fallbackWorkshopDir: '',
-    ignoredDirs: [],
+        // Other config params
+        config.fallbackToolsDir = '';
+        config.fallbackWorkshopDir = '';
+        config.ignoredDirs = [];
 
-    // These will be replaced in the template mod when running tasks
-    templateDir: '',
-    templateName: '%%name',
-    templateTitle: '%%title',
-    templateDescription: '%%description',
-    itemPreview: 'item_preview.jpg',
+        // These will be replaced in the template mod when running tasks
+        config.templateDir = '';
+        config.templateName = '%%name';
+        config.templateTitle = '%%title';
+        config.templateDescription = '%%description';
+        config.itemPreview = 'item_preview.jpg';
 
-    // Folder in which the built bundle is gonna be stored before being copied to workshop folder
-    distDir: 'dist',
+        // Folder in which the built bundle is gonna be stored before being copied to workshop folder
+        config.distDir = 'dist';
 
-    // Files in template
-    coreSrc: [],
-    modSrc: [],
+        // Files in template
+        config.coreSrc = [];
+        config.modSrc = [];
 
-    // Paths to mod tools relative to the mod tools folder
-    uploaderDir: 'ugc_uploader/',
-    uploaderExe: 'ugc_tool.exe',
-    uploaderGameConfig: 'steam_appid.txt',
-    stingrayDir: 'bin/',
-    stingrayExe: 'stingray_win64_dev_x64.exe',
+        // Paths to mod tools relative to the mod tools folder
+        config.uploaderDir = 'ugc_uploader/';
+        config.uploaderExe = 'ugc_tool.exe';
+        config.uploaderGameConfig = 'steam_appid.txt';
+        config.stingrayDir = 'bin/';
+        config.stingrayExe = 'stingray_win64_dev_x64.exe';
 
-    // Config file for workshop uploader tool
-    cfgFile: '',
+        // Config file for workshop uploader tool
+        config.cfgFile = '';
+    },
 
     async readData(filename, args) {
         config.filename = filename;

@@ -3,32 +3,37 @@ const pfs = require('./lib/pfs');
 const config = require('./config');
 
 // Commandline arguments
-const argv = require('minimist')(process.argv);
+const minimist = require('minimist');
+let argv = {};
 
-module.exports = {
-    argv,
+let cl = {
+    argv: {},
+
+    init(argv) {
+        cl.argv = argv = minimist(argv);
+    },
 
     // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
-    getWorkshopParams(args, plainArgs) {
+    getWorkshopParams(plainArgs) {
 
-        let modName = args.m || args.mod || plainArgs[0] || '';
-        let modTitle = args.t || args.title || modName;
+        let modName = argv.m || argv.mod || plainArgs[0] || '';
+        let modTitle = argv.t || argv.title || modName;
 
         return {
             name: modName,
             title: modTitle,
-            description: args.d || args.desc || args.description || modTitle + ' description',
-            language: args.l || args.language || 'english',
-            visibility: args.v || args.visibility || 'private',
-            verbose: args.verbose
+            description: argv.d || argv.desc || argv.description || modTitle + ' description',
+            language: argv.l || argv.language || 'english',
+            visibility: argv.v || argv.visibility || 'private',
+            verbose: argv.verbose
         };
     },
 
     // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
-    async getBuildParams(args, plainArgs) {
+    async getBuildParams(plainArgs) {
 
-        let verbose = args.verbose || false;
-        let shouldRemoveTemp = args.temp || false;
+        let verbose = argv.verbose || false;
+        let shouldRemoveTemp = argv.temp || false;
         let modNames = plainArgs;
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
@@ -40,10 +45,12 @@ module.exports = {
             }
         }
 
-        let modId = modNames.length == 1 ? args.id : null;
-        let noWorkshopCopy = args.dist || false;
-        let ignoreBuildErrors = args.e || args['ignore-errors'] || args['ignore-build-errors'] || config.data.ignore_build_errors;
+        let modId = modNames.length == 1 ? argv.id : null;
+        let noWorkshopCopy = argv.dist || false;
+        let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.data.ignore_build_errors;
 
         return { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors };
     }
 };
+
+module.exports = cl;
