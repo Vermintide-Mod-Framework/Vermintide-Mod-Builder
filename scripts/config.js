@@ -84,22 +84,22 @@ let config = {
 
     async parseData(args) {
         // Mods directory
-        let { modsDir, tempDir } = await config.getModsDir(config.data.mods_dir, config.data.temp_dir, args);
+        let { modsDir, tempDir } = await getModsDir(config.data.mods_dir, config.data.temp_dir, args);
         config.modsDir = modsDir;
         config.tempDir = tempDir;
 
         // Game number
-        config.gameNumber = config.getGameNumber(config.data.game, args);
+        config.gameNumber = getGameNumber(config.data.game, args);
 
         // Other config params
         config.fallbackToolsDir = path.fix(config.getGameSpecificKey('fallback_tools_dir') || '');
         config.fallbackWorkshopDir = path.combine(config.getGameSpecificKey('fallback_workshop_dir') || '', config.getGameId());
         config.ignoredDirs = config.data.ignored_dirs || [];
 
-        config.templateDir = config.getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
+        config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
 
         // Files in template
-        const { coreSrc, modSrc } = config.getTemplateSrc(config.data.template_core_files, config.templateDir);
+        const { coreSrc, modSrc } = getTemplateSrc(config.data.template_core_files, config.templateDir);
         config.coreSrc = coreSrc;
         config.modSrc = modSrc;
 
@@ -143,100 +143,7 @@ let config = {
 
     getToolsId() {
         return config.getGameSpecificKey('tools_id');
-    },
-
-    async getModsDir(modsDir, tempDir, args) {
-
-        modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
-        tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
-
-        let unspecifiedTempDir = !tempDir;
-        if (unspecifiedTempDir) {
-            tempDir = path.combine(modsDir, defaultTempDir);
-        }
-
-        let newModsDir = args.f || args.folder;
-
-        if (!newModsDir) {
-            console.log(`Using mods folder "${modsDir}"`);
-            console.log(`Using temp folder "${tempDir}"`);
-        }
-        else {
-            if (typeof newModsDir == 'string') {
-                modsDir = path.fix(newModsDir);
-                console.log(`Using mods folder "${modsDir}"`);
-                if (unspecifiedTempDir) {
-                    tempDir = path.combine(modsDir, defaultTempDir);
-                }
-            }
-            else {
-                console.warn(`Couldn't set mods folder "${newModsDir}", using default "${modsDir}"`);
-            }
-            console.log(`Using temp folder "${tempDir}"`);
-        }
-
-        if (!await pfs.accessible(modsDir + '/')) {
-            console.error(`Mods folder "${modsDir}" doesn't exist`);
-            process.exit();
-        }
-
-        return { modsDir, tempDir };
-    },
-
-    getGameNumber(gameNumber, args) {
-        let newGameNumber = args.g || args.game;
-
-        if (newGameNumber !== undefined) {
-            gameNumber = newGameNumber;
-        }
-
-        gameNumber = Number(gameNumber);
-
-        if (gameNumber !== 1 && gameNumber !== 2) {
-            console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`);
-            process.exit();
-        }
-
-        console.log('Game: Vermintide ' + gameNumber);
-
-        return gameNumber;
-    },
-
-    getTemplateDir(templateDir, args) {
-        let newTemplateDir = args.template || '';
-
-        if (newTemplateDir && typeof newTemplateDir == 'string') {
-            return newTemplateDir;
-        }
-
-        return templateDir;
-    },
-
-    getTemplateSrc(configCoreSrc, templateDir) {
-
-        // Static files from config
-        let coreSrc = [
-            path.combine(templateDir, config.itemPreview)
-        ];
-        if (Array.isArray(configCoreSrc)) {
-            for (let src of configCoreSrc) {
-                coreSrc.push(path.combine(templateDir, src));
-            };
-        }
-
-        // Folders with mod specific files
-        let modSrc = [
-            templateDir + '/**'
-        ];
-
-        // Exclude core files from being altered
-        for (let src of coreSrc) {
-            modSrc.push('!' + src);
-        };
-
-        return { coreSrc, modSrc };
     }
-
 };
 
 async function readData(filename, shouldReset) {
@@ -271,6 +178,98 @@ async function readData(filename, shouldReset) {
         console.error(`Couldn't read config`);
         return null;
     }
+}
+
+async function getModsDir(modsDir, tempDir, args) {
+
+    modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
+    tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
+
+    let unspecifiedTempDir = !tempDir;
+    if (unspecifiedTempDir) {
+        tempDir = path.combine(modsDir, defaultTempDir);
+    }
+
+    let newModsDir = args.f || args.folder;
+
+    if (!newModsDir) {
+        console.log(`Using mods folder "${modsDir}"`);
+        console.log(`Using temp folder "${tempDir}"`);
+    }
+    else {
+        if (typeof newModsDir == 'string') {
+            modsDir = path.fix(newModsDir);
+            console.log(`Using mods folder "${modsDir}"`);
+            if (unspecifiedTempDir) {
+                tempDir = path.combine(modsDir, defaultTempDir);
+            }
+        }
+        else {
+            console.warn(`Couldn't set mods folder "${newModsDir}", using default "${modsDir}"`);
+        }
+        console.log(`Using temp folder "${tempDir}"`);
+    }
+
+    if (!await pfs.accessible(modsDir + '/')) {
+        console.error(`Mods folder "${modsDir}" doesn't exist`);
+        process.exit();
+    }
+
+    return { modsDir, tempDir };
+}
+
+function getGameNumber(gameNumber, args) {
+    let newGameNumber = args.g || args.game;
+
+    if (newGameNumber !== undefined) {
+        gameNumber = newGameNumber;
+    }
+
+    gameNumber = Number(gameNumber);
+
+    if (gameNumber !== 1 && gameNumber !== 2) {
+        console.error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`);
+        process.exit();
+    }
+
+    console.log('Game: Vermintide ' + gameNumber);
+
+    return gameNumber;
+}
+
+function getTemplateDir(templateDir, args) {
+    let newTemplateDir = args.template || '';
+
+    if (newTemplateDir && typeof newTemplateDir == 'string') {
+        return newTemplateDir;
+    }
+
+    return templateDir;
+}
+
+function getTemplateSrc(configCoreSrc, templateDir) {
+
+    // Static files from config
+    let coreSrc = [
+        path.combine(templateDir, config.itemPreview)
+    ];
+    if (Array.isArray(configCoreSrc)) {
+        for (let src of configCoreSrc) {
+            coreSrc.push(path.combine(templateDir, src));
+        };
+    }
+
+    // Folders with mod specific files
+    let modSrc = [
+        templateDir + '/**'
+    ];
+
+    // Exclude core files from being altered
+    for (let src of coreSrc) {
+        modSrc.push('!' + src);
+    };
+
+    return { coreSrc, modSrc };
 }
 
 module.exports = config;

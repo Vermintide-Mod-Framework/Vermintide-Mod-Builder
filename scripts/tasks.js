@@ -303,6 +303,7 @@ let tasks = {
                 },
                 () => {
                     console.log();
+                    exitCode = 1;
                 }
             );
         }
@@ -349,8 +350,12 @@ let tasks = {
                         }
                         catch (error) {
                             console.error(error);
+                            exitCode = 1;
                         };
                     });
+                },
+                () => {
+                    exitCode = 1;
                 }
             );
         }
