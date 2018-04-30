@@ -17,8 +17,8 @@ function zipVmb() {
     return new Promise((resolve, reject) => {
         gulp.src(
             [
-                'template/**/*',
-                'template-vmf/**/*',
+                '.template/**/*',
+                '.template-vmf/**/*',
                 'vmb.exe',
                 'mods/'
             ],
