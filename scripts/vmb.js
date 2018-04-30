@@ -24,7 +24,7 @@ async function vmb(argv) {
     }
     catch (err) {
         console.error(err);
-        return { exitCode: 2, shouldExit: true };
+        return { exitCode: 2, finished: true };
     }
 
     // Early execution and exit for certain tasks
@@ -38,7 +38,7 @@ async function vmb(argv) {
     }
     catch (err) {
         console.error(err);
-        return { exitCode: 3, shouldExit: true };
+        return { exitCode: 3, finished: true };
     }
 
     // Run task

@@ -25,7 +25,7 @@ let tasks = {
             'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
             'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]'
         );
-        return { exitCode: 0, shouldExit: false };
+        return { exitCode: 0, finished: false };
     },
 
     // Sets and/or displayes params file values
@@ -41,12 +41,12 @@ let tasks = {
         catch (err) {
             console.error(err);
             console.error(`Couldn't save params`);
-            return { exitCode: 1, shouldExit: false };
+            return { exitCode: 1, finished: false };
         }
 
         console.log(config.data);
 
-        return { exitCode: 0, shouldExit: false };
+        return { exitCode: 0, finished: false };
     },
 
     // Creates a copy of the template mod and renames it to the provided name
@@ -70,7 +70,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            return { exitCode: 1, shouldExit: true };
+            return { exitCode: 1, finished: true };
         }
 
         console.log(`Copying template from "${config.templateDir}"`);
@@ -102,7 +102,7 @@ let tasks = {
             }
         }
 
-        return { exitCode, shouldExit: true };
+        return { exitCode, finished: true };
     },
 
     // Builds the mod then uploads it to workshop as a new item
@@ -134,7 +134,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            return { exitCode: 1, shouldExit: true };
+            return { exitCode: 1, finished: true };
         }
 
         try {
@@ -161,7 +161,7 @@ let tasks = {
             exitCode = 1;
         }
 
-        return { exitCode, shouldExit: true };
+        return { exitCode, finished: true };
     },
 
     // Uploads the last built version of the mod to the workshop
@@ -183,7 +183,7 @@ let tasks = {
 
         if (error) {
             console.error(error);
-            return { exitCode: 1, shouldExit: true };
+            return { exitCode: 1, finished: true };
         }
 
         let changenote = cl.argv.n || cl.argv.note || cl.argv.changenote || '';
@@ -211,7 +211,7 @@ let tasks = {
             exitCode = 1;
         }
 
-        return { exitCode, shouldExit: true };
+        return { exitCode, finished: true };
     },
 
     // Opens mod's workshop page
@@ -235,7 +235,7 @@ let tasks = {
 
             if (error) {
                 console.error(error);
-                return { exitCode: 1, shouldExit: true };
+                return { exitCode: 1, finished: true };
             }
         }
 
@@ -254,7 +254,7 @@ let tasks = {
             exitCode = 1;
         }
 
-        return { exitCode, shouldExit: true };
+        return { exitCode, finished: true };
     },
 
     // Builds specified mods and copies the bundles to the game workshop folder
@@ -277,7 +277,7 @@ let tasks = {
         }
         else {
             console.log('No mods to build');
-            return { exitCode, shouldExit: true };
+            return { exitCode, finished: true };
         }
 
         let toolsDir = await modTools.getModToolsDir().catch((error) => {
@@ -305,7 +305,7 @@ let tasks = {
             );
         }
 
-        return { exitCode, shouldExit: true };
+        return { exitCode, finished: true };
     },
 
     // Watches for changes in specified mods and builds them whenever they occur
@@ -318,7 +318,7 @@ let tasks = {
 
         if (modNames.length === 0) {
             console.log('No mods to watch');
-            return { exitCode, shouldExit: true };
+            return { exitCode, finished: true };
         }
 
         let toolsDir = await modTools.getModToolsDir().catch((error) => {
@@ -357,7 +357,7 @@ let tasks = {
             );
         }
 
-        return {exitCode, shouldExit: false};
+        return {exitCode, finished: false};
     }
 
 };
