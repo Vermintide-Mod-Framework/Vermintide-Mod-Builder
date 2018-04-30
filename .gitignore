@@ -6,6 +6,7 @@
 !package.json
 !package-lock.json
 !README.md
+!/scripts
 !/mods
 /mods/*
 !/mods/.gitkeep
