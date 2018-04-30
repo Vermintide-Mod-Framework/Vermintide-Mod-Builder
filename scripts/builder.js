@@ -4,7 +4,7 @@ const rename = require('gulp-rename');
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
-const reg = require('./reg');
+const reg = require('./lib/reg');
 const modTools = require('./mod_tools');
 const str = require('./lib/str');
 

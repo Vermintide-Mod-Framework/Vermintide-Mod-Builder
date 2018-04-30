@@ -2,7 +2,7 @@
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
-const reg = require('./reg');
+const reg = require('./lib/reg');
 
 let modTools = {
     validModName(modName) {
