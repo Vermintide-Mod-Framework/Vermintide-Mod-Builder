@@ -22,10 +22,11 @@ This script works for both Vermintide 1 and 2.
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <folder>] [-g <game_number>] [--reset]
+	vmb <command> [command-specific params] [-f <folder>] [-g <game_number>] [--rc <filename>] [--reset]
 
 `-f <folder>` or `--folder <folder>` - temporarily sets current mods folder  
 `-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for  
+`--rc <filename>` -  path to file to use as config instead of .vmbrc  
 `--reset` - resets .vmbrc before executing the command  
 
 Run without command to see a list of commands with parameters.

@@ -125,11 +125,8 @@ let uploader = {
                         (code == 3221225477 ? `\nCheck if Steam is running` : '')
                     );
                 }
-                else if (modId){
+                else {
                     resolve(modId);
-                }
-                else{
-                    reject(`Uploader failed to return an item id`);
                 }
             });
         });

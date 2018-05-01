@@ -19,7 +19,8 @@
   "scripts": {
     "start": "node vmb.js",
     "setup": "npm i -s",
-    "compile": "gulp compile"
+    "compile": "gulp compile",
+    "test": "node vmb-test"
   },
   "repository": {
     "type": "git",

@@ -21,7 +21,7 @@ async function vmb(argv) {
 
     // Read config from file
     try {
-        await config.readData('.vmbrc', cl.argv);
+        await config.readData(cl.argv);
     }
     catch (err) {
         console.error(err);

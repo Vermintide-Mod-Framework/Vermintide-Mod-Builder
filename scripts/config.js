@@ -41,7 +41,7 @@ let config = {
     },
 
     init() {
-        config.filename = '';
+        config.filename = '.vmbrc';
 
         config.data = {};
 
@@ -81,8 +81,8 @@ let config = {
         config.cfgFile = '';
     },
 
-    async readData(filename, args) {
-        config.filename = filename;
+    async readData(args) {
+        config.filename = args.rc || config.filename;
         config.data = await readData(config.filename, args.reset);
         if (!config.data || typeof config.data != 'object') {
             throw `Invalid config data in ${config.filename}`;

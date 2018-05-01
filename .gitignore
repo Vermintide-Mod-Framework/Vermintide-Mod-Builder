@@ -2,6 +2,7 @@
 
 !.gitignore
 !vmb.js
+!vmb-test.js
 !gulpfile.js
 !package.json
 !package-lock.json
