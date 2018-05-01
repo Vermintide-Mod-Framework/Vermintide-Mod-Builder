@@ -17,7 +17,7 @@ let tasks = {
     default() {
         console.log(
             'vmb <command> [-f <folder>] [-g <game_number>] [--reset]\n' +
-            'vmb params    [--<key1>=<value1> --<key2>=<value2>...]\n' +
+            'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
             'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
             'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]\n' +
             'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
@@ -28,9 +28,9 @@ let tasks = {
         return { exitCode: 0, finished: false };
     },
 
-    // Sets and/or displayes params file values
+    // Sets and/or displayes config file values
     // Limited to non-object values
-    // vmb params [--<key1>=<value1> --<key2>=<value2>...]
+    // vmb config [--<key1>=<value1> --<key2>=<value2>...]
     async config() {
 
         config.setData(cl.argv);
@@ -40,7 +40,7 @@ let tasks = {
         }
         catch (err) {
             console.error(err);
-            console.error(`Couldn't save params`);
+            console.error(`Couldn't save config`);
             return { exitCode: 1, finished: false };
         }
 
