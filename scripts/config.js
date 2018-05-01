@@ -26,6 +26,8 @@ let config = {
 
         template_dir: ".template-vmf",
 
+        template_preview_image: "item_preview.jpg",
+
         template_core_files: [
             'core/**'
         ],
@@ -59,7 +61,7 @@ let config = {
         config.templateName = '%%name';
         config.templateTitle = '%%title';
         config.templateDescription = '%%description';
-        config.itemPreview = 'item_preview.jpg';
+        config.itemPreview = '';
 
         // Folder in which the built bundle is gonna be stored before being copied to workshop folder
         config.distDir = 'dist';
@@ -104,6 +106,7 @@ let config = {
         config.ignoredDirs = config.data.ignored_dirs || [];
 
         config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
+        config.itemPreview = config.data.template_preview_image || config.defaultData.template_preview_image;
 
         // Files in template
         const { coreSrc, modSrc } = getTemplateSrc(config.data.template_core_files, config.templateDir);
@@ -170,9 +173,9 @@ async function readData(filename, shouldReset) {
 }
 
 function getGameSpecificKey(key){
-    let id = config.data[key + config.gameNumber];
+    let id = config.data[key + config.gameNumber] || config.defaultData[key + config.gameNumber];
     if (typeof id != 'string') {
-        throw `Failed to find '${key + config.gameNumber}' in ${config.filename}.`;
+        throw `Failed to find '${key + config.gameNumber}' in ${config.filename}. It must be a string.`;
     }
     return id;
 }

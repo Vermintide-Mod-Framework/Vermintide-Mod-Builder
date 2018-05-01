@@ -15,7 +15,7 @@ This script works for both Vermintide 1 and 2.
 2. Run vmb.exe to create default .vmbrc config file.  
 2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc -> `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
-3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or set them to empty string but do not delete the options themselves.  
+3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or remove them, then the standard fallback will be used.  
 4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in .vmbrc.   
 5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.  
 
@@ -93,7 +93,7 @@ You can customize this template or create your own.
 These are `%%name`, `%%title` and `%%description` for content of files and `%%name` for names of files and folders.  
 * Files which should be excluded from such alteration can be specified in `template_core_files`. They will simply be copied over.  
 
-Every template must have `item_preview.jpg` in it as that is used for the mod preview picture.  
+Every template must have `item_preview.jpg` in it as that is used for the mod preview picture. If you want to change the name or the format of this file, specify it in .vmbrc -> `template_preview_image`. 
 
 ### Compiling VMB executable
 
