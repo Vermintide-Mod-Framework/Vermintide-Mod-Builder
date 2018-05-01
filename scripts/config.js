@@ -10,7 +10,7 @@ let config = {
         mods_dir: 'mods',
         temp_dir: '',
 
-        game: 1,
+        game: 2,
 
         game_id1: '235540',
         game_id2: '552500',

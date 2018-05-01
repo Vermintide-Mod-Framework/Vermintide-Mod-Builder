@@ -46,7 +46,7 @@ let cl = {
             }
         }
 
-        let modId = modNames.length == 1 ? argv.id : null;
+        let modId = modNames && modNames.length == 1 ? argv.id : null;
         let noWorkshopCopy = argv.dist || false;
         let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.data.ignore_build_errors;
 
