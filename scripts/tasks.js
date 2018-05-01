@@ -23,7 +23,8 @@ let tasks = {
             'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
             'vmb open      {<mod_name> | --id <item_id>}\n' +
             'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
-            'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]'
+            'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]' +
+            'See README.md for more information.'
         );
         return { exitCode: 0, finished: false };
     },

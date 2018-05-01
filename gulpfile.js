@@ -20,7 +20,8 @@ function zipVmb() {
                 '.template/**/*',
                 '.template-vmf/**/*',
                 'vmb.exe',
-                'mods/'
+                'mods/',
+                'README.md'
             ],
             { base: '.' }
         )
