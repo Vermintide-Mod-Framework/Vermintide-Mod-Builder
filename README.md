@@ -1,7 +1,7 @@
 ## Vermintide Mod Builder  
 
 I made a script to ease the ever-growing pain of creating and rebuilding mods
-and compiled it into a 30 megabytes executable for ease of use.  
+and compiled it into a 30mb executable for ease of use.  
 The executable is the full [Node.js](https://nodejs.org/en/) enviroment
 and the script uses [gulp](https://gulpjs.com/) which is like make for javascript.
 Compiled with [pkg](https://github.com/zeit/pkg).  
