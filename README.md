@@ -1,4 +1,4 @@
-## Vermintide Mod Builder for VMF
+## Vermintide Mod Builder  
 
 I made a script to ease the ever-growing pain of creating and rebuilding mods
 and compiled it into a 30 megabytes executable for ease of use.  
@@ -36,7 +36,8 @@ Run without command to see a list of commands with parameters.
 	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
-This is needed for the game to recognize the mod.
+This is needed for the game to recognize the mod.  
+Be default the template is for mods that work under VMF. To create a VMF-independent mod specify `.template` as the template.
 
 #### Publish an existing mod to Steam Workshop:  
 
