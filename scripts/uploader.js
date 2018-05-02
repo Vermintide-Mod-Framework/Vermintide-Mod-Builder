@@ -66,7 +66,7 @@ let uploader = {
                         `language = "${params.language}";\n` +
                         `visibility = "${params.visibility}";\n`;
         console.log(`${config.cfgFile}:`);
-        console.log('  ' + str.rmn(configText).replace(/\n/g, '\n  '));
+        console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
         return await pfs.writeFile(path.combine(config.modsDir, params.name, config.cfgFile), configText);
     },
 

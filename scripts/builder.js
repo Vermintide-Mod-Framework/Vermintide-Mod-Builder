@@ -43,7 +43,7 @@ let builder = {
 
     // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
     async buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
-        console.log('\nBuilding ', modName);
+        console.log(`\nBuilding ${modName}`);
 
         let modDir = path.combine(config.modsDir, modName);
 
@@ -63,7 +63,7 @@ let builder = {
         let modWorkshopDir = !noWorkshopCopy && await getModWorkshopDir(modName, modId);
         await moveMod(modName, buildDir, modWorkshopDir);
 
-        console.log('Successfully built ' + modName);
+        console.log(`Successfully built ${modName}`);
     }
 };
 
@@ -99,7 +99,7 @@ async function getWorkshopDir() {
         console.error(errorMsg);
     }
 
-    console.log('Workshop folder:', workshopDir);
+    console.log(`Workshop folder: ${workshopDir}`);
     return workshopDir;
 }
 
@@ -116,13 +116,13 @@ async function checkTempFolder(modName, shouldRemove) {
                     return reject(error + '\nFailed to delete temp folder');
                 }
 
-                console.log('Removed ', tempPath);
+                console.log(`Removed ${tempPath}`);
                 return resolve();
             });
         });
     }
     else if (tempExists) {
-        console.log('Overwriting temp folder');
+        console.log(`Overwriting temp folder`);
     }
 }
 
@@ -165,7 +165,7 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
         stingray.on('error', error => reject(error));
 
         stingray.on('close', code => {
-            console.log('Finished building');
+            console.log(`Finished building`);
             resolve(code);
         });
     });
@@ -175,11 +175,12 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
     if (code) {
-        console.error('Stingray exited with error code: ' + code + '. Please check your scripts for syntax errors.');
+        console.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
     }
 
     let data = await pfs.readFile(path.combine(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
-        console.error(error + '\nFailed to read processed_bundles.csv');
+        console.error(error);
+        console.error(`Failed to read processed_bundles.csv`);
     });
 
 
@@ -188,7 +189,7 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
     }
 
     if (ignoreBuildErrors) {
-        console.log('Ignoring build errors');
+        console.log(`Ignoring build errors`);
     }
 
     if (!ignoreBuildErrors && (code || !data)) {
@@ -220,12 +221,12 @@ function outputFailedBundles(data, modName) {
 // Returns mod's directory in workshop folder
 async function getModWorkshopDir(modName, modId) {
     if (modId) {
-        console.log('Using specified item ID');
+        console.log(`Using specified item ID`);
     }
     else {
         modId = await modTools.getModId(modName);
     }
-    console.log('Item ID:', modId);
+    console.log(`Item ID: ${modId}`);
 
     let workshopDir = await getWorkshopDir();
 
@@ -251,7 +252,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
             .on('error', reject);
 
         if (modWorkshopDir) {
-            console.log('Copying to ', modWorkshopDir);
+            console.log(`Copying to ${modWorkshopDir}`);
             gulpStream = gulpStream.pipe(gulp.dest(modWorkshopDir)).on('error', reject);
         }
 

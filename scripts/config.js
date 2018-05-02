@@ -230,7 +230,7 @@ function getGameNumber(gameNumber, args) {
         throw `Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`;
     }
 
-    console.log('Game: Vermintide ' + gameNumber);
+    console.log(`Game: Vermintide ${gameNumber}`);
 
     return gameNumber;
 }

@@ -56,7 +56,7 @@ const vmb = require('./scripts/vmb');
         '.vmbrc-test'
     ]);
 
-    console.log('Succesfully finished all tests');
+    console.log(`Succesfully finished all tests`);
 
     cleanup();
 

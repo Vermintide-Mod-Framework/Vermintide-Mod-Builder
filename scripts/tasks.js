@@ -83,8 +83,8 @@ let tasks = {
             let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
 
             let modUrl = uploader.formUrl(modId);
-            console.log('Now you need to subscribe to ' + modUrl + ' in order to be able to build and test your mod.');
-            console.log('Opening url...');
+            console.log(`Now you need to subscribe to ${modUrl} in order to be able to build and test your mod.`);
+            console.log(`Opening url...`);
             await opn(modUrl);
         }
         catch (error) {
@@ -153,8 +153,8 @@ let tasks = {
 
             let modId = await modTools.getModId(modName);
             let modUrl = uploader.formUrl(modId);
-            console.log('Uploaded to ' + modUrl);
-            console.log('Opening url...');
+            console.log(`Uploaded to ${modUrl}`);
+            console.log(`Opening url...`);
             await opn(modUrl);
         }
         catch (error) {
@@ -201,9 +201,9 @@ let tasks = {
 
             let modId = await modTools.getModId(modName);
             let modUrl = uploader.formUrl(modId);
-            console.log('Uploaded to ' + modUrl);
+            console.log(`Uploaded to ${modUrl}`);
             if (openUrl) {
-                console.log('Opening url...');
+                console.log(`Opening url...`);
                 await opn(modUrl);
             }
         }
@@ -247,7 +247,7 @@ let tasks = {
             }
 
             let url = uploader.formUrl(modId);
-            console.log('Opening', url);
+            console.log(`Opening ${url}`);
             await opn(url);
         }
         catch (error) {
@@ -271,13 +271,13 @@ let tasks = {
         let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
 
         if (modNames.length > 0) {
-            console.log('Mods to build:');
+            console.log(`Mods to build:`);
             for (let modName of modNames) {
-                console.log('  ' + modName);
+                console.log(`  ${modName}`);
             }
         }
         else {
-            console.log('No mods to build');
+            console.log(`No mods to build`);
             return { exitCode, finished: true };
         }
 
@@ -318,7 +318,7 @@ let tasks = {
         let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
 
         if (modNames.length === 0) {
-            console.log('No mods to watch');
+            console.log(`No mods to watch`);
             return { exitCode, finished: true };
         }
 
