@@ -1,4 +1,5 @@
 const pfs = require('./scripts/lib/pfs');
+const vmb = require('./scripts/vmb');
 
 (async () => {
 
@@ -69,7 +70,7 @@ async function cleanup() {
 
 async function runTest(name, params) {
     console.log(`Running test ${name} with params "${params.join(' ')}"`);
-    let { exitCode } = await (require('./scripts/vmb')(params));
+    let { exitCode } = await vmb(params);
     if (exitCode) {
         console.error(`Failed upload ${name} with code ${exitCode}`);
         await cleanup();
