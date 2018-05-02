@@ -10,8 +10,8 @@ let cl = {
     argv: {},
     plainArgs: [],
 
-    init(argv) {
-        cl.argv = argv = minimist(argv);
+    init(args) {
+        cl.argv = argv = minimist(args);
     },
 
     // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]

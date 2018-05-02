@@ -58,7 +58,7 @@ const vmb = require('./scripts/vmb');
 
     console.log(`Succesfully finished all tests`);
 
-    cleanup();
+    await cleanup();
 
 })();
 
