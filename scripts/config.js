@@ -24,6 +24,9 @@ let config = {
         fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
         fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
 
+        bundle_extension1: '',
+        bundle_extension2: '.mod_bundle',
+
         template_dir: ".template-vmf",
 
         template_preview_image: "item_preview.jpg",
@@ -67,6 +70,7 @@ let config = {
 
         // Folder in which the built bundle is gonna be stored before being copied to workshop folder
         config.distDir = 'dist';
+        config.bundleExtension = '';
 
         // Files in template
         config.coreSrc = [];
@@ -113,6 +117,8 @@ let config = {
         config.gameNumber = getGameNumber(config.data.game, args);
         config.gameId = getGameSpecificKey('game_id');
         config.toolsId = getGameSpecificKey('tools_id');
+
+        config.bundleExtension = getGameSpecificKey('bundle_extension');
 
         // Other config params
         config.fallbackToolsDir = path.absolutify(getGameSpecificKey('fallback_tools_dir') || '');

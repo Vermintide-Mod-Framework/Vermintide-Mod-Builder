@@ -239,7 +239,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
         ], { base: buildDir })
             .pipe(rename(p => {
                 p.basename = modName;
-                p.extname = '';
+                p.extname = config.bundleExtension;
             }))
             .on('error', reject)
             .pipe(gulp.dest(modDistDir))
