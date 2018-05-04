@@ -16,7 +16,7 @@ let tasks = {
     // vmb
     default() {
         console.log(
-            'vmb <command> [-f <folder>] [-g <game_number>] [--rc <filename>] [--reset]\n' +
+            'vmb <command> [-f <mods_folder>] [-g <game_number>] [--rc <config_folder>] [--reset] [--cwd]\n' +
             'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
             'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
             'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]\n' +

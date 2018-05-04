@@ -9,14 +9,16 @@ const vmb = require('./scripts/vmb');
         'create',
         'test',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('build', [
         'build',
         'test',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('publish', [
@@ -25,7 +27,8 @@ const vmb = require('./scripts/vmb');
         '-g',
         '1',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('config', [
@@ -33,27 +36,31 @@ const vmb = require('./scripts/vmb');
         '--game',
         '1',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('upload 1', [
         'upload',
         'test',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('reset', [
         '--reset',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     await runTest('upload 2', [
         'upload',
         'test',
         '--rc',
-        '.vmbrc-test'
+        '.vscode',
+        '--cwd'
     ]);
 
     console.log(`Succesfully finished all tests`);
@@ -64,7 +71,7 @@ const vmb = require('./scripts/vmb');
 
 
 async function cleanup() {
-    await pfs.deleteFile('.', '.vmbrc-test').catch(err => { });
+    await pfs.deleteFile('.vscode', '.vmbrc').catch(err => { });
     await pfs.deleteDirectory('mods/test').catch(err => { });
 }
 

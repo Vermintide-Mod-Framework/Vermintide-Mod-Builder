@@ -75,9 +75,6 @@ let uploader = {
 
         let configPath = config.modsDir + '\\' + modName + '\\' + config.cfgFile;
 
-        if (!path.isAbsolute(config.modsDir)) {
-            configPath = path.combine(process.cwd(), configPath);
-        }
         let uploaderParams = [
             '-c', '"' + configPath + '"'
         ];

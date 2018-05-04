@@ -12,22 +12,23 @@ This script works for both Vermintide 1 and 2.
 ### Installation  
 
 1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
-2. Run vmb.exe to create default .vmbrc config file.  
-2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc -> `mods_dir`. This path can be relative or absolute. The path must already exist. To use current folder put `.` as the path.  
+2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
+2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc -> `mods_dir`. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
 3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or remove them, then the standard fallback will be used.  
 4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in .vmbrc.   
-5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.  
+5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program. 
 
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <folder>] [-g <game_number>] [--rc <filename>] [--reset]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g <game_number>] [--rc <config_folder>] [--reset] [--cwd]
 
-`-f <folder>` or `--folder <folder>` - temporarily sets current mods folder  
-`-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for  
-`--rc <filename>` -  path to file to use as config instead of .vmbrc  
-`--reset` - resets .vmbrc before executing the command  
+`-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder.  
+`-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for.  
+`--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default it is the directory with vmb.exe. Folder must exist. If the file doesn't exist in the folder, a default config will be created.    
+`--reset` - resets .vmbrc before executing the command.  
+`--cwd` - forces all non-absolute paths to be relative to the current working directory. See **[relative paths clarification](#relative-paths-clarification)**.
 
 Run without command to see a list of commands with parameters.
 
@@ -38,7 +39,7 @@ Run without command to see a list of commands with parameters.
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
-Be default the template is for mods that work under VMF. To create a VMF-independent mod specify `.template` as the template.
+By default the template is for mods that work under VMF. To create a VMF-independent mod specify `.template` as the template.
 
 #### Publish an existing mod to Steam Workshop:  
 
@@ -89,12 +90,22 @@ Note that you cannot set non-string or non-number options this way.
 When creating a mod, a template folder will be copied to act as a boilerplate for your mod.
 You can customize this template or create your own.  
 
-* The template folder is determined by `template_dir` in .vmbrc. This path can be relative or absolute.  
+* The template folder is determined by `template_dir` in .vmbrc. This path can be relative or absolute. If not absolute, it will be relative to the directory of the executable.   
 * Certain strings will be replaced with their corresponding values when creating a new mod.
 These are `%%name`, `%%title` and `%%description` for content of files and `%%name` for names of files and folders.  
 * Files which should be excluded from such alteration can be specified in `template_core_files`. They will simply be copied over.  
 
 Every template must have `item_preview.jpg` in it as that is used for the mod preview picture. If you want to change the name or the format of this file, specify it in .vmbrc -> `template_preview_image`. 
+
+### Relative paths clarification
+
+To provide convenience both to people who want to use vmb out of the box and people who want to configure it/add it to PATH/use multiple configs, relative paths to mods directory, temp directory, template directory and config file are treated differently:  
+
+* `mods_dir` and `temp_dir` are relative to the current working directory.  
+* `template_dir` is relative to the directory with vmb.exe.  
+* `.vmbrc` folder is relative to the current working directory but defaults to the vmb.exe folder when not overwritten by the `--rc` argument.
+
+You can use `--cwd` flag to force all non-absolute paths to be relative to the current working directory.
 
 ### Compiling VMB executable
 

@@ -41,7 +41,9 @@ let config = {
     },
 
     init() {
+        config.dir = '';
         config.filename = '.vmbrc';
+        config.exeDir = '';
 
         config.data = {};
 
@@ -82,14 +84,26 @@ let config = {
     },
 
     async readData(args) {
-        config.filename = args.rc || config.filename;
-        config.data = await readData(config.filename, args.reset);
+
+        config.exeDir = args.cwd ? process.cwd() : path.dirname(process.execPath);
+
+        if(args.rc){
+            config.dir = path.absolutify(args.rc);
+            console.log(`Using ${config.filename} in "${config.dir}"`);
+        }
+        else{
+            config.dir = config.exeDir;
+        }
+
+        config.data = await readData(path.combine(config.dir, config.filename), args.reset);
         if (!config.data || typeof config.data != 'object') {
             throw `Invalid config data in ${config.filename}`;
         }
     },
 
     async parseData(args) {
+
+
         // Mods directory
         let { modsDir, tempDir } = await getModsDir(config.data.mods_dir, config.data.temp_dir, args);
         config.modsDir = modsDir;
@@ -101,8 +115,8 @@ let config = {
         config.toolsId = getGameSpecificKey('tools_id');
 
         // Other config params
-        config.fallbackToolsDir = path.fix(getGameSpecificKey('fallback_tools_dir') || '');
-        config.fallbackWorkshopDir = path.combine(getGameSpecificKey('fallback_workshop_dir') || '', config.gameId);
+        config.fallbackToolsDir = path.absolutify(getGameSpecificKey('fallback_tools_dir') || '');
+        config.fallbackWorkshopDir = path.absolutify(path.combine(getGameSpecificKey('fallback_workshop_dir') || '', config.gameId));
         config.ignoredDirs = config.data.ignored_dirs || [];
 
         config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
@@ -135,16 +149,16 @@ let config = {
     },
 
     async writeData() {
-        await pfs.writeFile(config.filename, JSON.stringify(config.data, null, '\t'));
+        await pfs.writeFile(path.combine(config.dir, config.filename), JSON.stringify(config.data, null, '\t'));
     }
 };
 
-async function readData(filename, shouldReset) {
+async function readData(filepath, shouldReset) {
 
-    if (shouldReset && await pfs.accessible(filename)) {
+    if (shouldReset && await pfs.accessible(filepath)) {
         try {
-            console.log(`Deleting ${filename}`);
-            await pfs.unlink(filename);
+            console.log(`Deleting ${path.basename(filepath)}`);
+            await pfs.unlink(filepath);
         }
         catch (err) {
             console.error(err);
@@ -152,10 +166,10 @@ async function readData(filename, shouldReset) {
         }
     }
 
-    if (!await pfs.accessible(filename)) {
+    if (!await pfs.accessible(filepath)) {
         try {
-            console.log(`Creating default ${filename}`);
-            await pfs.writeFile(filename, JSON.stringify(config.defaultData, null, '\t'));
+            console.log(`Creating default ${path.basename(filepath)}`);
+            await pfs.writeFile(filepath, JSON.stringify(config.defaultData, null, '\t'));
         }
         catch (err) {
             console.error(err);
@@ -164,7 +178,7 @@ async function readData(filename, shouldReset) {
     }
 
     try {
-        return JSON.parse(await pfs.readFile(filename, 'utf8'));
+        return JSON.parse(await pfs.readFile(filepath, 'utf8'));
     }
     catch (err) {
         console.error(err);
@@ -185,6 +199,7 @@ async function getModsDir(modsDir, tempDir, args) {
     modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
     tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
 
+
     let unspecifiedTempDir = !tempDir;
     if (unspecifiedTempDir) {
         tempDir = path.combine(modsDir, defaultTempDir);
@@ -192,23 +207,23 @@ async function getModsDir(modsDir, tempDir, args) {
 
     let newModsDir = args.f || args.folder;
 
-    if (!newModsDir) {
-        console.log(`Using mods folder "${modsDir}"`);
-        console.log(`Using temp folder "${tempDir}"`);
-    }
-    else {
+    if (newModsDir) {
         if (typeof newModsDir == 'string') {
             modsDir = path.fix(newModsDir);
-            console.log(`Using mods folder "${modsDir}"`);
             if (unspecifiedTempDir) {
                 tempDir = path.combine(modsDir, defaultTempDir);
             }
         }
         else {
-            console.warn(`Couldn't set mods folder "${newModsDir}", using default "${modsDir}"`);
+            console.warn(`Couldn't set mods folder "${newModsDir}""`);
         }
-        console.log(`Using temp folder "${tempDir}"`);
     }
+
+    modsDir = path.absolutify(modsDir);
+    tempDir = path.absolutify(tempDir);
+
+    console.log(`Using mods folder "${modsDir}"`);
+    console.log(`Using temp folder "${tempDir}"`);
 
     if (!await pfs.accessible(modsDir + '/')) {
         throw `Mods folder "${modsDir}" doesn't exist`;
@@ -239,10 +254,10 @@ function getTemplateDir(templateDir, args) {
     let newTemplateDir = args.template || '';
 
     if (newTemplateDir && typeof newTemplateDir == 'string') {
-        return newTemplateDir;
+        return path.absolutify(newTemplateDir, config.exeDir);
     }
 
-    return templateDir;
+    return path.absolutify(templateDir, config.exeDir);
 }
 
 function getTemplateSrc(configCoreSrc, templateDir) {
@@ -265,7 +280,7 @@ function getTemplateSrc(configCoreSrc, templateDir) {
     // Exclude core files from being altered
     for (let src of coreSrc) {
         modSrc.push('!' + src);
-    };
+    }
 
     return { coreSrc, modSrc };
 }

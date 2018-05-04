@@ -129,16 +129,6 @@ async function checkTempFolder(modName, shouldRemove) {
 // Builds the mod
 async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 
-    if (!path.isAbsolute(modDir)) {
-        modDir = path.combine(process.cwd(), modDir);
-    }
-    if (!path.isAbsolute(dataDir)) {
-        dataDir = path.combine(process.cwd(), dataDir);
-    }
-    if (!path.isAbsolute(buildDir)) {
-        buildDir = path.combine(process.cwd(), buildDir);
-    }
-
     let stingrayParams = [
         `--compile-for win32`,
         `--source-dir "${modDir}"`,
