@@ -151,11 +151,15 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
         }
     });
 
+    let buildTime = Date.now();
+
     return await new Promise((resolve, reject) => {
         stingray.on('error', error => reject(error));
 
         stingray.on('close', code => {
-            console.log(`Finished building`);
+            buildTime = Date.now() - buildTime;
+            buildTime = Math.round(buildTime / 10) / 100;
+            console.log(`Finished building in ${buildTime}s`);
             resolve(code);
         });
     });
