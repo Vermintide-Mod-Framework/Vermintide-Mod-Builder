@@ -1,9 +1,7 @@
 local mod = get_mod("%%name")
 
-local mod_data = {}
-
 -- Everything here is optional. You can remove unused parts.
-mod_data = {
+local mod_data = {
 	name = "%%title",               -- Readable mod name
 	description = "%%description",  -- Mod description
 	is_togglable = true,            -- If the mod can be enabled/disabled
