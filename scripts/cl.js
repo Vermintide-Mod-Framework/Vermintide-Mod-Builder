@@ -14,7 +14,7 @@ let cl = {
         cl.argv = argv = minimist(args);
     },
 
-    // Returns <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
+    // Returns an object with all create/upload/publish params
     getWorkshopParams() {
 
         let modName = argv.m || argv.mod || cl.plainArgs[0] || '';
@@ -30,11 +30,11 @@ let cl = {
         };
     },
 
-    // Returns ["<mod1>; <mod2>;<mod3>"] [--verbose] [-t] [--id <item_id>]
+    // Returns an object with all build params
     async getBuildParams() {
 
         let verbose = argv.verbose || false;
-        let shouldRemoveTemp = argv.temp || false;
+        let shouldRemoveTemp = argv.clean || false;
         let modNames = cl.plainArgs.slice();
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
@@ -47,7 +47,7 @@ let cl = {
         }
 
         let modId = modNames && modNames.length == 1 ? argv.id : null;
-        let noWorkshopCopy = argv.dist || false;
+        let noWorkshopCopy = argv['no-workshop'] || false;
         let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.data.ignore_build_errors;
 
         return { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors };

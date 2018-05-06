@@ -1,39 +1,36 @@
 ## Vermintide Mod Builder  
 
-I made a script to ease the ever-growing pain of creating and rebuilding mods
-and compiled it into a 30mb executable for ease of use.  
+A Windows CLI program created to ease the ever-growing pain of creating and rebuilding mods for Vermintide. Works for both Vermintide 1 and 2.    
 The executable is the full [Node.js](https://nodejs.org/en/) enviroment
-and the script uses [gulp](https://gulpjs.com/) which is like make for javascript.
-Compiled with [pkg](https://github.com/zeit/pkg).  
-I'm pretty sure you're not supposed to do any of this but what the hell, it works.
-
-This script works for both Vermintide 1 and 2. 
+and the script uses [gulp](https://gulpjs.com/) which is like make for javascript. Compiled with [pkg](https://github.com/zeit/pkg).
 
 ### Prerequisites
 
 1. Vermintide Mod SDK must be installed. Look for it in the Tools section in your Steam library.  
 2. For now, you will need to switch the SDK between branches to build mods for Vermintide 1 or 2. To do this, right click on the SDK in your Steam library, go to Properties -> Betas and select NONE for Vermintide 1 or vermintide2_\<version\> for Vermintide 2.  
 4. For now, to enable mods in the launcher, find `launcher.config` in `%AppData%\Fatshark\Warhammer End Times Vermintide` or `%AppData%\Fatshark\Vermintide 2` and set `ModsEnabled` to `true`, or add `ModsEnabled = true` if it is missing.  
-3. Steam must be running for creating, publishing and uploading of mods to work.  
+3. Steam must be running for creating, publishing and uploading mods. 
+4. Subscribe to Vermintide Mod Framework on Steam workshop ([V1 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1289946781), [V2 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1369573612)) and make sure that it is the first mod in the list in the launcher if you want VMF-dependent mods to work.
 
-### Installation  
+### Quickstart Guide
 
 1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
 2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
-2. Place your existing mods in the `mods` folder or specify alternative path in .vmbrc -> `mods_dir`. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.  
-3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are gonna be built and uploaded by default.  
-3. Set `fallback_tools_dir` and `fallback_workshop_dir` in .vmbrc for both games. These paths will be used if the script fails to find them in the registry. You can leave these untouched or remove them, then the standard fallback will be used.  
-4. You can add folders that will be ignored when building/watching all mods to `ignored_dirs` in .vmbrc.   
-5. You can also set `temp_dir` to specify where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program. 
+3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are going to be created, built and uploaded by default.   
+4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it.  
+5. The main functionality of your mod should be added to `<mod_name>/scripts/mods/<mod_name>/<mod_name>.lua`.  
+6. To build the mod, run `vmb build <mod_name>`.  
+7. To upload an updated version of your mod, run `vmb upload <mod_name>`.  
+8. To re-publish a mod if you deleted it from the workshop, or to publish it for another game, run `vmb publish <mod_name> -g {1|2}`,
 
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <mods_folder>] [-g <game_number>] [--rc <config_folder>] [--reset] [--cwd]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--rc <config_folder>] [--reset] [--cwd]
 
-`-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder.  
-`-g <game_number>` or `--game <game_number>` - temporarily sets which game should the mods be built/uploaded for.  
-`--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default it is the directory with vmb.exe. Folder must exist. If the file doesn't exist in the folder, a default config will be created.    
+`-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.   
+`-g {1|2}` or `--game {1|2}` - temporarily sets for which game the mods should be created, built and uploaded.  
+`--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default, it is the directory with vmb.exe. The path must already exist. To use current working directory put `.` as the path. If the file doesn't exist in the folder, a default config will be created.      
 `--reset` - resets .vmbrc before executing the command.  
 `--cwd` - forces all non-absolute paths to be relative to the current working directory. See **[relative paths clarification](#relative-paths-clarification)**.
 
@@ -42,15 +39,15 @@ Run without command to see a list of commands with parameters.
 
 #### Create a mod from template:
 
-	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--template <template_folder>]
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
-By default the template is for mods that work under VMF. To create a VMF-independent mod specify `.template` as the template.
+By default, the template is for VMF-dependent mods. To create a VMF-independent mod specify `.template` as the template. See [Mod Templates](#mod-templates).
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--ignore-errors] [--verbose] [--clean]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
@@ -71,29 +68,43 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist] 
+	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] 
 
-#### Automatically build all or specified mods from current directory:
+#### Automatically build all or specified mods from current directory on changes:
 
-	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]
+	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop]
 
 Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
-`--verbose` - prints stingray executable console output.  
-`--ignore-errors` or `--ignore-build-errors` or `-e` - ignores stingray executable errors and tries to copy the built bundle anyway.
+`--verbose` - prints Stingray executable console output.  
+`--ignore-errors` or `--ignore-build-errors` or `-e` - ignores Stingray executable errors and tries to copy the built bundle anyway.
 You can also enable this parameter by default by setting `ignore_build_errors` in .vmbrc to true.  
-`--temp` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
+`--clean` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
-`--dist` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
+`--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
 
-#### To quickly change options in .vmbrc 
+#### To quickly change configuration in .vmbrc 
 	
 	vmb config [--<key1>=<value1> --<key2>=<value2>...]
 
 This will also print the contents of the .vmbrc file.
-Note that you cannot set non-string or non-number options this way.
+Note that you can only set string, number and boolean-type options this way.  
 
-### Mod templates  
+### Configuration  
+
+The program reads configuration file .vmbrc every time it starts. Some of these options can be temporarily overwritten with command line parameters described above. Below are some of the options and their default values.   
+
+* **`"mods_dir": "./mods"`** - folder in which mods are going to be searched for. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.  
+* **`"temp_dir": ""`** - folder where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.   
+* **`"game": 2`** - set to 1 or 2 to determine for which game the mods are going to be created, built and uploaded by default.  
+* `"fallback_tools_dir{1|2}": "C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/"` - these paths will be used as a fallback for Vermintide SDK folder if the script fails to find them in the registry.  
+* `"fallback_workshop_dir1{1|2}": "C:/Program Files (x86)/Steam/steamapps/workshop/content/"` - these paths will be used as a fallback for the Steam workshop folder if the script fails to find them in the registry.  
+* `"ignored_dirs": [ ".git", ".temp" ]` - folders in `<mods_dir>` that will be ignored when building/watching all mods.  
+* `"ignore_build_errors": false` - set to `true` to ignore Stingray executable errors during the build process.  
+* 	`"template_dir": ".template-vmf", "template_preview_image": "item_preview.jpg", "template_core_files": [ "core/**" ]` - see [Mod Templates](#mod-templates).  
+
+
+### Mod Templates  
 When creating a mod, a template folder will be copied to act as a boilerplate for your mod.
 You can customize this template or create your own.  
 
@@ -121,3 +132,7 @@ You can use `--cwd` flag to force all non-absolute paths to be relative to the c
 
 The compiler will say that some file needs to be distributed with the executable, but that is only relevant for non-win platforms and I'm pretty sure this script doesn't work under anything but Windows anyway.  
 Along with the executable, a zip archive will be created with template and mods folders included.
+
+### Tests
+
+    npm run test

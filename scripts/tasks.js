@@ -13,17 +13,16 @@ let tasks = {
     // All of these have the optional -f param that sets mods directory and -g for setting game number
 
     // Prints all existing commands with params
-    // vmb
     default() {
         console.log(
             'vmb <command> [-f <mods_folder>] [-g <game_number>] [--rc <config_folder>] [--reset] [--cwd]\n' +
             'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
             'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
-            'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--temp]\n' +
+            'vmb publish   <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--ignore-errors] [--verbose] [--clean]\n' +
             'vmb upload    <mod_name> [-n <changenote>] [--open] [--skip]\n' +
             'vmb open      {<mod_name> | --id <item_id>}\n' +
-            'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
-            'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--temp] [--id <item_id>] [--dist]\n' +
+            'vmb build     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop]\n' +
+            'vmb watch     [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop]\n' +
             'See README.md for more information.'
         );
         return { exitCode: 0, finished: false };
@@ -31,7 +30,6 @@ let tasks = {
 
     // Sets and/or displayes config file values
     // Limited to non-object values
-    // vmb config [--<key1>=<value1> --<key2>=<value2>...]
     async config() {
 
         config.setData(cl.argv);
@@ -52,7 +50,6 @@ let tasks = {
 
     // Creates a copy of the template mod and renames it to the provided name
     // Uploads an empty mod file to the workshop to create an id
-    // vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>]
     async create() {
 
         let exitCode = 0;
@@ -107,7 +104,6 @@ let tasks = {
     },
 
     // Builds the mod then uploads it to workshop as a new item
-    // vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--verbose]
     async publish() {
 
         let exitCode = 0;
@@ -166,7 +162,6 @@ let tasks = {
     },
 
     // Uploads the last built version of the mod to the workshop
-    // vmb upload <mod_name> [-n <changenote>] [--open] [--skip]
     async upload() {
 
         let exitCode = 0;
@@ -216,7 +211,6 @@ let tasks = {
     },
 
     // Opens mod's workshop page
-    // vmb open <mod_name> [--id <item_id>]
     async open() {
 
         let exitCode = 0;
@@ -259,11 +253,6 @@ let tasks = {
     },
 
     // Builds specified mods and copies the bundles to the game workshop folder
-    // vmb build [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
-    // --verbose - prints stingray console output even on successful build
-    // -t - doesn't delete temp folder before building
-    // --id - forces item id. can only be passed if building one mod
-    // --dist - doesn't copy to workshop folder
     async build() {
 
         let exitCode = 0;
@@ -310,7 +299,6 @@ let tasks = {
     },
 
     // Watches for changes in specified mods and builds them whenever they occur
-    // vmb watch [<mod1> <mod2>...] [--verbose] [-t] [--id <item_id>] [--dist]
     async watch() {
 
         let exitCode = 0;
