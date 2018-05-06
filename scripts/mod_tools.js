@@ -31,21 +31,27 @@ let modTools = {
         let value = '"InstallLocation"';
 
         let toolsDir = config.fallbackToolsDir;
-        let errorMsg = 'Vermintide mod SDK directory not found, using fallback.';
-        let appPath = await reg.get(sdkKey, value).catch(err => {
-            console.error(err);
-        });
 
-        if (appPath) {
-            toolsDir = appPath;
+        if (config.useFallback) {
+            console.log(`Using fallback mod tools folder.`);
         }
-        else {
-            console.error(errorMsg);
+        else{
+            let errorMsg = 'Vermintide mod SDK folder not found, using fallback.';
+            let appPath = await reg.get(sdkKey, value).catch(err => {
+                console.error(err);
+            });
+
+            if (appPath) {
+                toolsDir = appPath;
+            }
+            else {
+                console.error(errorMsg);
+            }
         }
 
         toolsDir = path.fix(toolsDir);
         if (!await pfs.accessible(path.combine(toolsDir, config.stingrayDir, config.stingrayExe))) {
-            throw 'Mod tools not found. You need to install Vermintide Mod Tools from Steam client or specify valid fallback path.';
+            throw `Mod tools not found in "${toolsDir}".\nYou need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`;
         }
         console.log(`Mod tools folder "${toolsDir}"`);
         return toolsDir;

@@ -73,33 +73,41 @@ async function getWorkshopDir() {
     let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
     let value = '"InstallLocation"';
 
-    let workshopDir = config.fallbackWorkshopDir;
-    let errorMsg = 'Vermintide workshop directory not found, using fallback.';
+    let workshopDir = config.fallbackSteamAppsDir;
 
-    let appPath = await reg.get(appKey, value).catch(err => {
-        console.error(err);
-    });
-
-    if (appPath && typeof appPath == 'string') {
-
-        appPath = path.fix(appPath);
-        let parts = appPath.split('/');
-        let neededPart = parts[parts.length - 2];
-
-        if (!neededPart) {
-            console.error(errorMsg);
-            workshopDir = config.fallbackWorkshopDir;
-        }
-        else {
-            workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
-            workshopDir = path.combine(workshopDir, 'workshop/content', gameId);
-        }
+    if (config.useFallback) {
+        console.log(`Using fallback SteamApps folder.`);
     }
     else {
-        console.error(errorMsg);
+        let errorMsg = 'SteamApps folder not found, using fallback.';
+        let appPath = await reg.get(appKey, value).catch(err => {
+            console.error(err);
+        });
+
+        if (appPath && typeof appPath == 'string') {
+
+            appPath = path.fix(appPath);
+            let parts = appPath.split('/');
+            let neededPart = parts[parts.length - 2];
+
+            if (!neededPart) {
+                console.error(errorMsg);
+            }
+            else {
+                workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
+            }
+        }
+        else {
+            console.error(errorMsg);
+        }
     }
 
-    console.log(`Workshop folder: ${workshopDir}`);
+    if (!await pfs.accessible(workshopDir)) {
+        throw `SteamApps folder "${workshopDir}" not found.\nYou need to specify a valid fallback path.`;
+    }
+
+    workshopDir = path.combine(workshopDir, 'workshop/content', gameId);
+    console.log(`Workshop folder ${workshopDir}`);
     return workshopDir;
 }
 

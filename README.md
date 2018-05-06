@@ -21,17 +21,18 @@ and the script uses [gulp](https://gulpjs.com/) which is like make for javascrip
 5. The main functionality of your mod should be added to `<mod_name>/scripts/mods/<mod_name>/<mod_name>.lua`.  
 6. To build the mod, run `vmb build <mod_name>`.  
 7. To upload an updated version of your mod, run `vmb upload <mod_name>`.  
-8. To re-publish a mod if you deleted it from the workshop, or to publish it for another game, run `vmb publish <mod_name> -g {1|2}`,
+8. To re-publish a mod if you deleted it from the workshop, or to publish it for another game, run `vmb publish <mod_name> -g {1|2}`.
 
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--rc <config_folder>] [--reset] [--cwd]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]
 
 `-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.   
 `-g {1|2}` or `--game {1|2}` - temporarily sets for which game the mods should be created, built and uploaded.  
 `--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default, it is the directory with vmb.exe. The path must already exist. To use current working directory put `.` as the path. If the file doesn't exist in the folder, a default config will be created.      
 `--reset` - resets .vmbrc before executing the command.  
+`--use-fallback` - uses fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
 `--cwd` - forces all non-absolute paths to be relative to the current working directory. See **[relative paths clarification](#relative-paths-clarification)**.
 
 Run without command to see a list of commands with parameters.
@@ -97,8 +98,9 @@ The program reads configuration file .vmbrc every time it starts. Some of these 
 * **`"mods_dir": "./mods"`** - folder in which mods are going to be searched for. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.  
 * **`"temp_dir": ""`** - folder where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.   
 * **`"game": 2`** - set to 1 or 2 to determine for which game the mods are going to be created, built and uploaded by default.  
-* `"fallback_tools_dir{1|2}": "C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/"` - these paths will be used as a fallback for Vermintide SDK folder if the script fails to find them in the registry.  
-* `"fallback_workshop_dir1{1|2}": "C:/Program Files (x86)/Steam/steamapps/workshop/content/"` - these paths will be used as a fallback for the Steam workshop folder if the script fails to find them in the registry.  
+* `"fallback_tools_dir{1|2}": "C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/"` - these paths will be used as a fallback for Vermintide SDK folders if the script fails to find them in the registry.  
+* `"fallback_steamapps_dir1{1|2}": "C:/Program Files (x86)/Steam/steamapps/"` - these paths will be used as a fallback for the SteamApps folders if the script fails to find them in the registry.  
+* `"use_fallback": false` - set to `true` to use fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
 * `"ignored_dirs": [ ".git", ".temp" ]` - folders in `<mods_dir>` that will be ignored when building/watching all mods.  
 * `"ignore_build_errors": false` - set to `true` to ignore Stingray executable errors during the build process.  
 * 	`"template_dir": ".template-vmf", "template_preview_image": "item_preview.jpg", "template_core_files": [ "core/**" ]` - see [Mod Templates](#mod-templates).  

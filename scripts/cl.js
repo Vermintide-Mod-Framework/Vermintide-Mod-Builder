@@ -48,7 +48,7 @@ let cl = {
 
         let modId = modNames && modNames.length == 1 ? argv.id : null;
         let noWorkshopCopy = argv['no-workshop'] || false;
-        let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.data.ignore_build_errors;
+        let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.ignoreBuildErrors;
 
         return { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors };
     }

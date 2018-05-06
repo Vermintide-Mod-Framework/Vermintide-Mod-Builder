@@ -21,8 +21,10 @@ let config = {
         fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
         fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
 
-        fallback_workshop_dir1: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
-        fallback_workshop_dir2: 'C:/Program Files (x86)/Steam/steamapps/workshop/content/',
+        fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
+        fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
+
+        use_fallback: false,
 
         bundle_extension1: '',
         bundle_extension2: '.mod_bundle',
@@ -58,7 +60,7 @@ let config = {
 
         // Other config params
         config.fallbackToolsDir = '';
-        config.fallbackWorkshopDir = '';
+        config.fallbackSteamAppsDir = '';
         config.ignoredDirs = [];
 
         // These will be replaced in the template mod when running tasks
@@ -122,7 +124,7 @@ let config = {
 
         // Other config params
         config.fallbackToolsDir = path.absolutify(getGameSpecificKey('fallback_tools_dir') || '');
-        config.fallbackWorkshopDir = path.absolutify(path.combine(getGameSpecificKey('fallback_workshop_dir') || '', config.gameId));
+        config.fallbackSteamAppsDir = path.absolutify(getGameSpecificKey('fallback_steamapps_dir') || '');
         config.ignoredDirs = config.data.ignored_dirs || [];
 
         config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
@@ -135,6 +137,14 @@ let config = {
 
         // Config file for workshop uploader tool
         config.cfgFile = 'itemV' + config.gameNumber + '.cfg';
+
+        config.useFallback = args['use-fallback'] === undefined && config.data.use_fallback === undefined ?
+            config.defaultData.use_fallback :
+            args['use-fallback'] || config.data.use_fallback;
+
+        config.ignoreBuildErrors = config.data.ignore_build_errors === undefined ?
+            config.defaultData.ignore_build_errors :
+            config.data.ignore_build_errors;
     },
 
     setData(args) {
