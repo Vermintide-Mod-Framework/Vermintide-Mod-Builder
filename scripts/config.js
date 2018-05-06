@@ -138,7 +138,7 @@ let config = {
     },
 
     setData(args) {
-        for (let key of Object.keys(config.data)) {
+        for (let key of Object.keys(config.defaultData)) {
 
             if (args[key] === undefined) {
                 continue;
