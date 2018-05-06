@@ -110,10 +110,10 @@ async function checkTempFolder(modName, shouldRemove) {
 
     if (tempExists && shouldRemove) {
         return await new Promise((resolve, reject) => {
-            child_process.exec('rmdir /s /q "' + tempPath + '"', error => {
+            child_process.exec(`rmdir /s /q "${tempPath}"`, error => {
 
                 if (error) {
-                    return reject(error + '\nFailed to delete temp folder');
+                    return reject(`${error}\nFailed to delete temp folder`);
                 }
 
                 console.log(`Removed ${tempPath}`);

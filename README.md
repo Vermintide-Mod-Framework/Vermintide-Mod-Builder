@@ -9,6 +9,13 @@ I'm pretty sure you're not supposed to do any of this but what the hell, it work
 
 This script works for both Vermintide 1 and 2. 
 
+### Prerequisites
+
+1. Vermintide Mod SDK must be installed. Look for it in the Tools section in your Steam library.  
+2. For now, you will need to switch the SDK between branches to build mods for Vermintide 1 or 2. To do this, right click on the SDK in your Steam library, go to Properties -> Betas and select NONE for Vermintide 1 or vermintide2_\<version\> for Vermintide 2.  
+4. For now, to enable mods in the launcher, find `launcher.config` in `%AppData%\Fatshark\Warhammer End Times Vermintide` or `%AppData%\Fatshark\Vermintide 2` and set `ModsEnabled` to `true`, or add `ModsEnabled = true` if it is missing.  
+3. Steam must be running for creating, publishing and uploading of mods to work.  
+
 ### Installation  
 
 1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
