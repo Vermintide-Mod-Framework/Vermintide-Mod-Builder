@@ -27,7 +27,7 @@ let uploader = {
 
         await uploader.validateTemplate(config.templateDir);
 
-        return await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
 
             let regexName = new RegExp(config.templateName, 'g');
             let regexTitle = new RegExp(config.templateTitle, 'g');
@@ -41,13 +41,16 @@ let uploader = {
                     p.basename = p.basename.replace(regexName, modName);
                 }))
                 .pipe(gulp.dest(modDir))
-                .on('error', reject)
+                .on('error', err => {
+                    throw err;
+                })
                 .on('end', () => {
-
                     if(config.coreSrc.length > 0){
                         gulp.src(config.coreSrc, { base: config.templateDir})
                             .pipe(gulp.dest(modDir))
-                            .on('error', reject)
+                            .on('error', err => {
+                                throw err;
+                            })
                             .on('end', resolve);
                     }
                     else{
@@ -55,6 +58,12 @@ let uploader = {
                     }
                 });
         });
+
+        let modBundleDir = path.combine(modDir, config.bundleDir);
+        if (!await pfs.accessible(modBundleDir)) {
+            await pfs.mkdir(modBundleDir);
+        }
+        await pfs.close(await pfs.open(path.combine(modBundleDir, modName + config.bundleExtension), 'w'));
     },
 
     // Creates item.cfg file
@@ -62,7 +71,7 @@ let uploader = {
         let configText = `title = "${params.title}";\n` +
                         `description = "${params.description}";\n` +
                         `preview = "${config.itemPreview}";\n` +
-                        `content = "dist";\n` +
+                        `content = "${config.bundleDir}";\n` +
                         `language = "${params.language}";\n` +
                         `visibility = "${params.visibility}";\n`;
         console.log(`${config.cfgFile}:`);

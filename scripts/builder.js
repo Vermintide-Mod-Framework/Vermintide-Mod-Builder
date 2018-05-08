@@ -41,9 +41,9 @@ let builder = {
         };
     },
 
-    // Builds modName, optionally deleting its temp folder, and copies it to the dist and workshop dirs
+    // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
     async buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
-        console.log(`\nBuilding ${modName}`);
+        console.log(`\nPreparing to build ${modName}`);
 
         let modDir = path.combine(config.modsDir, modName);
 
@@ -57,6 +57,7 @@ let builder = {
             throw `Mod folder doesn't have ${config.cfgFile}`;
         }
 
+        console.log(`\nBuilding ${modName}`);
         let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
         await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
@@ -235,11 +236,11 @@ async function getModWorkshopDir(modName, modId) {
     return path.combine(workshopDir, String(modId));
 }
 
-// Copies the mod to the config.modsDir and modName/dist
+// Copies the mod to the config.modsDir and modName/bundle
 async function moveMod(modName, buildDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
-        let modDistDir = path.combine(config.modsDir, modName, config.distDir);
+        let modBundleDir = path.combine(config.modsDir, modName, config.bundleDir);
 
         let gulpStream = gulp.src([
             buildDir + '/*([0-f])',
@@ -250,7 +251,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
                 p.extname = config.bundleExtension;
             }))
             .on('error', reject)
-            .pipe(gulp.dest(modDistDir))
+            .pipe(gulp.dest(modBundleDir))
             .on('error', reject);
 
         if (modWorkshopDir) {

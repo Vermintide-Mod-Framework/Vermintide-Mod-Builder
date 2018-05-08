@@ -327,7 +327,7 @@ let tasks = {
                     let src = [
                         modDir,
                         '!' + config.modsDir + '/' + modName + '/*.tmp',
-                        '!' + config.modsDir + '/' + modName + '/' + config.distDir + '/*'
+                        '!' + config.modsDir + '/' + modName + '/' + config.bundleDir + '/*'
                     ];
 
                     gulp.watch(src, async () => {

@@ -71,7 +71,7 @@ let config = {
         config.itemPreview = '';
 
         // Folder in which the built bundle is gonna be stored before being copied to workshop folder
-        config.distDir = 'dist';
+        config.bundleDir = '';
         config.bundleExtension = '';
 
         // Files in template
@@ -120,6 +120,7 @@ let config = {
         config.gameId = getGameSpecificKey('game_id');
         config.toolsId = getGameSpecificKey('tools_id');
 
+        config.bundleDir = 'bundleV' + config.gameNumber;
         config.bundleExtension = getGameSpecificKey('bundle_extension');
 
         // Other config params

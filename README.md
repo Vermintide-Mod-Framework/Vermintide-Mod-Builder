@@ -75,14 +75,14 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop]
 
-Two of the commands above will build and copy the bundle to the dist folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
+Two of the commands above will build and copy the bundle to the bundleV1 or bundleV2 folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
 `--verbose` - prints Stingray executable console output.  
 `--ignore-errors` or `--ignore-build-errors` or `-e` - ignores Stingray executable errors and tries to copy the built bundle anyway.
 You can also enable this parameter by default by setting `ignore_build_errors` in .vmbrc to true.  
 `--clean` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
-`--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the `dist` folder in mod's folder.
+`--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the bundle folder in mod's folder.
 
 #### To quickly change configuration in .vmbrc 
 	
