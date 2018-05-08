@@ -57,7 +57,7 @@ let builder = {
             throw `Mod folder doesn't have ${config.cfgFile}`;
         }
 
-        console.log(`\nBuilding ${modName}`);
+        console.log(`Building ${modName}`);
         let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
         await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
