@@ -6,6 +6,7 @@ const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
 const str = require('./lib/str');
+const modTools = require('./mod_tools');
 
 let uploader = {
 
@@ -63,7 +64,7 @@ let uploader = {
         if (!await pfs.accessible(modBundleDir)) {
             await pfs.mkdir(modBundleDir);
         }
-        await pfs.close(await pfs.open(path.combine(modBundleDir, modName + config.bundleExtension), 'w'));
+        await pfs.close(await pfs.open(path.combine(modBundleDir, modTools.hashModName(modName) + config.bundleExtension), 'w'));
     },
 
     // Creates item.cfg file

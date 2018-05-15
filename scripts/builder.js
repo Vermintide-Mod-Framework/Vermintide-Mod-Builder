@@ -247,7 +247,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
             '!' + buildDir + '/dlc'
         ], { base: buildDir })
             .pipe(rename(p => {
-                p.basename = modName;
+                p.basename = modTools.hashModName(modName);
                 p.extname = config.bundleExtension;
             }))
             .on('error', reject)

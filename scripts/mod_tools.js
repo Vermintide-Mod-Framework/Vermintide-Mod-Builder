@@ -3,6 +3,7 @@ const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
 const reg = require('./lib/reg');
+const crypto = require('crypto');
 
 let modTools = {
     validModName(modName) {
@@ -55,6 +56,11 @@ let modTools = {
         }
         console.log(`Mod tools folder "${toolsDir}"`);
         return toolsDir;
+    },
+
+    hashModName(data) {
+        var hash = crypto.createHash('md5').update(data, 'utf-8').digest('hex');
+        return hash.substring(0, 16);
     }
 };
 
