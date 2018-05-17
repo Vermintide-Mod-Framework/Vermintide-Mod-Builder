@@ -87,6 +87,11 @@ let config = {
 
         // Config file for workshop uploader tool
         config.cfgFile = '';
+
+        config.buggedUploaderMessage = 
+`I have read and agree to the terms of the Vermintide 2 End User License Agreement
+(http://store.steampowered.com/eula/552500_eula_0)
+including but not limited to Schedule 1 (Modding terms) thereto. (Y/N)?`;   
     },
 
     async readData(args) {

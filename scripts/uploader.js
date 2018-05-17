@@ -99,6 +99,7 @@ let uploader = {
         }
 
         console.log(`\nRunning uploader with steam app id ${config.gameId}`);
+        console.log(config.buggedUploaderMessage);
 
         await pfs.writeFile(path.combine(toolsDir, config.uploaderDir, config.uploaderGameConfig), config.gameId);
         let uploader = child_process.spawn(
@@ -112,8 +113,13 @@ let uploader = {
 
         let modId = '';
         uploader.stdout.on('data', data => {
-            console.log(str.rmn(data));
             data = String(data);
+            let checkStr = config.buggedUploaderMessage.split('\n')[0];
+            if (data.substr(0, checkStr.length) === checkStr) {
+                return;
+            }
+
+            console.log(str.rmn(data));
             if (data.includes('publisher_id')) {
                 try {
                     modId = data.match(/publisher_id: (\d*)/)[1];
