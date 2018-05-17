@@ -88,10 +88,7 @@ let config = {
         // Config file for workshop uploader tool
         config.cfgFile = '';
 
-        config.buggedUploaderMessage = 
-`I have read and agree to the terms of the Vermintide 2 End User License Agreement
-(http://store.steampowered.com/eula/552500_eula_0)
-including but not limited to Schedule 1 (Modding terms) thereto. (Y/N)?`;   
+        config.buggedUploaderMessage = '';
     },
 
     async readData(args) {
@@ -151,6 +148,11 @@ including but not limited to Schedule 1 (Modding terms) thereto. (Y/N)?`;
         config.ignoreBuildErrors = config.data.ignore_build_errors === undefined ?
             config.defaultData.ignore_build_errors :
             config.data.ignore_build_errors;
+
+        config.buggedUploaderMessage =
+`I have read and agree to the terms of the Vermintide ${config.gameNumber} End User License Agreement
+(http://store.steampowered.com/eula/${config.gameId}_eula_0)
+including but not limited to Schedule 1 (Modding terms) thereto. (Y/N)?`;
     },
 
     setData(args) {
