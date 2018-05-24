@@ -84,14 +84,14 @@ You can also enable this parameter by default by setting `ignore_build_errors` i
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the bundle folder in mod's folder.
 
-#### Quickly change configuration in .vmbrc 
+#### Quickly change configuration in .vmbrc:  
 	
 	vmb config [--<key1>=<value1> --<key2>=<value2>...]
 
 This will also print the contents of the .vmbrc file.
 Note that you can only set string, number and boolean-type options this way.  
 
-#### Show information about all or some mods  
+#### Show information about all or some mods:  
 
     vmb info [<mod_name1> <mod_name2>...] [--cfg]
 
