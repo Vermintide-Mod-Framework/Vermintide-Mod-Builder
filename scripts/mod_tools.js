@@ -11,8 +11,8 @@ let modTools = {
     },
 
     async getModId(modName) {
-        let data = await pfs.readFile(path.combine(config.modsDir, modName, config.cfgFile), 'utf8');
-        let modId = data.match(/^published_id *=? *(\d*)\D*$/m);
+        let cfgData = await pfs.readFile(path.combine(config.modsDir, modName, config.cfgFile), 'utf8');
+        let modId = cfgData.match(/^published_id *=? *(\d*)\D*$/m);
         modId = modId && modId[1];
 
         if (!modId) {

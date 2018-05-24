@@ -9,7 +9,7 @@ const modTools = require('./mod_tools');
 const str = require('./lib/str');
 
 let builder = {
-    async forEachMod(modNames, noWorkshopCopy, action, noAction) {
+    async forEachMod(modNames, noWorkshopCopy, action, onError) {
         for (let modName of modNames) {
 
             if (!modName) {
@@ -19,25 +19,28 @@ let builder = {
             let modDir = path.combine(config.modsDir, modName);
 
             let error = '';
+            let cfgExists = await pfs.accessible(path.combine(modDir, config.cfgFile));
             if (!modTools.validModName(modName)) {
                 error = `Folder name "${modDir}" is invalid`;
             }
             else if (!await pfs.accessible(modDir + '/')) {
                 error = `Folder "${modDir}" doesn't exist`;
             }
-            else if (!await pfs.accessible(path.combine(modDir, config.cfgFile)) && !noWorkshopCopy) {
+            else if (!cfgExists && !noWorkshopCopy) {
                 error = `Folder "${modDir}" doesn't have ${config.cfgFile} in it`;
             }
 
             if (error) {
-                if (typeof noAction == 'function') {
-                    await noAction();
+                if (typeof onError == 'function') {
+                    await onError(error);
                 }
-                console.error(error);
+                else {
+                    throw error;
+                }
                 continue;
             }
 
-            await action(modName, modDir);
+            await action(modName, modDir, cfgExists);
         };
     },
 

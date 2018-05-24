@@ -288,8 +288,8 @@ let tasks = {
                         exitCode = 1;
                     }
                 },
-                () => {
-                    console.log();
+                (error) => {
+                    console.log(`\n${error}`);
                     exitCode = 1;
                 }
             );
@@ -340,7 +340,8 @@ let tasks = {
                         };
                     });
                 },
-                () => {
+                (error) => {
+                    console.log(error);
                     exitCode = 1;
                 }
             );
