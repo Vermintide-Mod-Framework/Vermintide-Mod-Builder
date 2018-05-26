@@ -14,7 +14,7 @@ and the script uses [gulp](https://gulpjs.com/) which is like make for javascrip
 
 ### Quickstart Guide
 
-1. Download and export **[the latest release](https://www.dropbox.com/s/6prr4d5lsl4q2q8/vmb.zip?dl=1)**.  
+1. Download and export **[the latest release](https://drive.google.com/open?id=1G8T6CNXJuohQ0LDlEllKfykrNpqqMNeN)**.  
 2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are going to be created, built and uploaded by default.   
 4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it.  
