@@ -1,7 +1,7 @@
 {
-  "name": "unshame-sdk-mods",
+  "name": "vermintide-mod-builder",
   "version": "1.0.0",
-  "description": "UnShame-SDK-Mods",
+  "description": "Vermintide Mod Builder",
   "main": "vmb.js",
   "dependencies": {
     "gulp": "^4.0.0",
@@ -26,6 +26,6 @@
     "type": "git",
     "url": "https://github.com/Vermintide-Modders/VMF-Build-Script"
   },
-  "author": "",
+  "author": "UnShame",
   "license": "UNLICENSED"
 }
