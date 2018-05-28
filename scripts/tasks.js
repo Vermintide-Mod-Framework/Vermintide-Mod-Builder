@@ -10,12 +10,15 @@ const modTools = require('./mod_tools');
 const builder = require('./builder');
 const uploader = require('./uploader');
 
+const version = require('./version');
+
 let tasks = {
     // All of these have the optional -f param that sets mods directory and -g for setting game number
 
     // Prints all existing commands with params
     default() {
         console.log(
+            `Vermintide Mod Builder v${version}\n` +
             'vmb <command> [-f <mods_folder>] [-g <game_number>] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]\n' +
             'vmb config    [--<key1>=<value1> --<key2>=<value2>...]\n' +
             'vmb create    <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v <visibility>] [--template <template_folder>]\n' +
@@ -423,7 +426,6 @@ let tasks = {
 
         return {exitCode, finished: true};
     }
-
 };
 
 module.exports = tasks;

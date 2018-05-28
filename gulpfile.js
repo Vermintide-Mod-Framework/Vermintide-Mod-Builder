@@ -1,9 +1,11 @@
 const gulp = require('gulp'),
+      pfs = require('./scripts/lib/pfs'),
       zip = require('gulp-vinyl-zip').zip,
       pkg = require('pkg').exec;
 
 gulp.task('compile', async function(callback) {
     try {
+        await applyVersion();
         await pkg(['vmb.js', '--target', 'node8-win-x64']);
         await zipVmb();
     }
@@ -33,4 +35,11 @@ function zipVmb() {
                 reject();
             });
     });
+}
+
+async function applyVersion() {
+    let config = await pfs.readFile('./package.json', 'utf-8');
+    config = JSON.parse(config);
+    let content = `module.exports = '${config.version}';\n`;
+    await pfs.writeFile('./scripts/version.js', content);
 }

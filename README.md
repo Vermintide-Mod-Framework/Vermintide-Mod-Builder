@@ -35,7 +35,7 @@ and the script uses [gulp](https://gulpjs.com/) which is like make for javascrip
 `--use-fallback` - uses fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
 `--cwd` - forces all non-absolute paths to be relative to the current working directory. See **[relative paths clarification](#relative-paths-clarification)**.
 
-Run without command to see a list of commands with parameters.
+Run without command to see the version number and a list of commands with parameters.
 
 
 #### Create a mod from template:
