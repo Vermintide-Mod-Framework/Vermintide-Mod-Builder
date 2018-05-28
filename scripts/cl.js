@@ -46,10 +46,10 @@ let cl = {
         }
 
         let modId = modNames && modNames.length == 1 ? argv.id : null;
-        let noWorkshopCopy = argv['workshop'] === undefined ? false : !argv['workshop'];
+        let makeWorkshopCopy = !argv['no-workshop'];
         let ignoreBuildErrors = argv.e || argv['ignore-errors'] || argv['ignore-build-errors'] || config.ignoreBuildErrors;
 
-        return { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors };
+        return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
     }
 };
 

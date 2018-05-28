@@ -148,7 +148,7 @@ let tasks = {
             }
 
             let toolsDir = await modTools.getModToolsDir();
-            await builder.buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, true, params.verbose, buildParams.ignoreBuildErrors, null);
+            await builder.buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
             await pfs.copyIfDoesntExist(path.combine(config.templateDir, config.itemPreview), path.combine(modDir, config.itemPreview));
             await uploader.uploadMod(toolsDir, modName);
 
@@ -262,7 +262,7 @@ let tasks = {
 
         let exitCode = 0;
 
-        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
+        let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
 
         if (modNames.length > 0) {
             console.log(`Mods to build:`);
@@ -283,10 +283,10 @@ let tasks = {
         if (toolsDir) {
             await builder.forEachMod(
                 modNames,
-                noWorkshopCopy,
+                makeWorkshopCopy,
                 async modName => {
                     try {
-                        await builder.buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                        await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
                     }
                     catch (error) {
                         console.error(error);
@@ -308,7 +308,7 @@ let tasks = {
 
         let exitCode = 0;
 
-        let { modNames, verbose, shouldRemoveTemp, modId, noWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
+        let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
 
         if (modNames.length === 0) {
             console.log(`No mods to watch`);
@@ -325,7 +325,7 @@ let tasks = {
 
             await builder.forEachMod(
                 modNames,
-                noWorkshopCopy,
+                makeWorkshopCopy,
                 (modName, modDir) => {
                     console.log(`Watching ${modName}...`);
 
@@ -337,7 +337,7 @@ let tasks = {
 
                     gulp.watch(src, async () => {
                         try {
-                            await builder.buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                            await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
                         }
                         catch (error) {
                             console.error(error);
@@ -375,7 +375,7 @@ let tasks = {
 
         await builder.forEachMod(
             modNames,
-            true,
+            false,
             async (modName, modDir, cfgExists) => {
                 console.log(`\n${modName} information:`);
 

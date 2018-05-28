@@ -9,7 +9,7 @@ const modTools = require('./mod_tools');
 const str = require('./lib/str');
 
 let builder = {
-    async forEachMod(modNames, noWorkshopCopy, action, onError) {
+    async forEachMod(modNames, cfgMustExist, action, onError) {
         for (let modName of modNames) {
 
             if (!modName) {
@@ -26,7 +26,7 @@ let builder = {
             else if (!await pfs.accessible(modDir + '/')) {
                 error = `Folder "${modDir}" doesn't exist`;
             }
-            else if (!cfgExists && !noWorkshopCopy) {
+            else if (!cfgExists && cfgMustExist) {
                 error = `Folder "${modDir}" doesn't have ${config.cfgFile} in it`;
             }
 
@@ -45,7 +45,7 @@ let builder = {
     },
 
     // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
-    async buildMod(toolsDir, modName, shouldRemoveTemp, noWorkshopCopy, verbose, ignoreBuildErrors, modId) {
+    async buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
         console.log(`\nPreparing to build ${modName}`);
 
         let modDir = path.combine(config.modsDir, modName);
@@ -56,7 +56,7 @@ let builder = {
 
         await checkTempFolder(modName, shouldRemoveTemp);
 
-        if (!modId && !noWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))) {
+        if (!modId && makeWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))) {
             throw `Mod folder doesn't have ${config.cfgFile}`;
         }
 
@@ -64,7 +64,7 @@ let builder = {
         let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
         await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
-        let modWorkshopDir = !noWorkshopCopy && await getModWorkshopDir(modName, modId);
+        let modWorkshopDir = makeWorkshopCopy && await getModWorkshopDir(modName, modId);
         await moveMod(modName, buildDir, modWorkshopDir);
 
         console.log(`Successfully built ${modName}`);
