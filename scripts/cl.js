@@ -1,9 +1,8 @@
-
 const pfs = require('./lib/pfs');
 const config = require('./config');
 
 // Commandline arguments
-const minimist = require('minimist');
+const minimist = require('./lib/minimist');
 let argv = {};
 
 let cl = {
