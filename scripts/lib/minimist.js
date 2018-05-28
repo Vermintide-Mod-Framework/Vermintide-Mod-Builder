@@ -1,5 +1,7 @@
 module.exports = function (args, opts) {
-    if (!opts) opts = {};
+    if (!opts) {
+        opts = {};
+    }
 
     var flags = { bools: {}, strings: {}, unknownFn: null };
 
@@ -53,7 +55,9 @@ module.exports = function (args, opts) {
 
     function setArg(key, val, arg) {
         if (arg && flags.unknownFn && !argDefined(key, arg)) {
-            if (flags.unknownFn(arg) === false) return;
+            if (flags.unknownFn(arg) === false) {
+                return;
+            }
         }
 
         var value = !flags.strings[key] && isNumber(val)
@@ -69,7 +73,9 @@ module.exports = function (args, opts) {
     function setKey(obj, keys, value) {
         var o = obj;
         keys.slice(0, -1).forEach(function (key) {
-            if (o[key] === undefined) o[key] = {};
+            if (o[key] === undefined) {
+                o[key] = {};
+            }
             o = o[key];
         });
 
@@ -106,10 +112,6 @@ module.exports = function (args, opts) {
             }
             setArg(key, value, arg);
         }
-        else if (/^--no-.+/.test(arg)) {
-            var key = arg.match(/^--no-(.+)/)[1];
-            setArg(key, false, arg);
-        }
         else if (/^--.+/.test(arg)) {
             var key = arg.match(/^--(.+)/)[1];
             var next = args[i + 1];
@@ -136,7 +138,7 @@ module.exports = function (args, opts) {
                 var next = arg.slice(j + 2);
 
                 if (next === '-') {
-                    setArg(letters[j], next, arg)
+                    setArg(letters[j], next, arg);
                     continue;
                 }
 
@@ -229,7 +231,11 @@ function hasKey(obj, keys) {
 }
 
 function isNumber(x) {
-    if (typeof x === 'number') return true;
-    if (/^0x[0-9a-f]+$/i.test(x)) return true;
+    if (typeof x === 'number') {
+        return true;
+    }
+    if (/^0x[0-9a-f]+$/i.test(x)) {
+        return true;
+    }
     return /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)(e[-+]?\d+)?$/.test(x);
 }
