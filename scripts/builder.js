@@ -50,7 +50,7 @@ let builder = {
 
         let modDir = path.combine(config.modsDir, modName);
 
-        let modTempDir = path.combine(config.tempDir, modName);
+        let modTempDir = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
         let dataDir = path.combine(modTempDir, 'compile');
         let buildDir = path.combine(modTempDir, 'bundle');
 
@@ -117,7 +117,7 @@ async function getWorkshopDir() {
 
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
-    let tempPath = path.combine(config.tempDir, modName);
+    let tempPath = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
     let tempExists = await pfs.accessible(tempPath);
 
     if (tempExists && shouldRemove) {
