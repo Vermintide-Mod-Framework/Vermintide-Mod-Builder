@@ -1,4 +1,4 @@
-mod =  [
+mod = [
 	"%%name"
 ]
 
@@ -7,6 +7,5 @@ package = [
 ]
 
 lua = [
-	"localization/*"
 	"scripts/mods/%%name/*"
 ]

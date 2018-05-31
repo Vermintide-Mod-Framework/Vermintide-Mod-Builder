@@ -2,8 +2,14 @@ return {
 	mod_description = {
 		en = "%%description"
 	},
+	checkbox_option_name = {
+		en = "Checkbox Option"
+	},
+	checkbox_option_tooltip = {
+		en = "Checkbox Option description."
+	},
 --[[
-	some_text_id = {
+	some_other_text_id = {
 		en = "Translation",        -- English
 		fr = "Translation",        -- French
 		de = "Translation",        -- German
@@ -12,16 +18,6 @@ return {
 		it = "Translation",        -- Italian
 		pl = "Translation",        -- Polish
 		["br-pt"] = "Translation", -- Portuguese-Brazil
-	},
-	some_other_text_id = {
-		en = "Translation",
-		fr = "Translation",
-		de = "Translation",
-		es = "Translation",
-		ru = "Translation",
-		it = "Translation",
-		pl = "Translation",
-		["br-pt"] = "Translation",
 	},
 --]]
 }

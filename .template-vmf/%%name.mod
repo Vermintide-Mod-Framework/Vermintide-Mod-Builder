@@ -1,8 +1,10 @@
 return {
 	run = function()
-		local mod = new_mod("%%name")
-		mod:localization("localization/%%name")
-		mod:initialize("scripts/mods/%%name/%%name")
+		new_mod("%%name", {
+			mod_script       = "scripts/mods/%%name/%%name",
+			mod_data         = "scripts/mods/%%name/%%name_data",
+			mod_localization = "scripts/mods/%%name/%%name_localization"
+		})
 	end,
 	packages = {
 		"resource_packages/%%name/%%name"

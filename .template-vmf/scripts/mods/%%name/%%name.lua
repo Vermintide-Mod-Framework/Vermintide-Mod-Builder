@@ -1,28 +1,5 @@
 local mod = get_mod("%%name")
 
--- Everything here is optional. You can remove unused parts.
-local mod_data = {
-	name = "%%title",               -- Readable mod name
-	description = "%%description",  -- Mod description
-	is_togglable = true,            -- If the mod can be enabled/disabled
-	is_mutator = false,             -- If the mod is mutator
-	mutator_settings = {},          -- Extra settings, if it's mutator
-	options_widgets = {				-- Widget settings for the mod options menu
-		{
-			["setting_name"] = "checkbox",
-			["widget_type"] = "checkbox",
-			["text"] = "Checkbox",
-			["tooltip"] = "Checkbox\n" ..
-						"Line_1\n\n" ..
-						"Line_2\n\n" ..
-						"Line_3",
-			["default_value"] = true
-		}
-	},
-}
-
-mod:initialize_data(mod_data)
-
 --[[
 	Functions
 --]]
@@ -50,7 +27,7 @@ mod.update = function(dt)
 end
 
 -- Call when all mods are being unloaded
-mod.on_unload = function()
+mod.on_unload = function(exit_game)
 	return
 end
 
