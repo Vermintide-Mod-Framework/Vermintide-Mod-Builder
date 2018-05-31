@@ -1,6 +1,6 @@
 {
   "name": "vermintide-mod-builder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vermintide Mod Builder",
   "main": "vmb.js",
   "dependencies": {
