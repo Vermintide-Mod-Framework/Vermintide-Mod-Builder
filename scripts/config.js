@@ -16,10 +16,10 @@ let config = {
         game_id2: '552500',
 
         tools_id1: '718610',
-        tools_id2: '718610',
+        tools_id2: '866060',
 
         fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-        fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+        fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 SDK/',
 
         fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
         fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
