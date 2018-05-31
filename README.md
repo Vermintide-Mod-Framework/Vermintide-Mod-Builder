@@ -6,9 +6,8 @@ and the script uses [gulp](https://gulpjs.com/) which is like make for javascrip
 
 ### Prerequisites
 
-1. Vermintide Mod SDK must be installed. Look for it in the Tools section in your Steam library.  
-2. For now, you will need to switch the SDK between branches to build mods for Vermintide 1 or 2. To do this, right click on the SDK in your Steam library, go to Properties -> Betas and select NONE for Vermintide 1 or vermintide2_\<version\> for Vermintide 2.  
-4. For now, to enable mods in the launcher, find `launcher.config` in `%AppData%\Fatshark\Warhammer End Times Vermintide` or `%AppData%\Fatshark\Vermintide 2` and set `ModsEnabled` to `true`, or add `ModsEnabled = true` if it is missing.  
+1. Vermintide Mod SDK must be installed. Look for *"Warhammer: End Times - Vermintide Mod SDK Pre-Alpha"* for Vermintide 1 and *"Warhammer: Vermintide 2 SDK (Alpha)"* for Vermintide 2 in the Tools section in your Steam library.  
+4. [V1 ONLY] For now, to enable mods in the launcher, find `launcher.config` in `%AppData%\Fatshark\Warhammer End Times Vermintide` and set `ModsEnabled` to `true`, or add `ModsEnabled = true` if it is missing.  
 3. Steam must be running for creating, publishing and uploading mods. 
 4. Subscribe to Vermintide Mod Framework on Steam workshop ([V1 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1289946781), [V2 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1369573612)) and make sure that it is the first mod in the list in the launcher if you want VMF-dependent mods to work.
 
@@ -17,7 +16,7 @@ and the script uses [gulp](https://gulpjs.com/) which is like make for javascrip
 1. Download and export **[the latest release](https://drive.google.com/open?id=1G8T6CNXJuohQ0LDlEllKfykrNpqqMNeN)**.  
 2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are going to be created, built and uploaded by default.   
-4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it.  
+4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it. Note that the mod you're subscribing to is not functional at this stage and will prevent you from entering the game until you build it properly.   
 5. The main functionality of your mod should be added to `<mod_name>/scripts/mods/<mod_name>/<mod_name>.lua`.  
 6. To build the mod, run `vmb build <mod_name>`.  
 7. To upload an updated version of your mod, run `vmb upload <mod_name>`.  
