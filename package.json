@@ -1,9 +1,10 @@
 {
   "name": "vermintide-mod-builder",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Vermintide Mod Builder",
   "main": "vmb.js",
   "dependencies": {
+    "del": "^3.0.0",
     "gulp": "^4.0.0",
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.6.1",

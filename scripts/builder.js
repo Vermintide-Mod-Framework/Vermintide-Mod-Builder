@@ -7,6 +7,7 @@ const config = require('./config');
 const reg = require('./lib/reg');
 const modTools = require('./mod_tools');
 const str = require('./lib/str');
+const del = require('del');
 
 let builder = {
     async forEachMod(modNames, cfgMustExist, action, onError) {
@@ -65,6 +66,7 @@ let builder = {
         await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
         let modWorkshopDir = makeWorkshopCopy && await getModWorkshopDir(modName, modId);
+        await cleanBundleDirs(modName, modWorkshopDir);
         await moveMod(modName, buildDir, modWorkshopDir);
 
         console.log(`Successfully built ${modName}`);
@@ -266,6 +268,19 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
             resolve();
         });
     });
+}
+
+async function cleanBundleDirs(modName, modWorkshopDir) {
+
+    let bundleMask = '*' + config.bundleExtension;
+    let modBundleMask = path.combine(config.modsDir, modName, config.bundleDir, bundleMask);
+    let workshopBundleMask = modWorkshopDir ? path.combine(modWorkshopDir, bundleMask) : null;
+
+    await del([modBundleMask], { force: false });
+
+    if (workshopBundleMask) {
+        await del([workshopBundleMask], { force: true });
+    }
 }
 
 module.exports = builder;
