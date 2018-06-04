@@ -171,7 +171,7 @@ let tasks = {
 
         let exitCode = 0;
 
-        let modName = cl.argv.m || cl.argv.mod || cl.plainArgs[0] || '';
+        let modName = cl.getFirstModName();
         let modDir = path.combine(config.modsDir, modName);
 
         let error = '';
@@ -220,7 +220,7 @@ let tasks = {
 
         let exitCode = 0;
 
-        let modName = cl.argv.m || cl.argv.mod || cl.plainArgs[0] || '';
+        let modName = cl.getFirstModName();
         let modDir = path.combine(config.modsDir, modName);
         let modId = cl.argv.id || null;
 

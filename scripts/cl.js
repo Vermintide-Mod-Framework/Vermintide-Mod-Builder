@@ -16,7 +16,7 @@ let cl = {
     // Returns an object with all create/upload/publish params
     getWorkshopParams() {
 
-        let modName = argv.m || argv.mod || cl.plainArgs[0] || '';
+        let modName = cl.getFirstModName();
         let modTitle = argv.t || argv.title || modName;
 
         return {
@@ -29,16 +29,22 @@ let cl = {
         };
     },
 
+    getFirstModName() {
+        let modName = cl.plainArgs[0] || '';
+        return String(modName).toLowerCase();
+    },
+
     // Returns an object with all build params
     async getBuildParams() {
 
         let verbose = argv.verbose || false;
         let shouldRemoveTemp = argv.clean || false;
-        let modNames = cl.plainArgs.slice();
+        let modNames = cl.plainArgs.map(modName => String(modName).toLowerCase());
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
             try {
                 modNames = await pfs.getDirs(config.modsDir, config.ignoredDirs);
+                modNames = modNames.map(modName => String(modName).toLowerCase());
             }
             catch(err) {
                 console.error(err);
