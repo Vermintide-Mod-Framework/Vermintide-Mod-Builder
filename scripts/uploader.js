@@ -162,7 +162,7 @@ let uploader = {
         let data = await pfs.readFile(modCfg, 'utf8');
 
         if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
-            throw `Mod has already been published for Vermintide ${config.gameNumber}, use gulp upload instead.`;
+            throw `Mod has already been published for Vermintide ${config.gameNumber}, use vmb upload instead.`;
         }
 
         return true;
