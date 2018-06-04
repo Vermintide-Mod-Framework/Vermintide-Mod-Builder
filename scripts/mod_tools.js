@@ -59,6 +59,7 @@ let modTools = {
     },
 
     hashModName(data) {
+        data = String(data).toLowerCase();
         var hash = crypto.createHash('md5').update(data, 'utf-8').digest('hex');
         return hash.substring(0, 16);
     }

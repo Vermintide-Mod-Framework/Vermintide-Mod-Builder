@@ -31,7 +31,7 @@ let cl = {
 
     getFirstModName() {
         let modName = cl.plainArgs[0] || '';
-        return String(modName).toLowerCase();
+        return modName;
     },
 
     // Returns an object with all build params
@@ -39,12 +39,11 @@ let cl = {
 
         let verbose = argv.verbose || false;
         let shouldRemoveTemp = argv.clean || false;
-        let modNames = cl.plainArgs.map(modName => String(modName).toLowerCase());
+        let modNames = cl.plainArgs.slice();
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
             try {
                 modNames = await pfs.getDirs(config.modsDir, config.ignoredDirs);
-                modNames = modNames.map(modName => String(modName).toLowerCase());
             }
             catch(err) {
                 console.error(err);
