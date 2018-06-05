@@ -25,6 +25,7 @@ let cl = {
             description: argv.d || argv.desc || argv.description || modTitle + ' description',
             language: argv.l || argv.language || 'english',
             visibility: argv.v || argv.visibility || 'private',
+            tags: argv.tags || '',
             verbose: argv.verbose
         };
     },

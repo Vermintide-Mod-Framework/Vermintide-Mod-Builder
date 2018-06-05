@@ -69,12 +69,29 @@ let uploader = {
 
     // Creates item.cfg file
     async createCfgFile(params) {
+
+        let tagArray = String(params.tags).split(/;\s*/);
+        let tags = '';
+        tagArray.forEach(tag => {
+
+            if(tag.length === 0) {
+                return;
+            }
+
+            if(tags.length > 0) {
+                tags += ', ';
+            }
+
+            tags += `"${tag}"`;
+        });
+
         let configText = `title = "${params.title}";\n` +
                         `description = "${params.description}";\n` +
                         `preview = "${config.itemPreview}";\n` +
                         `content = "${config.bundleDir}";\n` +
                         `language = "${params.language}";\n` +
-                        `visibility = "${params.visibility}";\n`;
+                        `visibility = "${params.visibility}";\n` +
+                        `tags = [${tags}]`;
         console.log(`${config.cfgFile}:`);
         console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
         return await pfs.writeFile(path.combine(config.modsDir, params.name, config.cfgFile), configText);

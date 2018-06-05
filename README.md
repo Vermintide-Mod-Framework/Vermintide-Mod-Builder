@@ -39,7 +39,7 @@ Run without command to see the version number and a list of commands with parame
 
 #### Create a mod from template:
 
-	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--template <template_folder>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
@@ -47,7 +47,7 @@ By default, the template is for VMF-dependent mods. To create a VMF-independent 
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--ignore-errors] [--verbose] [--clean]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--tags "<tag1>; <tag2>;..."] [--ignore-errors] [--verbose] [--clean]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
