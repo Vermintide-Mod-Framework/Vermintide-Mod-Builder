@@ -12,5 +12,7 @@
 /mods/*
 !/mods/.gitkeep
 
+!/embedded
+
 !/.template
 !/.template-vmf

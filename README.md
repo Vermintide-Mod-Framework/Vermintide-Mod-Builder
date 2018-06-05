@@ -41,7 +41,7 @@ Run without command to see the version number and a list of commands with parame
 
 	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
 
-This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload an empty mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
+This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload a placeholder mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
 By default, the template is for VMF-dependent mods. To create a VMF-independent mod specify `.template` as the template. See [Mod Templates](#mod-templates).
 

@@ -2,6 +2,7 @@ const child_process = require('child_process');
 const gulp = require('gulp');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
+const fs = require('fs');
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
@@ -28,7 +29,7 @@ let uploader = {
 
         await uploader.validateTemplate(config.templateDir);
 
-        await new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
 
             let regexName = new RegExp(config.templateName, 'g');
             let regexTitle = new RegExp(config.templateTitle, 'g');
@@ -59,12 +60,28 @@ let uploader = {
                     }
                 });
         });
+    },
 
+    async copyPlaceholderBundle(modName) {
+
+        let modDir = path.combine(config.modsDir, modName);
         let modBundleDir = path.combine(modDir, config.bundleDir);
+
         if (!await pfs.accessible(modBundleDir)) {
             await pfs.mkdir(modBundleDir);
         }
-        await pfs.close(await pfs.open(path.combine(modBundleDir, modTools.hashModName(modName) + config.bundleExtension), 'w'));
+
+        let placeholderBundle = path.join(`${__dirname}`, `/../embedded/placeholderV${config.gameNumber}`);
+
+        return await new Promise((resolve, reject) => {
+            fs.createReadStream(placeholderBundle)
+                .on('error', reject)
+                .pipe(fs.createWriteStream(path.combine(modBundleDir, modTools.hashModName(modName) + config.bundleExtension)))
+                .on('error', reject)
+                .on('close', () => {
+                    resolve();
+                });
+        });
     },
 
     // Creates item.cfg file
