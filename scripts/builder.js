@@ -276,7 +276,7 @@ async function cleanBundleDirs(modName, modWorkshopDir) {
     let modBundleMask = path.combine(config.modsDir, modName, config.bundleDir, bundleMask);
     let workshopBundleMask = modWorkshopDir ? path.combine(modWorkshopDir, bundleMask) : null;
 
-    await del([modBundleMask], { force: false });
+    await del([modBundleMask], { force: true });
 
     if (workshopBundleMask) {
         await del([workshopBundleMask], { force: true });
