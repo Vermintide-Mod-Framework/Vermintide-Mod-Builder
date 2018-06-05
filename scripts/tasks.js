@@ -79,7 +79,8 @@ let tasks = {
         console.log(`Copying template from "${config.templateDir}"`);
 
         try {
-            await uploader.copyTemplate(params);
+            await uploader.copyTemplate(params);            
+            await uploader.copyPlaceholderBundle(params.name);
             await uploader.createCfgFile(params);
 
             let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
