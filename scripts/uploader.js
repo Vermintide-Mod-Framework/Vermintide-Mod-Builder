@@ -64,7 +64,9 @@ let uploader = {
         if (!await pfs.accessible(modBundleDir)) {
             await pfs.mkdir(modBundleDir);
         }
-        await pfs.close(await pfs.open(path.combine(modBundleDir, modTools.hashModName(modName) + config.bundleExtension), 'w'));
+
+        let placeholderBundle = `${__dirname}/../embedded/placeholderV${config.gameNumber}`;
+        await pfs.copyFile(placeholderBundle, path.combine(modBundleDir, modTools.hashModName(modName) + config.bundleExtension));
     },
 
     // Creates item.cfg file

@@ -6,7 +6,7 @@ const gulp = require('gulp'),
 gulp.task('compile', async function(callback) {
     try {
         await applyVersion();
-        await pkg(['vmb.js', '--target', 'node8-win-x64']);
+        await pkg(['.']);
         await zipVmb();
     }
     catch(err) {
