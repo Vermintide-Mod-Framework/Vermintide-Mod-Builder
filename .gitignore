@@ -16,3 +16,5 @@
 
 !/.template
 !/.template-vmf
+
+!.eslintrc.json
