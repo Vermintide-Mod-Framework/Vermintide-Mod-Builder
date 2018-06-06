@@ -7,8 +7,8 @@ async function vmb(argv) {
     cl.init(argv);
 
     // Init tasks
-    let tasks = require('./tasks');
-    let taskManager = require('./task_manager');
+    const tasks = require('./tasks');
+    const taskManager = require('./task_manager');
     taskManager.init(tasks);
 
     // Get current task from commandline
@@ -29,7 +29,7 @@ async function vmb(argv) {
     }
 
     // Early execution and exit for certain tasks
-    if (taskName == 'default' || taskName == 'config') {
+    if (taskName == 'help' || taskName == 'config') {
         return await taskManager.runTask(taskName);
     }
 

@@ -26,7 +26,7 @@ let taskManager = {
                 return { taskName, plainArgs };
             }
         }
-        return { taskName: 'default', plainArgs };
+        return { taskName: 'help', plainArgs };
     },
 
     // Runs specified task
