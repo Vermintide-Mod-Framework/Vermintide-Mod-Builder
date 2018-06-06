@@ -4,7 +4,6 @@ const rename = require('gulp-rename');
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
-const reg = require('./lib/reg');
 const modTools = require('./mod_tools');
 const str = require('./lib/str');
 const del = require('del');
@@ -72,50 +71,6 @@ let builder = {
         console.log(`Successfully built ${modName}`);
     }
 };
-
-// Gets the steam workshop folder from vermintide's install location
-async function getWorkshopDir() {
-    let gameId = config.gameId;
-    let appKey = '"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ' + gameId + '"';
-    let value = '"InstallLocation"';
-
-    let workshopDir = config.fallbackSteamAppsDir;
-
-    if (config.useFallback) {
-        console.log(`Using fallback SteamApps folder.`);
-    }
-    else {
-        let errorMsg = 'SteamApps folder not found, using fallback.';
-        let appPath = await reg.get(appKey, value).catch(err => {
-            console.error(err);
-        });
-
-        if (appPath && typeof appPath == 'string') {
-
-            appPath = path.fix(appPath);
-            let parts = appPath.split('/');
-            let neededPart = parts[parts.length - 2];
-
-            if (!neededPart) {
-                console.error(errorMsg);
-            }
-            else {
-                workshopDir = appPath.substring(0, appPath.lastIndexOf(neededPart));
-            }
-        }
-        else {
-            console.error(errorMsg);
-        }
-    }
-
-    if (!await pfs.accessible(workshopDir)) {
-        throw `SteamApps folder "${workshopDir}" not found.\nYou need to specify a valid fallback path.`;
-    }
-
-    workshopDir = path.combine(workshopDir, 'workshop/content', gameId);
-    console.log(`Workshop folder ${workshopDir}`);
-    return workshopDir;
-}
 
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
@@ -236,7 +191,7 @@ async function getModWorkshopDir(modName, modId) {
     }
     console.log(`Item ID: ${modId}`);
 
-    let workshopDir = await getWorkshopDir();
+    let workshopDir = await modTools.getWorkshopDir();
 
     return path.combine(workshopDir, String(modId));
 }

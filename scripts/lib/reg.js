@@ -7,7 +7,7 @@ module.exports = {
 
         let spawn = child_process.spawn(
             'REG',
-            ['QUERY', key, '/v', value],
+            ['QUERY', `"${key}"`, '/v', `"${value}"`],
             { windowsVerbatimArguments: true }
         );
 
@@ -34,7 +34,7 @@ module.exports = {
                     result = result.split('\r\n')[2].split('    ')[3];
                 }
                 catch (err) {
-                    reject('Unexpected REG QUERY output');
+                    reject(`Unexpected REG QUERY output:\n${result}`);
                 }
 
                 resolve(result);

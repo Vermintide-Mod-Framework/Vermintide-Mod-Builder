@@ -19,7 +19,8 @@
     "gulp-rename": "^1.2.2",
     "gulp-replace": "^0.6.1",
     "normalize-path": "^3.0.0",
-    "opn": "^5.2.0"
+    "opn": "^5.2.0",
+    "vdf": "0.0.2"
   },
   "devDependencies": {
     "pkg": "^4.3.1",
