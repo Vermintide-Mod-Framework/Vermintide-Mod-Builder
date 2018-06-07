@@ -72,7 +72,7 @@ module.exports = async function infoTask() {
             }
         },
         (error) => {
-            console.log(`\n${error}`);
+            console.error(`\n${error}`);
             exitCode = 1;
         }
     );

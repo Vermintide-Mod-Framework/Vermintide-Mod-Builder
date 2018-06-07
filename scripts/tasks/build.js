@@ -39,7 +39,7 @@ module.exports = async function buildTask() {
                 }
             },
             (error) => {
-                console.log(`\n${error}`);
+                console.error(`\n${error}`);
                 exitCode = 1;
             }
         );

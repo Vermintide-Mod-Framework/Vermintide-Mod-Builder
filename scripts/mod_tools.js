@@ -114,7 +114,7 @@ let modTools = {
                 toolsDir = await modTools.getAppDir(config.toolsId);
             }
             catch (err) {
-                console.log(err);
+                console.error(err);
             }
 
             if (!toolsDir || typeof toolsDir != 'string') {
@@ -147,7 +147,7 @@ let modTools = {
                 steamAppsDir = await modTools.getSteamAppsDir(gameId);
             }
             catch (err) {
-                console.log(err);
+                console.error(err);
             }
 
             if (!steamAppsDir || typeof steamAppsDir != 'string') {

@@ -47,7 +47,7 @@ module.exports = async function watchTask() {
                 });
             },
             (error) => {
-                console.log(error);
+                console.error(error);
                 exitCode = 1;
             }
         );

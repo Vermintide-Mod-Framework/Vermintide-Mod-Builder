@@ -169,13 +169,13 @@ function outputFailedBundles(data, modName) {
         let bundle = line.split(', ');
 
         if (bundle.length < 4) {
-            console.log(`Incorrect processed_bundles.csv string`, bundle);
+            console.error(`Incorrect processed_bundles.csv string`, bundle);
             continue;
         }
 
         /* jshint ignore:start */
         if (bundle[3] == 0) {
-            console.log('Failed to build %s/%s/%s.%s', config.modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
+            console.error('Failed to build %s/%s/%s.%s', config.modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
         }
         /* jshint ignore:end */
     };
