@@ -3,7 +3,7 @@ const gulp = require('gulp'),
       zip = require('gulp-vinyl-zip').zip,
       pkg = require('pkg').exec;
 
-gulp.task('compile', async function(callback) {
+gulp.task('build', async function(callback) {
     try {
         await applyVersion();
         await pkg(['.']);

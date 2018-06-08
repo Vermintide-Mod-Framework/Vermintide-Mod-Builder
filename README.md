@@ -136,11 +136,11 @@ You can use `--cwd` flag to force all non-absolute paths to be relative to the c
 ### Compiling VMB executable
 
 	npm run setup   
-	npm run compile
+	npm run build
 
 The compiler will say that some file needs to be distributed with the executable, but that is only relevant for non-win platforms and I'm pretty sure this script doesn't work under anything but Windows anyway.  
 Along with the executable, a zip archive will be created with template and mods folders included.
 
 ### Tests
 
-    npm run test
+    npm test
