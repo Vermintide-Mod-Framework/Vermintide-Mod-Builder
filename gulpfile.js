@@ -23,7 +23,8 @@ function zipVmb() {
                 '.template-vmf/**/*',
                 'vmb.exe',
                 'mods/',
-                'README.md'
+                'README.md',
+                'LICENSE'
             ],
             { base: '.' }
         )
