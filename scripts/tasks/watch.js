@@ -1,4 +1,4 @@
-const gulp = require('gulp');
+const watcher = require('glob-watcher');
 const cl = require('../cl');
 const config = require('../config');
 
@@ -36,7 +36,7 @@ module.exports = async function watchTask() {
                     '!' + config.modsDir + '/' + modName + '/' + config.bundleDir + '/*'
                 ];
 
-                gulp.watch(src, async () => {
+                watcher(src, async (callback) => {
                     try {
                         await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
                     }
@@ -44,6 +44,7 @@ module.exports = async function watchTask() {
                         console.error(error);
                         exitCode = 1;
                     };
+                    callback();
                 });
             },
             (error) => {

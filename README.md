@@ -1,8 +1,7 @@
 ## Vermintide Mod Builder  
 
 A Windows CLI program created to ease the ever-growing pain of creating and rebuilding mods for Vermintide. Works for both Vermintide 1 and 2.    
-The executable is the full [Node.js](https://nodejs.org/en/) enviroment
-and the script uses [gulp](https://gulpjs.com/) which is like make for javascript. Compiled with [pkg](https://github.com/zeit/pkg).
+Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.com/zeit/pkg).
 
 ### Prerequisites
 

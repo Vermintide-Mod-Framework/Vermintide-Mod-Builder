@@ -1,5 +1,5 @@
 const child_process = require('child_process');
-const gulp = require('gulp');
+const vinyl = require('vinyl-fs');
 const rename = require('gulp-rename');
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
@@ -202,7 +202,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
 
         let modBundleDir = path.combine(config.modsDir, modName, config.bundleDir);
 
-        let gulpStream = gulp.src([
+        let gulpStream = vinyl.src([
             buildDir + '/*([0-f])',
             '!' + buildDir + '/dlc'
         ], { base: buildDir })
@@ -211,12 +211,12 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
                 p.extname = config.bundleExtension;
             }))
             .on('error', reject)
-            .pipe(gulp.dest(modBundleDir))
+            .pipe(vinyl.dest(modBundleDir))
             .on('error', reject);
 
         if (modWorkshopDir) {
             console.log(`Copying to ${modWorkshopDir}`);
-            gulpStream = gulpStream.pipe(gulp.dest(modWorkshopDir)).on('error', reject);
+            gulpStream = gulpStream.pipe(vinyl.dest(modWorkshopDir)).on('error', reject);
         }
 
         gulpStream.on('end', () => {

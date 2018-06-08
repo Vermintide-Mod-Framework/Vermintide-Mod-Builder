@@ -1,5 +1,5 @@
 const child_process = require('child_process');
-const gulp = require('gulp');
+const vinyl = require('vinyl-fs');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
 const fs = require('fs');
@@ -34,7 +34,7 @@ let uploader = {
             let regexName = new RegExp(config.templateName, 'g');
             let regexTitle = new RegExp(config.templateTitle, 'g');
             let regexDescription = new RegExp(config.templateDescription, 'g');
-            gulp.src(config.modSrc, { base: config.templateDir })
+            vinyl.src(config.modSrc, { base: config.templateDir })
                 .pipe(replace(regexName, modName))
                 .pipe(replace(regexTitle, params.title))
                 .pipe(replace(regexDescription, params.description))
@@ -42,14 +42,14 @@ let uploader = {
                     p.dirname = p.dirname.replace(regexName, modName);
                     p.basename = p.basename.replace(regexName, modName);
                 }))
-                .pipe(gulp.dest(modDir))
+                .pipe(vinyl.dest(modDir))
                 .on('error', err => {
                     throw err;
                 })
                 .on('end', () => {
                     if(config.coreSrc.length > 0){
-                        gulp.src(config.coreSrc, { base: config.templateDir})
-                            .pipe(gulp.dest(modDir))
+                        vinyl.src(config.coreSrc, { base: config.templateDir})
+                            .pipe(vinyl.dest(modDir))
                             .on('error', err => {
                                 throw err;
                             })

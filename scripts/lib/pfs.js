@@ -1,5 +1,5 @@
 const path = require('./path');
-const gulp = require('gulp');
+const vinyl = require('vinyl-fs');
 const rename = require('gulp-rename');
 const fs = require('fs');
 const promisify = require('@octetstream/promisify');
@@ -74,12 +74,12 @@ pfs.copyIfDoesntExist = async function (sourceFile, destFile) {
     }
 
     return await new Promise((resolve, reject) => {
-        gulp.src(sourceFile, { base: sourcePath.dir })
+        vinyl.src(sourceFile, { base: sourcePath.dir })
             .pipe(rename(p => {
                 p.basename = destPath.name;
                 p.extname = destPath.ext;
             }))
-            .pipe(gulp.dest(destPath.dir))
+            .pipe(vinyl.dest(destPath.dir))
             .on('error', reject)
             .on('end', resolve);
     });
