@@ -2,11 +2,11 @@ return {
 	mod_description = {
 		en = "%%description"
 	},
-	checkbox_option_name = {
-		en = "Checkbox Option"
+	example_checkbox_option_name = {
+		en = "Example Checkbox Option"
 	},
-	checkbox_option_tooltip = {
-		en = "Checkbox Option description."
+	example_checkbox_option_tooltip = {
+		en = "Example Checkbox Option description."
 	},
 --[[
 	some_other_text_id = {
