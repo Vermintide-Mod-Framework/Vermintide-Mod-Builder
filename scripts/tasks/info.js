@@ -5,14 +5,13 @@ const cl = require('../cl');
 const config = require('../config');
 
 const modTools = require('../mod_tools');
-const builder = require('../builder');
 const uploader = require('../uploader');
 
 module.exports = async function infoTask() {
 
     let exitCode = 0;
 
-    let { modNames } = await cl.getBuildParams();
+    let modNames = await cl.getModNames();
     let showCfg = cl.argv['cfg'] || false;
 
     if (modNames.length > 0) {
@@ -26,7 +25,7 @@ module.exports = async function infoTask() {
         return { exitCode, finished: true };
     }
 
-    await builder.forEachMod(
+    await modTools.forEachMod(
         modNames,
         false,
         async (modName, modDir, cfgExists) => {

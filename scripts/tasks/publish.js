@@ -5,8 +5,9 @@ const cl = require('../cl');
 const config = require('../config');
 
 const modTools = require('../mod_tools');
-const builder = require('../builder');
+const buildMod = require('../builder');
 const uploader = require('../uploader');
+const templater = require('../templater');
 
 module.exports = async function publishTask() {
 
@@ -26,7 +27,7 @@ module.exports = async function publishTask() {
     }
     else {
         try {
-            await uploader.validateTemplate(config.templateDir);
+            await templater.validateTemplate(config.templateDir);
         }
         catch (err) {
             error = err;
@@ -47,7 +48,9 @@ module.exports = async function publishTask() {
         }
 
         let toolsDir = await modTools.getModToolsDir();
-        await builder.buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
+        await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
+
+        console.log();
         await pfs.copyIfDoesntExist(path.combine(config.templateDir, config.itemPreview), path.combine(modDir, config.itemPreview));
         await uploader.uploadMod(toolsDir, modName);
 

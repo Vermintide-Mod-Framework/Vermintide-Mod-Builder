@@ -3,7 +3,7 @@ const cl = require('../cl');
 const config = require('../config');
 
 const modTools = require('../mod_tools');
-const builder = require('../builder');
+const buildMod = require('../builder');
 
 module.exports = async function watchTask() {
 
@@ -24,7 +24,7 @@ module.exports = async function watchTask() {
     if (toolsDir) {
         console.log();
 
-        await builder.forEachMod(
+        await modTools.forEachMod(
             modNames,
             makeWorkshopCopy,
             (modName, modDir) => {
@@ -38,7 +38,7 @@ module.exports = async function watchTask() {
 
                 watcher(src, async (callback) => {
                     try {
-                        await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                        await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
                     }
                     catch (error) {
                         console.error(error);

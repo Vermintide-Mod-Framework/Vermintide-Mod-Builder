@@ -35,21 +35,27 @@ let cl = {
         return modName;
     },
 
-    // Returns an object with all build params
-    async getBuildParams() {
-
-        let verbose = argv.verbose || false;
-        let shouldRemoveTemp = argv.clean || false;
+    async getModNames() {
         let modNames = cl.plainArgs.slice();
 
         if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
             try {
                 modNames = await pfs.getDirs(config.modsDir, config.ignoredDirs);
             }
-            catch(err) {
+            catch (err) {
                 console.error(err);
             }
         }
+
+        return modNames;
+    },
+
+    // Returns an object with all build params
+    async getBuildParams() {
+
+        let verbose = argv.verbose || false;
+        let shouldRemoveTemp = argv.clean || false;
+        let modNames = await cl.getModNames();
 
         let modId = modNames && modNames.length == 1 ? argv.id : null;
         let makeWorkshopCopy = !argv['no-workshop'];

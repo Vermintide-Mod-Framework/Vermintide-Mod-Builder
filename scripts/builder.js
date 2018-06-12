@@ -8,69 +8,32 @@ const modTools = require('./mod_tools');
 const str = require('./lib/str');
 const del = require('del');
 
-let builder = {
-    async forEachMod(modNames, cfgMustExist, action, onError) {
-        for (let modName of modNames) {
+// Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
+async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
+    console.log(`\nPreparing to build ${modName}`);
 
-            if (!modName) {
-                continue;
-            }
+    let modDir = path.combine(config.modsDir, modName);
 
-            let modDir = path.combine(config.modsDir, modName);
+    let modTempDir = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
+    let dataDir = path.combine(modTempDir, 'compile');
+    let buildDir = path.combine(modTempDir, 'bundle');
 
-            let error = '';
-            let cfgExists = await pfs.accessible(path.combine(modDir, config.cfgFile));
-            if (!modTools.validModName(modName)) {
-                error = `Folder name "${modDir}" is invalid`;
-            }
-            else if (!await pfs.accessible(modDir + '/')) {
-                error = `Folder "${modDir}" doesn't exist`;
-            }
-            else if (!cfgExists && cfgMustExist) {
-                error = `Folder "${modDir}" doesn't have ${config.cfgFile} in it`;
-            }
+    await checkTempFolder(modName, shouldRemoveTemp);
 
-            if (error) {
-                if (typeof onError == 'function') {
-                    await onError(error);
-                }
-                else {
-                    throw error;
-                }
-                continue;
-            }
-
-            await action(modName, modDir, cfgExists);
-        };
-    },
-
-    // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
-    async buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
-        console.log(`\nPreparing to build ${modName}`);
-
-        let modDir = path.combine(config.modsDir, modName);
-
-        let modTempDir = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
-        let dataDir = path.combine(modTempDir, 'compile');
-        let buildDir = path.combine(modTempDir, 'bundle');
-
-        await checkTempFolder(modName, shouldRemoveTemp);
-
-        if (!modId && makeWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))) {
-            throw `Mod folder doesn't have ${config.cfgFile}`;
-        }
-
-        console.log(`Building ${modName}`);
-        let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
-        await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
-
-        let modWorkshopDir = makeWorkshopCopy && await getModWorkshopDir(modName, modId);
-        await cleanBundleDirs(modName, modWorkshopDir);
-        await moveMod(modName, buildDir, modWorkshopDir);
-
-        console.log(`Successfully built ${modName}`);
+    if (!modId && makeWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))) {
+        throw `Mod folder doesn't have ${config.cfgFile}`;
     }
-};
+
+    console.log(`Building ${modName}`);
+    let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
+    await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
+
+    let modWorkshopDir = makeWorkshopCopy && await getModWorkshopDir(modName, modId);
+    await cleanBundleDirs(modName, modWorkshopDir);
+    await moveMod(modName, buildDir, modWorkshopDir);
+
+    console.log(`Successfully built ${modName}`);
+}
 
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
@@ -238,4 +201,4 @@ async function cleanBundleDirs(modName, modWorkshopDir) {
     }
 }
 
-module.exports = builder;
+module.exports = buildMod;

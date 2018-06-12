@@ -6,6 +6,7 @@ const config = require('../config');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
+const templater = require('../templater');
 
 module.exports = async function createTask() {
 
@@ -31,8 +32,8 @@ module.exports = async function createTask() {
     console.log(`Copying template from "${config.templateDir}"`);
 
     try {
-        await uploader.copyTemplate(params);
-        await uploader.copyPlaceholderBundle(params.name);
+        await templater.copyTemplate(params);
+        await templater.copyPlaceholderBundle(params.name);
         await uploader.createCfgFile(params);
 
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);

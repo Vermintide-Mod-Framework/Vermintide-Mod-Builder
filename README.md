@@ -54,7 +54,7 @@ If .cfg file is present it shouldn't have `published_id` in it.
 
 #### Upload a new version of a mod to Steam Workshop:  
 
-	vmb upload <mod_name> [-n <changenote>] [--open] [--skip]  
+	vmb upload {<mod_name1> <mod_name2>... | --all}  [-n <changenote>] [--open] [--skip]  
 
 This will use `itemV1.cfg` or `itemV2.cfg` in the mod's folder and upload the last built version. Seems to only update the mod if the content has changed.  
 `--changenote` or `-n`- list of changes made  

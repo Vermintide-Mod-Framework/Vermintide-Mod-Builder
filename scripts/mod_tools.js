@@ -7,6 +7,42 @@ const crypto = require('crypto');
 const vdf = require('vdf');
 
 let modTools = {
+
+    async forEachMod(modNames, cfgMustExist, action, onError) {
+        for (let modName of modNames) {
+
+            if (!modName) {
+                continue;
+            }
+
+            let modDir = path.combine(config.modsDir, modName);
+
+            let error = '';
+            let cfgExists = await pfs.accessible(path.combine(modDir, config.cfgFile));
+            if (!modTools.validModName(modName)) {
+                error = `Folder name "${modDir}" is invalid`;
+            }
+            else if (!await pfs.accessible(modDir + '/')) {
+                error = `Folder "${modDir}" doesn't exist`;
+            }
+            else if (!cfgExists && cfgMustExist) {
+                error = `Folder "${modDir}" doesn't have ${config.cfgFile} in it`;
+            }
+
+            if (error) {
+                if (typeof onError == 'function') {
+                    await onError(error);
+                }
+                else {
+                    throw error;
+                }
+                continue;
+            }
+
+            await action(modName, modDir, cfgExists);
+        };
+    },
+
     validModName(modName) {
         return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- %]+$/);
     },

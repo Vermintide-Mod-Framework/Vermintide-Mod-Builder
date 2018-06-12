@@ -1,7 +1,7 @@
 const cl = require('../cl');
 
 const modTools = require('../mod_tools');
-const builder = require('../builder');
+const buildMod = require('../builder');
 
 module.exports = async function buildTask() {
 
@@ -9,13 +9,13 @@ module.exports = async function buildTask() {
 
     let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
 
-    if (modNames.length > 0) {
+    if (modNames.length > 1) {
         console.log(`Mods to build:`);
         for (let modName of modNames) {
             console.log(`  ${modName}`);
         }
     }
-    else {
+    else if(modNames.length === 0) {
         console.log(`No mods to build`);
         return { exitCode, finished: true };
     }
@@ -26,12 +26,12 @@ module.exports = async function buildTask() {
     });
 
     if (toolsDir) {
-        await builder.forEachMod(
+        await modTools.forEachMod(
             modNames,
             makeWorkshopCopy,
             async modName => {
                 try {
-                    await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                    await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
                 }
                 catch (error) {
                     console.error(error);
