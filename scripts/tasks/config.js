@@ -1,9 +1,8 @@
-const cl = require('../cl');
 const config = require('../config');
 
 module.exports = async function configTask() {
 
-    config.setData(cl.argv);
+    config.setData();
 
     try {
         await config.writeData();
@@ -14,7 +13,7 @@ module.exports = async function configTask() {
         return { exitCode: 1, finished: false };
     }
 
-    console.log(config.data);
+    console.log(config.getData());
 
     return { exitCode: 0, finished: false };
 };

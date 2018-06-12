@@ -7,6 +7,7 @@ const config = require('../config');
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
 const templater = require('../templater');
+const cfg = require('../cfg');
 
 module.exports = async function createTask() {
 
@@ -14,7 +15,7 @@ module.exports = async function createTask() {
 
     let params = cl.getWorkshopParams();
     let modName = params.name;
-    let modDir = path.combine(config.modsDir, modName);
+    let modDir = path.combine(config.get('modsDir'), modName);
 
     let error = '';
     if (!modTools.validModName(modName)) {
@@ -29,12 +30,12 @@ module.exports = async function createTask() {
         return { exitCode: 1, finished: true };
     }
 
-    console.log(`Copying template from "${config.templateDir}"`);
+    console.log(`Copying template from "${config.get('templateDir')}"`);
 
     try {
         await templater.copyTemplate(params);
         await templater.copyPlaceholderBundle(params.name);
-        await uploader.createCfgFile(params);
+        await cfg.writeFile(params);
 
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
 
@@ -48,7 +49,7 @@ module.exports = async function createTask() {
         exitCode = 1;
 
         // Cleanup directory if it has been created
-        let modDir = path.combine(config.modsDir, modName);
+        let modDir = path.combine(config.get('modsDir'), modName);
         if (await pfs.accessible(modDir)) {
             try {
                 await pfs.deleteDirectory(modDir);

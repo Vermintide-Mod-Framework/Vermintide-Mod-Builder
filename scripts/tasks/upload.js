@@ -8,7 +8,7 @@ module.exports = async function uploadTask() {
 
     let exitCode = 0;
 
-    if (cl.plainArgs.length === 0 && !cl.argv.all) {
+    if (cl.getPlainArgs().length === 0 && !cl.get('all')) {
         console.error('To upload all mods, use --all flag.');
         return { exitCode: 1, finished: true };
     }
@@ -25,14 +25,14 @@ module.exports = async function uploadTask() {
         console.log('No mods to upload');
     }
 
-    let changenote = cl.argv.n || cl.argv.note || cl.argv.changenote || '';
+    let changenote = cl.get('n') || cl.get('note') || cl.get('changenote') || '';
     if (typeof changenote != 'string') {
         changenote = '';
     }
 
-    let openUrl = cl.argv.o || cl.argv.open;
+    let openUrl = cl.get('o') || cl.get('open');
 
-    let skip = cl.argv.s || cl.argv.skip;
+    let skip = cl.get('s') || cl.get('skip');
 
     let modToolsDir;
     try {

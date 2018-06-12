@@ -8,14 +8,15 @@ const modTools = require('../mod_tools');
 const buildMod = require('../builder');
 const uploader = require('../uploader');
 const templater = require('../templater');
+const cfg = require('../cfg');
 
-module.exports = async function publishTask() {
+module.exports = async function taskPublish() {
 
     let exitCode = 0;
 
     let params = cl.getWorkshopParams();
     let modName = params.name;
-    let modDir = path.combine(config.modsDir, modName);
+    let modDir = path.combine(config.get('modsDir'), modName);
     let buildParams = await cl.getBuildParams();
 
     let error = '';
@@ -27,7 +28,7 @@ module.exports = async function publishTask() {
     }
     else {
         try {
-            await templater.validateTemplate(config.templateDir);
+            await templater.validateTemplate(config.get('templateDir'));
         }
         catch (err) {
             error = err;
@@ -40,18 +41,39 @@ module.exports = async function publishTask() {
     }
 
     try {
-        if (await uploader.cfgExists(modName)) {
-            console.log(`Using existing ${config.cfgFile}`);
+        let cfgData = await cfg.readFile(modName);
+
+        if (cfg.getValue(cfgData, 'published_id', 'number')){
+
+            console.error(
+                `Mod has already been published for Vermintide ${config.get('gameNumber')} with item cfg "${cfg.getPath(modName)}".\n` +
+                `Use 'vmb upload' or specify a different item cfg file with --cfg instead.`
+            );
+
+            return { exitCode: 1, finished: true };
         }
-        else {
-            await uploader.createCfgFile(params);
+
+        console.log(`Using existing ${cfg.getBase()}`);
+    }
+    catch (error) {
+
+        try {
+            await cfg.writeFile(params);
         }
+        catch (error) {
+            console.error(error);
+            return { exitCode: 1, finished: true };
+        }
+
+    }
+
+    try {
 
         let toolsDir = await modTools.getModToolsDir();
         await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
 
         console.log();
-        await pfs.copyIfDoesntExist(path.combine(config.templateDir, config.itemPreview), path.combine(modDir, config.itemPreview));
+        await pfs.copyIfDoesntExist(path.combine(config.get('templateDir'), config.get('itemPreview')), path.combine(modDir, config.get('itemPreview')));
         await uploader.uploadMod(toolsDir, modName);
 
         let modId = await modTools.getModId(modName);

@@ -3,25 +3,22 @@
 async function vmb(argv) {
 
     // Read command line parameters
-    const cl = require('./cl');
-    cl.init(argv);
+    const cl = require('./cl')(argv);
 
     // Init tasks
     const tasks = require('./tasks');
-    const taskManager = require('./task_manager');
-    taskManager.init(tasks);
+    const taskManager = require('./task_manager')(tasks);
 
     // Get current task from commandline
-    const { taskName, plainArgs } = taskManager.getCurrentTask(cl.argv._);
-    cl.plainArgs = plainArgs;
+    const { taskName, plainArgs } = taskManager.getCurrentTask(cl.get('_'));
+    cl.setPlainArgs(plainArgs);
 
     // Init config
-    const config = require('./config');
-    config.init();
+    const config = require('./config')();
 
     // Read config from file
     try {
-        await config.readData(cl.argv);
+        await config.readData();
     }
     catch (err) {
         console.error(err);
@@ -35,12 +32,16 @@ async function vmb(argv) {
 
     // Parse config data
     try {
-        await config.parseData(cl.argv);
+        await config.parseData();
     }
     catch (err) {
         console.error(err);
         return { exitCode: 3, finished: true };
     }
+
+    // Init item cfg reader
+    require('./cfg')();
+
 
     // Run task
     return await taskManager.runTask(taskName);

@@ -5,6 +5,7 @@ const config = require('./config');
 const reg = require('./lib/reg');
 const crypto = require('crypto');
 const vdf = require('vdf');
+const cfg = require('./cfg');
 
 let modTools = {
 
@@ -18,11 +19,10 @@ let modTools = {
                 continue;
             }
 
-            let modDir = path.combine(config.modsDir, modName);
-            let cfgDir = config.getAbsoluteCfgPath(modDir);
+            let modDir = path.combine(config.get('modsDir'), modName);
 
             let error = '';
-            let cfgExists = await pfs.accessible(path.combine(cfgDir, config.cfgFile));
+            let cfgExists = await cfg.fileExists(modName);
 
             if (!modTools.validModName(modName)) {
                 error = `Folder name "${modDir}" is invalid`;
@@ -31,7 +31,7 @@ let modTools = {
                 error = `Folder "${modDir}" doesn't exist`;
             }
             else if (!cfgExists && cfgMustExist) {
-                error = `Folder "${cfgDir}" doesn't have ${config.cfgFile} in it`;
+                error = `${cfg.getBase()} not found in "${cfg.getDir(modDir)}"`;
             }
 
             modInfo.push({ modName, modDir, cfgExists, error });
@@ -45,15 +45,18 @@ let modTools = {
     },
 
     async getModId(modName) {
-        let modDir = path.combine(config.modsDir, modName);
-        let cfgDir = config.getAbsoluteCfgPath(modDir);
-        let cfgData = await pfs.readFile(path.combine(cfgDir, config.cfgFile), 'utf8');
+
+        if(!await cfg.fileExists(modName)) {
+            throw `${cfg.getBase()} not found in ${cfg.getDir(modName)}`;
+        }
+
+        let cfgData = await cfg.readFile(modName);
         let modId = cfgData.match(/^published_id *=? *(\d*)\D*$/m);
         modId = modId && modId[1];
 
         if (!modId) {
             throw (
-                `Item ID not found in ${modDir}/${config.cfgFile} file.\n` +
+                `Item ID not found in "${cfg.getPath()}" file.\n` +
                 `You need to publish your mod to workshop before you can build/view it.\n` +
                 `Alternatively you can specify the workshop item id with --id param.`
             );
@@ -141,12 +144,12 @@ let modTools = {
 
         let toolsDir;
 
-        if (config.useFallback) {
+        if (config.get('useFallback')) {
             console.log(`Using fallback mod tools folder.`);
         }
         else{
             try {
-                toolsDir = await modTools.getAppDir(config.toolsId);
+                toolsDir = await modTools.getAppDir(config.get('toolsId'));
             }
             catch (err) {
                 console.error(err);
@@ -158,10 +161,10 @@ let modTools = {
         }
 
         if (!toolsDir) {
-            toolsDir = config.fallbackToolsDir;
+            toolsDir = config.get('fallbackToolsDir');
         }
 
-        if (!await pfs.accessible(path.combine(toolsDir, config.stingrayDir, config.stingrayExe))) {
+        if (!await pfs.accessible(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
             throw `Mod tools not found in "${toolsDir}".\nYou need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`;
         }
         console.log(`Mod tools folder "${toolsDir}"`);
@@ -170,11 +173,11 @@ let modTools = {
 
     // Gets the steam workshop folder from vermintide's install location
     async getWorkshopDir() {
-        let gameId = config.gameId;
+        let gameId = config.get('gameId');
 
         let steamAppsDir;
 
-        if (config.useFallback) {
+        if (config.get('useFallback')) {
             console.log(`Using fallback SteamApps folder.`);
         }
         else {
@@ -191,7 +194,7 @@ let modTools = {
         }
 
         if (!steamAppsDir) {
-            steamAppsDir = config.fallbackSteamAppsDir;
+            steamAppsDir = config.get('fallbackSteamAppsDir');
         }
 
         if (!await pfs.accessible(steamAppsDir)) {

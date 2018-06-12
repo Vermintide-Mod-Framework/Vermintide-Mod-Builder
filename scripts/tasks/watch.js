@@ -39,8 +39,8 @@ module.exports = async function watchTask() {
 
         let src = [
             modDir,
-            '!' + config.modsDir + '/' + modName + '/*.tmp',
-            '!' + config.modsDir + '/' + modName + '/' + config.bundleDir + '/*'
+            '!' + config.get('modsDir') + '/' + modName + '/*.tmp',
+            '!' + config.get('modsDir') + '/' + modName + '/' + config.get('bundleDir') + '/*'
         ];
 
         watcher(src, async (callback) => {

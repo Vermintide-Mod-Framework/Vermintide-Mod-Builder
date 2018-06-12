@@ -3,6 +3,7 @@ const path = require('../lib/path');
 const str = require('../lib/str');
 const cl = require('../cl');
 const config = require('../config');
+const cfg = require('../cfg');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
@@ -12,7 +13,7 @@ module.exports = async function infoTask() {
     let exitCode = 0;
 
     let modNames = await cl.getModNames();
-    let showCfg = cl.argv['cfg'] || false;
+    let showCfg = cl.get('cfg') || false;
 
     if (modNames.length > 1) {
         console.log(`Showing information for mods:`);
@@ -33,7 +34,8 @@ module.exports = async function infoTask() {
             continue;
         }
 
-        let cfgDir = config.getAbsoluteCfgPath(modDir);
+        let cfgDir = cfg.getDir(modDir);
+        let cfgBase = cfg.getBase();
 
         console.log(`\n${modName} information:`);
 
@@ -45,14 +47,14 @@ module.exports = async function infoTask() {
         }
         catch (err) {
             let errExplanation = cfgExists ?
-                `"published_id" not found in "${cfgDir}/${config.cfgFile}"` :
-                `"${cfgDir}/${config.cfgFile}" not found`;
+                `"published_id" not found in "${cfgDir}/${cfgBase}"` :
+                `"${cfgDir}/${cfgBase}" not found`;
 
             console.warn(`Not published (${errExplanation})`);
         }
 
-        let bundleName = modTools.hashModName(modName) + config.bundleExtension;
-        let bundleDir = path.combine(modDir, config.bundleDir);
+        let bundleName = modTools.hashModName(modName) + config.get('bundleExtension');
+        let bundleDir = path.combine(modDir, config.get('bundleDir'));
         let bundlePath = path.combine(bundleDir, bundleName);
         try {
             let stat = await pfs.stat(bundlePath);
@@ -64,16 +66,16 @@ module.exports = async function infoTask() {
         }
 
         if (showCfg && cfgExists) {
-            console.log(`${config.cfgFile} in "${ cfgDir }":`);
-            let cfgData = await pfs.readFile(path.combine(cfgDir, config.cfgFile), 'utf8');
+            console.log(`${cfgBase} in "${cfgDir}":`);
+            let cfgData = await pfs.readFile(path.combine(cfgDir, cfgBase), 'utf8');
             cfgData = str.rmn(cfgData).replace(/^/gm, '  ');
             console.log(cfgData);
         }
         else if (cfgExists) {
-            console.log(`Found ${config.cfgFile} in "${cfgDir}"`);
+            console.log(`Found ${cfgBase} in "${cfgDir}"`);
         }
         else {
-            console.warn(`No ${config.cfgFile} in "${cfgDir}"`);
+            console.warn(`No ${cfgBase} in "${cfgDir}"`);
         }
     };
 

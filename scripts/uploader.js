@@ -3,48 +3,14 @@ const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
 const str = require('./lib/str');
+const cfg = require('./cfg');
 
 let uploader = {
-
-    // Creates item.cfg file
-    async createCfgFile(params) {
-
-        let tagArray = String(params.tags).split(/;\s*/);
-        let tags = '';
-        for(let tag of tagArray) {
-
-            if(tag.length === 0) {
-                continue;
-            }
-
-            if(tags.length > 0) {
-                tags += ', ';
-            }
-
-            tags += `"${tag}"`;
-        };
-
-        let configText = `title = "${params.title}";\n` +
-                        `description = "${params.description}";\n` +
-                        `preview = "${config.itemPreview}";\n` +
-                        `content = "${config.bundleDir}";\n` +
-                        `language = "${params.language}";\n` +
-                        `visibility = "${params.visibility}";\n` +
-                        `tags = [${tags}]`;
-        console.log(`${config.cfgFile}:`);
-        console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
-
-        let modDir = path.combine(config.modsDir, params.name);
-        let cfgDir = config.getAbsoluteCfgPath(modDir);
-        return await pfs.writeFile(path.combine(cfgDir, config.cfgFile), configText);
-    },
 
     // Uploads mod to the workshop
     async uploadMod(toolsDir, modName, changenote, skip) {
 
-        let modDir = path.combine(config.modsDir, modName);
-        let cfgDir = config.getAbsoluteCfgPath(modDir);
-        let cfgPath = path.combine(cfgDir, config.cfgFile);
+        let cfgPath = cfg.getPath(modName);
 
         let uploaderParams = [
             '-c', '"' + cfgPath + '"'
@@ -59,14 +25,14 @@ let uploader = {
             uploaderParams.push('-s');
         }
 
-        console.log(`Running uploader with steam app id ${config.gameId}`);
+        console.log(`Running uploader with steam app id ${config.get('gameId')}`);
 
-        await pfs.writeFile(path.combine(toolsDir, config.uploaderDir, config.uploaderGameConfig), config.gameId);
+        await pfs.writeFile(path.combine(toolsDir, config.get('uploaderDir'), config.get('uploaderGameConfig')), config.get('gameId'));
         let ugc_tool = child_process.spawn(
-            config.uploaderExe,
+            config.get('uploaderExe'),
             uploaderParams,
             {
-                cwd: path.combine(toolsDir, config.uploaderDir),
+                cwd: path.combine(toolsDir, config.get('uploaderDir')),
                 windowsVerbatimArguments: true
             }
         );
@@ -104,24 +70,6 @@ let uploader = {
     // Returns steam workshop url for mod
     formUrl(modId) {
         return 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
-    },
-
-    // Checks if the mod has published_id in its item.cfg
-    async cfgExists(modName) {
-
-        let modCfg = path.combine(config.modsDir, modName, config.cfgFile);
-
-        if(!await pfs.accessible(modCfg)){
-            return false;
-        }
-
-        let data = await pfs.readFile(modCfg, 'utf8');
-
-        if(data.match(/^published_id *=? *(\d*)\D*$/m)) {
-            throw `Mod has already been published for Vermintide ${config.gameNumber}, use vmb upload instead.`;
-        }
-
-        return true;
     }
 
 };

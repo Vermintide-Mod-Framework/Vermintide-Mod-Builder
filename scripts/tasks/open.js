@@ -12,8 +12,8 @@ module.exports = async function openTask() {
     let exitCode = 0;
 
     let modName = cl.getFirstModName();
-    let modDir = path.combine(config.modsDir, modName);
-    let modId = cl.argv.id || null;
+    let modDir = path.combine(config.get('modsDir'), modName);
+    let modId = cl.get('id') || null;
 
     if (!modId) {
         let error = '';

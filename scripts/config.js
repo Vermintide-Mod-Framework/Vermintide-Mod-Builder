@@ -1,189 +1,190 @@
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
+const cl = require('./cl');
 
 const defaultTempDir = '.temp';
 
-let config = {
-    defaultTempDir,
+let defaultData = {
+    mods_dir: 'mods',
+    temp_dir: '',
 
-    defaultData: {
-        mods_dir: 'mods',
-        temp_dir: '',
+    game: 2,
 
-        game: 2,
+    game_id1: '235540',
+    game_id2: '552500',
 
-        game_id1: '235540',
-        game_id2: '552500',
+    tools_id1: '718610',
+    tools_id2: '866060',
 
-        tools_id1: '718610',
-        tools_id2: '866060',
+    fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
+    fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 SDK/',
 
-        fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-        fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 SDK/',
+    fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
+    fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
 
-        fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
-        fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
+    use_fallback: false,
 
-        use_fallback: false,
+    bundle_extension1: '',
+    bundle_extension2: '.mod_bundle',
 
-        bundle_extension1: '',
-        bundle_extension2: '.mod_bundle',
+    template_dir: ".template-vmf",
 
-        template_dir: ".template-vmf",
+    template_preview_image: "item_preview.jpg",
 
-        template_preview_image: "item_preview.jpg",
+    template_core_files: [
+        'core/**'
+    ],
 
-        template_core_files: [
-            'core/**'
-        ],
+    ignored_dirs: [
+        '.git',
+        defaultTempDir
+    ],
 
-        ignored_dirs: [
-            '.git',
-            defaultTempDir
-        ],
-
-        ignore_build_errors: false
-    },
-
-    init() {
-        config.dir = '';
-        config.filename = '.vmbrc';
-        config.exeDir = '';
-
-        config.data = {};
-
-        config.modsDir = '';
-        config.tempDir = '';
-        config.gameNumber = 0;
-        config.gameId = '';
-        config.toolsId = '';
-
-        // Other config params
-        config.fallbackToolsDir = '';
-        config.fallbackSteamAppsDir = '';
-        config.ignoredDirs = [];
-
-        // These will be replaced in the template mod when running tasks
-        config.templateDir = '';
-        config.templateName = '%%name';
-        config.templateTitle = '%%title';
-        config.templateDescription = '%%description';
-        config.itemPreview = '';
-
-        // Folder in which the built bundle is gonna be stored before being copied to workshop folder
-        config.bundleDir = '';
-        config.bundleExtension = '';
-
-        // Files in template
-        config.coreSrc = [];
-        config.modSrc = [];
-
-        // Paths to mod tools relative to the mod tools folder
-        config.uploaderDir = 'ugc_uploader/';
-        config.uploaderExe = 'ugc_tool.exe';
-        config.uploaderGameConfig = 'steam_appid.txt';
-        config.stingrayDir = 'bin/';
-        config.stingrayExe = 'stingray_win64_dev_x64.exe';
-
-        // Config file for workshop uploader tool
-        config.cfgFile = '';
-        config.cfgDir = '';
-
-    },
-
-    async readData(args) {
-
-        config.exeDir = args.cwd ? process.cwd() : path.dirname(process.execPath);
-
-        if(args.rc){
-            config.dir = path.absolutify(args.rc);
-            console.log(`Using ${config.filename} in "${config.dir}"`);
-        }
-        else{
-            config.dir = config.exeDir;
-        }
-
-        config.data = await readData(path.combine(config.dir, config.filename), args.reset);
-        if (!config.data || typeof config.data != 'object') {
-            throw `Invalid config data in ${config.filename}`;
-        }
-    },
-
-    async parseData(args) {
-
-
-        // Mods directory
-        let { modsDir, tempDir } = await getModsDir(config.data.mods_dir, config.data.temp_dir, args);
-        config.modsDir = modsDir;
-        config.tempDir = tempDir;
-
-        // Game number
-        config.gameNumber = getGameNumber(config.data.game, args);
-        config.gameId = getGameSpecificKey('game_id');
-        config.toolsId = getGameSpecificKey('tools_id');
-
-        config.bundleDir = 'bundleV' + config.gameNumber;
-        config.bundleExtension = getGameSpecificKey('bundle_extension');
-
-        // Other config params
-        config.fallbackToolsDir = path.absolutify(getGameSpecificKey('fallback_tools_dir') || '');
-        config.fallbackSteamAppsDir = path.absolutify(getGameSpecificKey('fallback_steamapps_dir') || '');
-        config.ignoredDirs = config.data.ignored_dirs || [];
-
-        config.templateDir = getTemplateDir(config.data.template_dir || config.defaultData.template_dir, args);
-        config.itemPreview = config.data.template_preview_image || config.defaultData.template_preview_image;
-
-        // Files in template
-        const { coreSrc, modSrc } = getTemplateSrc(config.data.template_core_files, config.templateDir);
-        config.coreSrc = coreSrc;
-        config.modSrc = modSrc;
-
-        // Config file for workshop uploader tool
-        if (args.cfg && typeof args.cfg == 'string') {
-            let cfgPath = path.parse(args.cfg);
-            config.cfgFile = cfgPath.base;
-            config.cfgDir = cfgPath.dir;
-        }
-        else {
-            config.cfgFile =  'itemV' + config.gameNumber + '.cfg';
-        }
-
-        config.useFallback = args['use-fallback'] === undefined && config.data.use_fallback === undefined ?
-            config.defaultData.use_fallback :
-            args['use-fallback'] || config.data.use_fallback;
-
-        config.ignoreBuildErrors = config.data.ignore_build_errors === undefined ?
-            config.defaultData.ignore_build_errors :
-            config.data.ignore_build_errors;
-    },
-
-    setData(args) {
-        for (let key of Object.keys(config.defaultData)) {
-
-            if (args[key] === undefined) {
-                continue;
-            }
-
-            if (typeof config.data[key] == 'object') {
-                console.error(`Cannot set key "${key}" because it is an object. Modify ${config.filename} directly.`);
-                continue;
-            }
-
-            console.log(`Set ${key} to ${args[key]}`);
-            config.data[key] = args[key];
-        };
-    },
-
-    async writeData() {
-        await pfs.writeFile(path.combine(config.dir, config.filename), JSON.stringify(config.data, null, '\t'));
-    },
-
-    getAbsoluteCfgPath(relativeTo) {
-        return path.absolutify(config.cfgDir, relativeTo);
-    }
+    ignore_build_errors: false
 };
 
-async function readData(filepath, shouldReset) {
+let data = {};
+
+let values = {
+    dir: undefined,
+    filename: '.vmbrc',
+    exeDir: undefined,
+
+    modsDir: undefined,
+    tempDir: undefined,
+    gameNumber: undefined,
+    gameId: undefined,
+    toolsId: undefined,
+
+    // Other config params
+    fallbackToolsDir: undefined,
+    fallbackSteamAppsDir: undefined,
+    ignoredDirs: undefined,
+
+    // These will be replaced in the template mod when running tasks
+    templateDir: undefined,
+    templateName: '%%name',
+    templateTitle: '%%title',
+    templateDescription: '%%description',
+    itemPreview: undefined,
+
+    // Folder in which the built bundle is gonna be stored before being copied to workshop folder
+    bundleDir: undefined,
+    bundleExtension: undefined,
+
+    // Files in template
+    coreSrc: undefined,
+    modSrc: undefined,
+
+    // Paths to mod tools relative to the mod tools folder
+    uploaderDir: 'ugc_uploader/',
+    uploaderExe: 'ugc_tool.exe',
+    uploaderGameConfig: 'steam_appid.txt',
+    stingrayDir: 'bin/',
+    stingrayExe: 'stingray_win64_dev_x64.exe'
+};
+
+function get(key) {
+
+    if(values[key] === undefined) {
+        throw new Error(`Config key "${key}" is undefined`);
+    }
+
+    return values[key];
+}
+
+function set(...pairs) {
+    for(let i = 0; i < pairs.length; i += 2) {
+        values[pairs[i]] = pairs[i + 1];
+    }
+}
+
+async function readData() {
+
+    let exeDir = cl.get('cwd') ? process.cwd() : path.dirname(process.execPath);
+    let dir;
+    let filename = values.filename;
+
+    if(cl.get('rc')){
+        dir = path.absolutify(cl.get('rc'));
+        console.log(`Using ${filename} in "${dir}"`);
+    }
+    else{
+        dir = exeDir;
+    }
+
+    data = await _readData(path.combine(dir, filename), cl.get('reset'));
+    if (!data || typeof data != 'object') {
+        throw `Invalid config data in ${filename}`;
+    }
+}
+
+async function parseData() {
+
+    let { modsDir, tempDir } = await _getModsDir(data.mods_dir, data.temp_dir);
+    values.modsDir = modsDir;
+    values.tempDir = tempDir;
+
+    // Game number
+    values.gameNumber = _getGameNumber(data.game);
+    values.gameId = _getGameSpecificKey('game_id');
+    values.toolsId = _getGameSpecificKey('tools_id');
+
+
+    values.bundleDir = 'bundleV' + values.gameNumber;
+    values.bundleExtension = _getGameSpecificKey('bundle_extension');
+
+    // Other config params
+    values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir') || '');
+    values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir') || '');
+    values.ignoredDirs = data.ignored_dirs || [];
+
+    values.templateDir = _getTemplateDir(data.template_dir || defaultData.template_dir);
+    values.itemPreview = data.template_preview_image || defaultData.template_preview_image;
+
+    // Files in template
+    let { coreSrc, modSrc } = _getTemplateSrc(data.template_core_files, values.templateDir);
+    values.coreSrc = coreSrc;
+    values.modSrc = modSrc;
+
+    values.useFallback = cl.get('use-fallback') === undefined && data.use_fallback === undefined ?
+        defaultData.use_fallback :
+        cl.get('use-fallback') || data.use_fallback;
+
+    values.ignoreBuildErrors = data.ignore_build_errors === undefined ?
+        defaultData.ignore_build_errors :
+        data.ignore_build_errors;
+}
+
+function getData() {
+    return data;
+}
+
+function setData() {
+    for (let key of Object.keys(defaultData)) {
+
+        let value = cl.get(key);
+
+        if (value === undefined) {
+            continue;
+        }
+
+        if (typeof data[key] == 'object') {
+            console.error(`Cannot set key "${key}" because it is an object. Modify ${values.filename} directly.`);
+            continue;
+        }
+
+        console.log(`Set ${key} to ${value}`);
+        data[key] = value;
+    };
+}
+
+async function writeData() {
+    await pfs.writeFile(path.combine(values.dir, values.filename), JSON.stringify(data, null, '\t'));
+}
+
+
+async function _readData(filepath, shouldReset) {
 
     if (shouldReset && await pfs.accessible(filepath)) {
         try {
@@ -199,7 +200,7 @@ async function readData(filepath, shouldReset) {
     if (!await pfs.accessible(filepath)) {
         try {
             console.log(`Creating default ${path.basename(filepath)}`);
-            await pfs.writeFile(filepath, JSON.stringify(config.defaultData, null, '\t'));
+            await pfs.writeFile(filepath, JSON.stringify(defaultData, null, '\t'));
         }
         catch (err) {
             console.error(err);
@@ -216,15 +217,17 @@ async function readData(filepath, shouldReset) {
     }
 }
 
-function getGameSpecificKey(key){
-    let id = config.data[key + config.gameNumber] || config.defaultData[key + config.gameNumber];
+function _getGameSpecificKey(key){
+    let id = data[key + values.gameNumber] || defaultData[key + values.gameNumber];
+
     if (typeof id != 'string') {
-        throw `Failed to find '${key + config.gameNumber}' in ${config.filename}. It must be a string.`;
+        throw `Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a string.`;
     }
+
     return id;
 }
 
-async function getModsDir(modsDir, tempDir, args) {
+async function _getModsDir(modsDir, tempDir) {
 
     modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
     tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
@@ -235,7 +238,7 @@ async function getModsDir(modsDir, tempDir, args) {
         tempDir = path.combine(modsDir, defaultTempDir);
     }
 
-    let newModsDir = args.f || args.folder;
+    let newModsDir = cl.get('f') || cl.get('folder');
 
     if (newModsDir) {
         if (typeof newModsDir == 'string') {
@@ -262,8 +265,8 @@ async function getModsDir(modsDir, tempDir, args) {
     return { modsDir, tempDir };
 }
 
-function getGameNumber(gameNumber, args) {
-    let newGameNumber = args.g || args.game;
+function _getGameNumber(gameNumber) {
+    let newGameNumber = cl.get('g') || cl.get('game');
 
     if (newGameNumber !== undefined) {
         gameNumber = newGameNumber;
@@ -272,7 +275,7 @@ function getGameNumber(gameNumber, args) {
     gameNumber = Number(gameNumber);
 
     if (gameNumber !== 1 && gameNumber !== 2) {
-        throw `Vermintide ${gameNumber} hasn't been released yet. Check your ${config.filename}.`;
+        throw `Vermintide ${gameNumber} hasn't been released yet. Check your ${values.filename}.`;
     }
 
     console.log(`Game: Vermintide ${gameNumber}`);
@@ -280,21 +283,21 @@ function getGameNumber(gameNumber, args) {
     return gameNumber;
 }
 
-function getTemplateDir(templateDir, args) {
-    let newTemplateDir = args.template || '';
+function _getTemplateDir(templateDir) {
+    let newTemplateDir = cl.get('template') || '';
 
     if (newTemplateDir && typeof newTemplateDir == 'string') {
-        return path.absolutify(newTemplateDir, config.exeDir);
+        return path.absolutify(newTemplateDir, values.exeDir);
     }
 
-    return path.absolutify(templateDir, config.exeDir);
+    return path.absolutify(templateDir, values.exeDir);
 }
 
-function getTemplateSrc(configCoreSrc, templateDir) {
+function _getTemplateSrc(configCoreSrc, templateDir) {
 
     // Static files from config
     let coreSrc = [
-        path.combine(templateDir, config.itemPreview)
+        path.combine(templateDir, values.itemPreview)
     ];
     if (Array.isArray(configCoreSrc)) {
         for (let src of configCoreSrc) {
@@ -315,4 +318,16 @@ function getTemplateSrc(configCoreSrc, templateDir) {
     return { coreSrc, modSrc };
 }
 
-module.exports = config;
+
+module.exports = function() {
+    module.exports.get = get;
+    module.exports.set = set;
+
+    module.exports.readData = readData;
+    module.exports.parseData = parseData;
+    module.exports.getData = getData;
+    module.exports.setData = setData;
+    module.exports.writeData = writeData;
+
+    return module.exports;
+};

@@ -4,6 +4,7 @@ const rename = require('gulp-rename');
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
+const cfg = require('./cfg');
 const modTools = require('./mod_tools');
 const str = require('./lib/str');
 const del = require('del');
@@ -12,16 +13,16 @@ const del = require('del');
 async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let modDir = path.combine(config.modsDir, modName);
+    let modDir = path.combine(config.get('modsDir'), modName);
 
-    let modTempDir = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
+    let modTempDir = path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
     let dataDir = path.combine(modTempDir, 'compile');
     let buildDir = path.combine(modTempDir, 'bundle');
 
     await checkTempFolder(modName, shouldRemoveTemp);
 
-    if (!modId && makeWorkshopCopy && !await pfs.accessible(path.combine(modDir, config.cfgFile))) {
-        throw `Mod folder doesn't have ${config.cfgFile}`;
+    if (!modId && makeWorkshopCopy && !await cfg.fileExists(modName)) {
+        throw `${cfg.getBase()} not found in "${cfg.getDir(modName)}"`;
     }
 
     console.log(`Building ${modName}`);
@@ -37,7 +38,7 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
 
 // Checks if temp folder exists, optionally removes it
 async function checkTempFolder(modName, shouldRemove) {
-    let tempPath = path.combine(config.tempDir, `${modName}V${config.gameNumber}`);
+    let tempPath = path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
     let tempExists = await pfs.accessible(tempPath);
 
     if (tempExists && shouldRemove) {
@@ -69,10 +70,10 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
     ];
 
     let stingray = child_process.spawn(
-        config.stingrayExe,
+        config.get('stingrayExe'),
         stingrayParams,
         {
-            cwd: path.combine(toolsDir, config.stingrayDir),
+            cwd: path.combine(toolsDir, config.get('stingrayDir')),
             windowsVerbatimArguments: true
         }
     );
@@ -142,7 +143,7 @@ function outputFailedBundles(data, modName) {
 
         /* jshint ignore:start */
         if (bundle[3] == 0) {
-            console.error('Failed to build %s/%s/%s.%s', config.modsDir, modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
+            console.error('Failed to build %s/%s/%s.%s', config.get('modsDir'), modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
         }
         /* jshint ignore:end */
     };
@@ -163,11 +164,11 @@ async function getModWorkshopDir(modName, modId) {
     return path.combine(workshopDir, String(modId));
 }
 
-// Copies the mod to the config.modsDir and modName/bundle
+// Copies the mod to the config.get('modsDir') and modName/bundle
 async function moveMod(modName, buildDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
-        let modBundleDir = path.combine(config.modsDir, modName, config.bundleDir);
+        let modBundleDir = path.combine(config.get('modsDir'), modName, config.get('bundleDir'));
 
         let gulpStream = vinyl.src([
             buildDir + '/*([0-f])',
@@ -175,7 +176,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
         ], { base: buildDir })
             .pipe(rename(p => {
                 p.basename = modTools.hashModName(modName);
-                p.extname = config.bundleExtension;
+                p.extname = config.get('bundleExtension');
             }))
             .on('error', reject)
             .pipe(vinyl.dest(modBundleDir))
@@ -194,8 +195,8 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
 
 async function cleanBundleDirs(modName, modWorkshopDir) {
 
-    let bundleMask = '*' + config.bundleExtension;
-    let modBundleMask = path.combine(config.modsDir, modName, config.bundleDir, bundleMask);
+    let bundleMask = '*' + config.get('bundleExtension');
+    let modBundleMask = path.combine(config.get('modsDir'), modName, config.get('bundleDir'), bundleMask);
     let workshopBundleMask = modWorkshopDir ? path.combine(modWorkshopDir, bundleMask) : null;
 
     await del([modBundleMask], { force: true });
