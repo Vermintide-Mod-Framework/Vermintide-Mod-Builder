@@ -87,6 +87,8 @@ let config = {
 
         // Config file for workshop uploader tool
         config.cfgFile = '';
+        config.cfgDir = '';
+
     },
 
     async readData(args) {
@@ -137,7 +139,14 @@ let config = {
         config.modSrc = modSrc;
 
         // Config file for workshop uploader tool
-        config.cfgFile = 'itemV' + config.gameNumber + '.cfg';
+        if (args.cfg && typeof args.cfg == 'string') {
+            let cfgPath = path.parse(args.cfg);
+            config.cfgFile = cfgPath.base;
+            config.cfgDir = cfgPath.dir;
+        }
+        else {
+            config.cfgFile =  'itemV' + config.gameNumber + '.cfg';
+        }
 
         config.useFallback = args['use-fallback'] === undefined && config.data.use_fallback === undefined ?
             config.defaultData.use_fallback :
@@ -167,6 +176,10 @@ let config = {
 
     async writeData() {
         await pfs.writeFile(path.combine(config.dir, config.filename), JSON.stringify(config.data, null, '\t'));
+    },
+
+    getAbsoluteCfgPath(relativeTo) {
+        return path.absolutify(config.cfgDir, relativeTo);
     }
 };
 

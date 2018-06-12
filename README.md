@@ -25,16 +25,17 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]
 
 `-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.   
 `-g {1|2}` or `--game {1|2}` - temporarily sets for which game the mods should be created, built and uploaded.  
+`--cfg <path_to_item_cfg>` - path to .cfg file that stores information about a mod. Can be relative or absolute. If not set to absolute, it will be relative to each mod's directory. Defaults to `itemV1.cfg` and `itemV2.cfg` depending on selected game.  
 `--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default, it is the directory with vmb.exe. The path must already exist. To use current working directory put `.` as the path. If the file doesn't exist in the folder, a default config will be created.      
 `--reset` - resets .vmbrc before executing the command.  
-`--use-fallback` - uses fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
-`--cwd` - forces all non-absolute paths to be relative to the current working directory. See **[relative paths clarification](#relative-paths-clarification)**.
+`--use-fallback` - uses fallback paths instead of looking them up in the registry. Can speed up building/uploading. You can also permanently set this in .vmbrc.  
+`--cwd` - forces all paths which are relative to the executable's directory to be relative to the current working directory instead. See **[relative paths clarification](#relative-paths-clarification)**.
 
-Run without command to see the version number and a list of commands with parameters.
+Run without command to see version number and a list of commands with parameters.
 
 
 #### Create a mod from template:
@@ -56,7 +57,9 @@ If .cfg file is present it shouldn't have `published_id` in it.
 
 	vmb upload {<mod_name1> <mod_name2>... | --all}  [-n <changenote>] [--open] [--skip]  
 
-This will use `itemV1.cfg` or `itemV2.cfg` in the mod's folder and upload the last built version. Seems to only update the mod if the content has changed.  
+This will use `itemV1.cfg` or `itemV2.cfg` in the mod's folder (if not overwritten by `--cfg`) and upload the last built version. Workshop seems to only update the mod if the content was changed.  
+If multiple mods are specified, they will all be uploaded with the same changenote.  
+`--all` - must be set in order to upload all mods.  
 `--changenote` or `-n`- list of changes made  
 `--open` or `-o` - opens the mod's url after uploading  
 `--skip` or `-s` - only uploads the contents of .cfg  
@@ -102,11 +105,11 @@ This will show the full path to the mod's folder, whether the mod has been publi
 The program reads configuration file .vmbrc every time it starts. Some of these options can be temporarily overwritten with command line parameters described above. Below are some of the options and their default values.   
 
 * **`"mods_dir": "./mods"`** - folder in which mods are going to be searched for. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.  
-* **`"temp_dir": ""`** - folder where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.   
+* `"temp_dir": ""` - folder where temporary files will be placed during the build process. Leaving it empty will default to `<mods_dir>/.temp`. If not set to an absolute path, it will be relative to the current working directory, just like `mods_dir`. Unlike `mods_dir`, this path doesn't have to exist prior to running the program.   
 * **`"game": 2`** - set to 1 or 2 to determine for which game the mods are going to be created, built and uploaded by default.  
 * `"fallback_tools_dir{1|2}": "C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/"` - these paths will be used as a fallback for Vermintide SDK folders if the script fails to find them in the registry.  
 * `"fallback_steamapps_dir1{1|2}": "C:/Program Files (x86)/Steam/steamapps/"` - these paths will be used as a fallback for the SteamApps folders if the script fails to find them in the registry.  
-* `"use_fallback": false` - set to `true` to use fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
+* **`"use_fallback": false`** - set to `true` to use fallback paths instead of looking them up in the registry. Can speed up building/uploading.  
 * `"ignored_dirs": [ ".git", ".temp" ]` - folders in `<mods_dir>` that will be ignored when building/watching all mods.  
 * `"ignore_build_errors": false` - set to `true` to ignore Stingray executable errors during the build process.  
 * 	`"template_dir": ".template-vmf", "template_preview_image": "item_preview.jpg", "template_core_files": [ "core/**" ]` - see [Mod Templates](#mod-templates).  
@@ -125,15 +128,16 @@ Every template must have `item_preview.jpg` in it as that is used for the mod pr
 
 ### Relative paths clarification
 
-To provide convenience both to people who want to use vmb out of the box and people who want to configure it/add it to PATH/use multiple configs, relative paths to mods directory, temp directory, template directory and config file are treated differently:  
+To provide convenience both to people who want to use vmb out of the box and people who want to configure it/add it to PATH/use multiple configs, some paths are treated differently:  
 
 * `mods_dir` and `temp_dir` are relative to the current working directory.  
 * `template_dir` is relative to the directory with vmb.exe.  
 * `.vmbrc` folder is relative to the current working directory but defaults to the vmb.exe folder when not overwritten by the `--rc` argument.
+* `--cfg` path to item cfg file is relative to each mod's directory.  
 
-You can use `--cwd` flag to force all non-absolute paths to be relative to the current working directory.
+You can use `--cwd` flag to force all paths which are relative to the executable's directory to be relative to the current working directory instead. You only need to use this flag if you're running vmb from the source code (via node.exe).
 
-### Compiling VMB executable
+### Building VMB executable
 
 	npm run setup   
 	npm run build

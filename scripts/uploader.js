@@ -33,16 +33,21 @@ let uploader = {
                         `tags = [${tags}]`;
         console.log(`${config.cfgFile}:`);
         console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
-        return await pfs.writeFile(path.combine(config.modsDir, params.name, config.cfgFile), configText);
+
+        let modDir = path.combine(config.modsDir, params.name);
+        let cfgDir = config.getAbsoluteCfgPath(modDir);
+        return await pfs.writeFile(path.combine(cfgDir, config.cfgFile), configText);
     },
 
     // Uploads mod to the workshop
     async uploadMod(toolsDir, modName, changenote, skip) {
 
-        let configPath = config.modsDir + '\\' + modName + '\\' + config.cfgFile;
+        let modDir = path.combine(config.modsDir, modName);
+        let cfgDir = config.getAbsoluteCfgPath(modDir);
+        let cfgPath = path.combine(cfgDir, config.cfgFile);
 
         let uploaderParams = [
-            '-c', '"' + configPath + '"'
+            '-c', '"' + cfgPath + '"'
         ];
 
         if (changenote) {

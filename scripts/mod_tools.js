@@ -16,9 +16,10 @@ let modTools = {
             }
 
             let modDir = path.combine(config.modsDir, modName);
+            let cfgDir = config.getAbsoluteCfgPath(modDir);
 
             let error = '';
-            let cfgExists = await pfs.accessible(path.combine(modDir, config.cfgFile));
+            let cfgExists = await pfs.accessible(path.combine(cfgDir, config.cfgFile));
             if (!modTools.validModName(modName)) {
                 error = `Folder name "${modDir}" is invalid`;
             }
@@ -26,7 +27,7 @@ let modTools = {
                 error = `Folder "${modDir}" doesn't exist`;
             }
             else if (!cfgExists && cfgMustExist) {
-                error = `Folder "${modDir}" doesn't have ${config.cfgFile} in it`;
+                error = `Folder "${cfgDir}" doesn't have ${config.cfgFile} in it`;
             }
 
             if (error) {
@@ -48,13 +49,15 @@ let modTools = {
     },
 
     async getModId(modName) {
-        let cfgData = await pfs.readFile(path.combine(config.modsDir, modName, config.cfgFile), 'utf8');
+        let modDir = path.combine(config.modsDir, modName);
+        let cfgDir = config.getAbsoluteCfgPath(modDir);
+        let cfgData = await pfs.readFile(path.combine(cfgDir, config.cfgFile), 'utf8');
         let modId = cfgData.match(/^published_id *=? *(\d*)\D*$/m);
         modId = modId && modId[1];
 
         if (!modId) {
             throw (
-                `Item ID not found in ${config.cfgFile} file.\n` +
+                `Item ID not found in ${modDir}/${config.cfgFile} file.\n` +
                 `You need to publish your mod to workshop before you can build/view it.\n` +
                 `Alternatively you can specify the workshop item id with --id param.`
             );

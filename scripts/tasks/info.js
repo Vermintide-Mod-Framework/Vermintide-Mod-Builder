@@ -14,13 +14,13 @@ module.exports = async function infoTask() {
     let modNames = await cl.getModNames();
     let showCfg = cl.argv['cfg'] || false;
 
-    if (modNames.length > 0) {
+    if (modNames.length > 1) {
         console.log(`Showing information for mods:`);
         for (let modName of modNames) {
             console.log(`  ${modName}`);
         }
     }
-    else {
+    else if (modNames.length === 0) {
         console.log(`No mods found`);
         return { exitCode, finished: true };
     }
@@ -29,9 +29,11 @@ module.exports = async function infoTask() {
         modNames,
         false,
         async (modName, modDir, cfgExists) => {
+            let cfgDir = config.getAbsoluteCfgPath(modDir);
+
             console.log(`\n${modName} information:`);
 
-            console.log(`Folder: ${modDir}`);
+            console.log(`Folder: "${modDir}"`);
 
             try {
                 let modId = await modTools.getModId(modName);
@@ -39,10 +41,10 @@ module.exports = async function infoTask() {
             }
             catch (err) {
                 let errExplanation = cfgExists ?
-                    `"published_id" not found in ${config.cfgFile}` :
-                    `${config.cfgFile} not found`;
+                    `"published_id" not found in "${cfgDir}/${config.cfgFile}"` :
+                    `"${cfgDir}/${config.cfgFile}" not found`;
 
-                console.log(`Not published (${errExplanation})`);
+                console.warn(`Not published (${errExplanation})`);
             }
 
             let bundleName = modTools.hashModName(modName) + config.bundleExtension;
@@ -51,23 +53,23 @@ module.exports = async function infoTask() {
             try {
                 let stat = await pfs.stat(bundlePath);
                 let lastModified = stat.mtime;
-                console.log(`Last built: ${lastModified}`);
+                console.log(`Last built: ${lastModified} ("${bundleDir}/${bundleName}")`);
             }
             catch (err) {
-                console.log(`Not built ("${bundleName}" not found in "${bundleDir}")`);
+                console.warn(`Not built ("${bundleName}" not found in "${bundleDir}")`);
             }
 
             if (showCfg && cfgExists) {
-                console.log(`${config.cfgFile}:`);
-                let cfgData = await pfs.readFile(path.combine(modDir, config.cfgFile), 'utf8');
+                console.log(`${config.cfgFile} in "${ cfgDir }":`);
+                let cfgData = await pfs.readFile(path.combine(cfgDir, config.cfgFile), 'utf8');
                 cfgData = str.rmn(cfgData).replace(/^/gm, '  ');
                 console.log(cfgData);
             }
             else if (cfgExists) {
-                console.log(`Found ${config.cfgFile}`);
+                console.log(`Found ${config.cfgFile} in "${cfgDir}"`);
             }
             else {
-                console.log(`No ${config.cfgFile}`);
+                console.warn(`No ${config.cfgFile} in "${cfgDir}"`);
             }
         },
         (error) => {
