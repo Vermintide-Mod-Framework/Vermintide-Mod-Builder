@@ -192,7 +192,7 @@ async function _readData(filepath, shouldReset) {
             await pfs.unlink(filepath);
         }
         catch (err) {
-            err.message += `Couldn't delete config`;
+            err.message += `\nCouldn't delete config`;
             throw err;
         }
     }
@@ -203,7 +203,7 @@ async function _readData(filepath, shouldReset) {
             await pfs.writeFile(filepath, JSON.stringify(defaultData, null, '\t'));
         }
         catch (err) {
-            err.message += `Couldn't create config`;
+            err.message += `\nCouldn't create config`;
             throw err;
         }
     }
@@ -212,7 +212,7 @@ async function _readData(filepath, shouldReset) {
         return JSON.parse(await pfs.readFile(filepath, 'utf8'));
     }
     catch (err) {
-        err.message += `Couldn't read config`;
+        err.message += `\nCouldn't read config`;
         throw err;
     }
 }

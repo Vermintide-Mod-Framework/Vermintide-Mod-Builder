@@ -26,7 +26,7 @@ module.exports = async function createTask() {
     }
 
     if (error) {
-        console.error(error);
+        console.error(new Error(error));
         return { exitCode: 1, finished: true };
     }
 
