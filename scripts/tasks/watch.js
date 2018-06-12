@@ -16,43 +16,46 @@ module.exports = async function watchTask() {
         return { exitCode, finished: true };
     }
 
-    let toolsDir = await modTools.getModToolsDir().catch((error) => {
+    let toolsDir;
+    try {
+        toolsDir = await modTools.getModToolsDir();
+    }
+    catch (error) {
         console.error(error);
-        exitCode = 1;
-    });
+        return { exitCode: 1, finished: true };
+    };
 
-    if (toolsDir) {
-        console.log();
+    console.log();
 
-        await modTools.forEachMod(
-            modNames,
-            makeWorkshopCopy,
-            (modName, modDir) => {
-                console.log(`Watching ${modName}...`);
+    for (let { modName, modDir, error } of await modTools.validateModNames(modNames, false)) {
 
-                let src = [
-                    modDir,
-                    '!' + config.modsDir + '/' + modName + '/*.tmp',
-                    '!' + config.modsDir + '/' + modName + '/' + config.bundleDir + '/*'
-                ];
+        if (error) {
+            console.error(error);
+            exitCode = 1;
+            continue;
+        }
 
-                watcher(src, async (callback) => {
-                    try {
-                        await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
-                    }
-                    catch (error) {
-                        console.error(error);
-                        exitCode = 1;
-                    };
-                    callback();
-                });
-            },
-            (error) => {
+        console.log(`Watching ${modName}...`);
+
+        let src = [
+            modDir,
+            '!' + config.modsDir + '/' + modName + '/*.tmp',
+            '!' + config.modsDir + '/' + modName + '/' + config.bundleDir + '/*'
+        ];
+
+        watcher(src, async (callback) => {
+
+            try {
+                await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+            }
+            catch (error) {
                 console.error(error);
                 exitCode = 1;
-            }
-        );
-    }
+            };
+
+            callback();
+        });
+    };
 
     return { exitCode, finished: false };
 };

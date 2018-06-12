@@ -8,7 +8,10 @@ const vdf = require('vdf');
 
 let modTools = {
 
-    async forEachMod(modNames, cfgMustExist, action, onError) {
+    async validateModNames(modNames, cfgMustExist) {
+
+        let modInfo = [];
+
         for (let modName of modNames) {
 
             if (!modName) {
@@ -20,6 +23,7 @@ let modTools = {
 
             let error = '';
             let cfgExists = await pfs.accessible(path.combine(cfgDir, config.cfgFile));
+
             if (!modTools.validModName(modName)) {
                 error = `Folder name "${modDir}" is invalid`;
             }
@@ -30,18 +34,10 @@ let modTools = {
                 error = `Folder "${cfgDir}" doesn't have ${config.cfgFile} in it`;
             }
 
-            if (error) {
-                if (typeof onError == 'function') {
-                    await onError(error);
-                }
-                else {
-                    throw error;
-                }
-                continue;
-            }
-
-            await action(modName, modDir, cfgExists);
+            modInfo.push({ modName, modDir, cfgExists, error });
         };
+
+        return modInfo;
     },
 
     validModName(modName) {

@@ -11,10 +11,10 @@ let uploader = {
 
         let tagArray = String(params.tags).split(/;\s*/);
         let tags = '';
-        tagArray.forEach(tag => {
+        for(let tag of tagArray) {
 
             if(tag.length === 0) {
-                return;
+                continue;
             }
 
             if(tags.length > 0) {
@@ -22,7 +22,7 @@ let uploader = {
             }
 
             tags += `"${tag}"`;
-        });
+        };
 
         let configText = `title = "${params.title}";\n` +
                         `description = "${params.description}";\n` +

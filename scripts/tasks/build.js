@@ -20,29 +20,30 @@ module.exports = async function buildTask() {
         return { exitCode, finished: true };
     }
 
-    let toolsDir = await modTools.getModToolsDir().catch((error) => {
+    let toolsDir;
+    try {
+        toolsDir = await modTools.getModToolsDir();
+    }
+    catch (error) {
         console.error(error);
-        exitCode = 1;
-    });
+        return { exitCode: 1, finished: true };
+    }
 
-    if (toolsDir) {
-        await modTools.forEachMod(
-            modNames,
-            makeWorkshopCopy,
-            async modName => {
-                try {
-                    await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
-                }
-                catch (error) {
-                    console.error(error);
-                    exitCode = 1;
-                }
-            },
-            (error) => {
-                console.error(`\n${error}`);
-                exitCode = 1;
-            }
-        );
+    for (let { modName, error} of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
+
+        if (error) {
+            console.error(`\n${error}`);
+            exitCode = 1;
+            continue;
+        }
+
+        try {
+            await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+        }
+        catch (error) {
+            console.error(error);
+            exitCode = 1;
+        }
     }
 
     return { exitCode, finished: true };

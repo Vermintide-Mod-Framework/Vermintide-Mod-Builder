@@ -104,10 +104,14 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
         console.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
     }
 
-    let data = await pfs.readFile(path.combine(dataDir, 'processed_bundles.csv'), 'utf8').catch(error => {
+    let data = '';
+    try {
+        data = await pfs.readFile(path.combine(dataDir, 'processed_bundles.csv'), 'utf8');
+    }
+    catch (error) {
         console.error(error);
         console.error(`Failed to read processed_bundles.csv`);
-    });
+    }
 
 
     if (data) {
