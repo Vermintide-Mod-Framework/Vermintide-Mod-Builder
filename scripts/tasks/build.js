@@ -29,7 +29,7 @@ module.exports = async function buildTask() {
         return { exitCode: 1, finished: true };
     }
 
-    for (let { modName, error} of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
+    for (let { modName, error } of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
 
         if (error) {
             console.error(`\n${error}`);

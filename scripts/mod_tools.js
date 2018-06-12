@@ -47,7 +47,7 @@ let modTools = {
     async getModId(modName) {
 
         if(!await cfg.fileExists(modName)) {
-            throw `${cfg.getBase()} not found in ${cfg.getDir(modName)}`;
+            throw new Error(`${cfg.getBase()} not found in ${cfg.getDir(modName)}`);
         }
 
         let cfgData = await cfg.readFile(modName);
@@ -55,7 +55,7 @@ let modTools = {
         modId = modId && modId[1];
 
         if (!modId) {
-            throw (
+            throw new Error(
                 `Item ID not found in "${cfg.getPath()}" file.\n` +
                 `You need to publish your mod to workshop before you can build/view it.\n` +
                 `Alternatively you can specify the workshop item id with --id param.`
@@ -75,7 +75,7 @@ let modTools = {
             steamDir = await reg.get(appKey, value);
         }
         catch (err) {
-            throw `${err}\nSteam installation directory not found`;
+            throw new Error(`${err}\nSteam installation directory not found`);
         }
 
         let appManifestName = `appmanifest_${appId}.acf`;
@@ -92,11 +92,11 @@ let modTools = {
             data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, 'libraryfolders.vdf'), 'utf-8'));
         }
         catch (err) {
-            throw `${err}\nCoudln't parse ${vdfName}`;
+            throw new Error(`${err}\nCoudln't parse ${vdfName}`);
         }
 
         if (!data.LibraryFolders) {
-            throw `Coudln't parse ${vdfName}`;
+            throw new Error(`Coudln't parse ${vdfName}`);
         }
 
         let i = 0;
@@ -113,7 +113,7 @@ let modTools = {
             }
         }
 
-        throw `SteamApps folder for app ${appId} not found`;
+        throw new Error(`SteamApps folder for app ${appId} not found`);
     },
 
     async getAppDir(appId) {
@@ -125,7 +125,7 @@ let modTools = {
             data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, appManifestName), 'utf-8'));
         }
         catch (err) {
-            throw `${err}\nCoudln't parse ${appManifestName}`;
+            throw new Error(`${err}\nCoudln't parse ${appManifestName}`);
         }
 
         let installDir;
@@ -133,7 +133,7 @@ let modTools = {
             installDir = data.AppState.installdir;
         }
         catch (err) {
-            throw `Coudln't parse ${appManifestName}`;
+            throw new Error(`Coudln't parse ${appManifestName}`);
         }
 
         return path.combine(steamAppsDir, 'common', installDir);
@@ -165,7 +165,7 @@ let modTools = {
         }
 
         if (!await pfs.accessible(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
-            throw `Mod tools not found in "${toolsDir}".\nYou need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`;
+            throw new Error(`Mod tools not found in "${toolsDir}".\nYou need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`);
         }
         console.log(`Mod tools folder "${toolsDir}"`);
         return toolsDir;
@@ -198,7 +198,7 @@ let modTools = {
         }
 
         if (!await pfs.accessible(steamAppsDir)) {
-            throw `SteamApps folder "${steamAppsDir}" not found.\nYou need to specify a valid fallback path.`;
+            throw new Error(`SteamApps folder "${steamAppsDir}" not found.\nYou need to specify a valid fallback path.`);
         }
 
         steamAppsDir = path.combine(steamAppsDir, 'workshop/content', gameId);

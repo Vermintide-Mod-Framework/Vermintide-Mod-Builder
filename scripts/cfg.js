@@ -92,7 +92,7 @@ function getValue(data, key, type) {
             regEx = `(?:^|;)\s*${key}\s*=\s*"([^"]*)"\s*;`;
 
         default:
-            throw `Unsupported cfg value type "${type}"`;
+            throw new Error(`Unsupported cfg value type "${type}"`);
     }
 
     return data.match(new RegExp(regEx, 'm'));

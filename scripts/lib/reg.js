@@ -19,14 +19,12 @@ module.exports = {
 
         return await new Promise((resolve, reject) => {
 
-            spawn.on('error', err => {
-                reject(err);
-            });
+            spawn.on('error', reject);
 
             spawn.on('close', code => {
 
                 if (code || !result) {
-                    reject(code);
+                    reject(new Error(`REG QUERY exited with code ${code}`));
                     return;
                 }
 
@@ -34,7 +32,7 @@ module.exports = {
                     result = result.split('\r\n')[2].split('    ')[3];
                 }
                 catch (err) {
-                    reject(`Unexpected REG QUERY output:\n${result}`);
+                    reject(new Error(`Unexpected REG QUERY output:\n${result}`));
                 }
 
                 resolve(result);
@@ -43,6 +41,6 @@ module.exports = {
     },
 
     set: function(){
-        throw `Not implemented`;
+        throw new Error(`Not implemented`);
     }
 };

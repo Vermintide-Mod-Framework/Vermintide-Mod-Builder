@@ -55,10 +55,10 @@ let uploader = {
 
             ugc_tool.on('close', code => {
                 if(code) {
-                    reject(
+                    reject(new Error(
                         'Uploader exited with error code: ' + code +
                         (code == 3221225477 ? `\nCheck if Steam is running` : '')
-                    );
+                    ));
                 }
                 else {
                     resolve(modId);

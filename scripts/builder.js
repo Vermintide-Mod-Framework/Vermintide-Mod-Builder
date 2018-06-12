@@ -19,25 +19,25 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
     let dataDir = path.combine(modTempDir, 'compile');
     let buildDir = path.combine(modTempDir, 'bundle');
 
-    await checkTempFolder(modName, shouldRemoveTemp);
+    await _checkTempFolder(modName, shouldRemoveTemp);
 
     if (!modId && makeWorkshopCopy && !await cfg.fileExists(modName)) {
-        throw `${cfg.getBase()} not found in "${cfg.getDir(modName)}"`;
+        throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
     }
 
     console.log(`Building ${modName}`);
-    let stingrayExitCode = await runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
-    await processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
+    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
+    await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
-    let modWorkshopDir = makeWorkshopCopy && await getModWorkshopDir(modName, modId);
-    await cleanBundleDirs(modName, modWorkshopDir);
-    await moveMod(modName, buildDir, modWorkshopDir);
+    let modWorkshopDir = makeWorkshopCopy && await _getModWorkshopDir(modName, modId);
+    await _cleanBundleDirs(modName, modWorkshopDir);
+    await _moveMod(modName, buildDir, modWorkshopDir);
 
     console.log(`Successfully built ${modName}`);
 }
 
 // Checks if temp folder exists, optionally removes it
-async function checkTempFolder(modName, shouldRemove) {
+async function _checkTempFolder(modName, shouldRemove) {
     let tempPath = path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
     let tempExists = await pfs.accessible(tempPath);
 
@@ -46,7 +46,8 @@ async function checkTempFolder(modName, shouldRemove) {
             child_process.exec(`rmdir /s /q "${tempPath}"`, error => {
 
                 if (error) {
-                    return reject(`${error}\nFailed to delete temp folder`);
+                    error.message += '\nFailed to delete temp folder';
+                    return reject(error);
                 }
 
                 console.log(`Removed ${tempPath}`);
@@ -60,7 +61,7 @@ async function checkTempFolder(modName, shouldRemove) {
 }
 
 // Builds the mod
-async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
+async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 
     let stingrayParams = [
         `--compile-for win32`,
@@ -99,7 +100,7 @@ async function runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 }
 
 // Reads and outputs processed_bundles.csv
-async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
+async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
     if (code) {
         console.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
@@ -116,7 +117,7 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
 
 
     if (data) {
-        outputFailedBundles(data, modName);
+        _outputFailedBundles(data, modName);
     }
 
     if (ignoreBuildErrors) {
@@ -124,12 +125,12 @@ async function processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) 
     }
 
     if (!ignoreBuildErrors && (code || !data)) {
-        throw `Failed to build ${modName}`;
+        throw new Error(`Failed to build ${modName}`);
     }
 }
 
 // Outputs built files which are empty
-function outputFailedBundles(data, modName) {
+function _outputFailedBundles(data, modName) {
     let bundles = str.rmn(data).split('\n');
     bundles.splice(0, 1);
 
@@ -150,7 +151,7 @@ function outputFailedBundles(data, modName) {
 }
 
 // Returns mod's directory in workshop folder
-async function getModWorkshopDir(modName, modId) {
+async function _getModWorkshopDir(modName, modId) {
     if (modId) {
         console.log(`Using specified item ID`);
     }
@@ -165,7 +166,7 @@ async function getModWorkshopDir(modName, modId) {
 }
 
 // Copies the mod to the config.get('modsDir') and modName/bundle
-async function moveMod(modName, buildDir, modWorkshopDir) {
+async function _moveMod(modName, buildDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
         let modBundleDir = path.combine(config.get('modsDir'), modName, config.get('bundleDir'));
@@ -193,7 +194,7 @@ async function moveMod(modName, buildDir, modWorkshopDir) {
     });
 }
 
-async function cleanBundleDirs(modName, modWorkshopDir) {
+async function _cleanBundleDirs(modName, modWorkshopDir) {
 
     let bundleMask = '*' + config.get('bundleExtension');
     let modBundleMask = path.combine(config.get('modsDir'), modName, config.get('bundleDir'), bundleMask);

@@ -11,11 +11,11 @@ let templater = {
 
     async validateTemplate(templateDir) {
         if (!await pfs.accessible(templateDir)) {
-            throw `Template folder "${templateDir}" doesn't exist.`;
+            throw new Error(`Template folder "${templateDir}" doesn't exist.`);
         }
 
         if (!await pfs.accessible(path.combine(templateDir, config.get('itemPreview')))) {
-            throw `Template folder "${templateDir}" doesn't have "${config.get('itemPreview')}" in it.`;
+            throw new Error(`Template folder "${templateDir}" doesn't have "${config.get('itemPreview')}" in it.`);
         }
     },
 
@@ -41,16 +41,12 @@ let templater = {
                     p.basename = p.basename.replace(regexName, modName);
                 }))
                 .pipe(vinyl.dest(modDir))
-                .on('error', err => {
-                    throw err;
-                })
+                .on('error', reject)
                 .on('end', () => {
                     if (config.get('coreSrc').length > 0) {
                         vinyl.src(config.get('coreSrc'), { base: config.get('templateDir') })
                             .pipe(vinyl.dest(modDir))
-                            .on('error', err => {
-                                throw err;
-                            })
+                            .on('error', reject)
                             .on('end', resolve);
                     }
                     else {

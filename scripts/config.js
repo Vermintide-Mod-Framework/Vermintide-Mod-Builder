@@ -115,7 +115,7 @@ async function readData() {
 
     data = await _readData(path.combine(dir, filename), cl.get('reset'));
     if (!data || typeof data != 'object') {
-        throw `Invalid config data in ${filename}`;
+        throw new Error(`Invalid config data in ${filename}`);
     }
 }
 
@@ -192,8 +192,8 @@ async function _readData(filepath, shouldReset) {
             await pfs.unlink(filepath);
         }
         catch (err) {
-            console.error(err);
-            throw `Couldn't delete config`;
+            err.message += `Couldn't delete config`;
+            throw err;
         }
     }
 
@@ -203,8 +203,8 @@ async function _readData(filepath, shouldReset) {
             await pfs.writeFile(filepath, JSON.stringify(defaultData, null, '\t'));
         }
         catch (err) {
-            console.error(err);
-            throw `Couldn't create config`;
+            err.message += `Couldn't create config`;
+            throw err;
         }
     }
 
@@ -212,8 +212,8 @@ async function _readData(filepath, shouldReset) {
         return JSON.parse(await pfs.readFile(filepath, 'utf8'));
     }
     catch (err) {
-        console.error(err);
-        throw `Couldn't read config`;
+        err.message += `Couldn't read config`;
+        throw err;
     }
 }
 
@@ -221,7 +221,7 @@ function _getGameSpecificKey(key){
     let id = data[key + values.gameNumber] || defaultData[key + values.gameNumber];
 
     if (typeof id != 'string') {
-        throw `Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a string.`;
+        throw new Error(`Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a string.`);
     }
 
     return id;
@@ -259,7 +259,7 @@ async function _getModsDir(modsDir, tempDir) {
     console.log(`Using temp folder "${tempDir}"`);
 
     if (!await pfs.accessible(modsDir + '/')) {
-        throw `Mods folder "${modsDir}" doesn't exist`;
+        throw new Error(`Mods folder "${modsDir}" doesn't exist`);
     }
 
     return { modsDir, tempDir };
@@ -275,7 +275,7 @@ function _getGameNumber(gameNumber) {
     gameNumber = Number(gameNumber);
 
     if (gameNumber !== 1 && gameNumber !== 2) {
-        throw `Vermintide ${gameNumber} hasn't been released yet. Check your ${values.filename}.`;
+        throw new Error(`Vermintide ${gameNumber} hasn't been released yet. Check your ${values.filename}.`);
     }
 
     console.log(`Game: Vermintide ${gameNumber}`);
