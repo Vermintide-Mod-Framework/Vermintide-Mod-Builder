@@ -37,7 +37,7 @@ module.exports = async function uploadTask() {
 
     let modToolsDir;
     try {
-        await modTools.getModToolsDir();
+        modToolsDir = await modTools.getModToolsDir();
     }
     catch (error) {
         console.error(error);
