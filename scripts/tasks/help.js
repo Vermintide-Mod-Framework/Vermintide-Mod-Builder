@@ -1,6 +1,6 @@
 const version = require('../version');
 
-module.exports = function helpTask() {
+module.exports = function taskHelp() {
     console.log(
         `Vermintide Mod Builder v${version}\n\n` +
 

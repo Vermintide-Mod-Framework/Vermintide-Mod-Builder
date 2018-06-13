@@ -9,7 +9,7 @@ const uploader = require('../uploader');
 const templater = require('../templater');
 const cfg = require('../cfg');
 
-module.exports = async function createTask() {
+module.exports = async function taskCreate() {
 
     let exitCode = 0;
 

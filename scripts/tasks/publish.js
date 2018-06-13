@@ -15,57 +15,18 @@ module.exports = async function taskPublish() {
     let exitCode = 0;
 
     let params = cl.getWorkshopParams();
-    let modName = params.name;
-    let modDir = path.combine(config.get('modsDir'), modName);
     let buildParams = await cl.getBuildParams();
 
-    let error = '';
-    if (!modTools.validModName(modName)) {
-        error = `Folder name "${modDir}" is invalid`;
+    try {
+        await _validateParams(params);
     }
-    else if (!await pfs.accessible(modDir + '/')) {
-        error = `Folder "${modDir}" doesn't exist`;
-    }
-    else {
-        try {
-            await templater.validateTemplate(config.get('templateDir'));
-        }
-        catch (err) {
-            error = err;
-        }
-    }
-
-    if (error) {
+    catch (error) {
         console.error(error);
         return { exitCode: 1, finished: true };
     }
 
-    try {
-        let cfgData = await cfg.readFile(modName);
-
-        if (cfg.getValue(cfgData, 'published_id', 'number')){
-
-            console.error(
-                `Mod has already been published for Vermintide ${config.get('gameNumber')} with item cfg "${cfg.getPath(modName)}".\n` +
-                `Use 'vmb upload' or specify a different item cfg file with --cfg instead.`
-            );
-
-            return { exitCode: 1, finished: true };
-        }
-
-        console.log(`Using existing ${cfg.getBase()}`);
-    }
-    catch (error) {
-
-        try {
-            await cfg.writeFile(params);
-        }
-        catch (error) {
-            console.error(error);
-            return { exitCode: 1, finished: true };
-        }
-
-    }
+    let modName = params.name;
+    let modDir = path.combine(config.get('modsDir'), modName);
 
     try {
 
@@ -73,7 +34,10 @@ module.exports = async function taskPublish() {
         await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
 
         console.log();
-        await pfs.copyIfDoesntExist(path.combine(config.get('templateDir'), config.get('itemPreview')), path.combine(modDir, config.get('itemPreview')));
+        await pfs.copyIfDoesntExist(
+            path.combine(config.get('templateDir'), config.get('itemPreview')),
+            path.combine(modDir, config.get('itemPreview'))
+        );
         await uploader.uploadMod(toolsDir, modName);
 
         let modId = await modTools.getModId(modName);
@@ -89,3 +53,40 @@ module.exports = async function taskPublish() {
 
     return { exitCode, finished: true };
 };
+
+async function _validateParams(params) {
+
+    let modName = params.name;
+    let modDir = path.combine(config.get('modsDir'), modName);
+
+    if (!modTools.validModName(modName)) {
+        throw new Error(`Folder name "${modDir}" is invalid`);
+    }
+
+    if (!await pfs.accessible(modDir + '/')) {
+        throw new Error(`Folder "${modDir}" doesn't exist`);
+    }
+
+    await templater.validateTemplate(config.get('templateDir'));
+
+    let cfgData = '';
+    try {
+        cfgData = await cfg.readFile(modName);
+    }
+    catch (error) {
+        await cfg.writeFile(params);
+    }
+
+    if (cfgData) {
+
+        if (cfg.getValue(cfgData, 'published_id', 'number')) {
+
+            throw new Error(
+                `Mod has already been published for Vermintide ${config.get('gameNumber')} with item cfg "${cfg.getPath(modName)}".\n` +
+                `Use 'vmb upload' or specify a different item cfg file with --cfg instead.`
+            );
+        }
+
+        console.log(`Using existing ${cfg.getBase()}`);
+    }
+}

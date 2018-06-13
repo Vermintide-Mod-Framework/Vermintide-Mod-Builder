@@ -4,7 +4,7 @@ const cl = require('../cl');
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
 
-module.exports = async function uploadTask() {
+module.exports = async function taskUpload() {
 
     let exitCode = 0;
 

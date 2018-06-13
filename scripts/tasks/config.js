@@ -1,6 +1,6 @@
 const config = require('../config');
 
-module.exports = async function configTask() {
+module.exports = async function taskConfig() {
 
     config.setData();
 

@@ -3,7 +3,7 @@ const cl = require('../cl');
 const modTools = require('../mod_tools');
 const buildMod = require('../builder');
 
-module.exports = async function buildTask() {
+module.exports = async function taskBuild() {
 
     let exitCode = 0;
 

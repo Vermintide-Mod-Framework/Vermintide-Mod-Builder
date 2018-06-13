@@ -8,7 +8,7 @@ const cfg = require('../cfg');
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
 
-module.exports = async function infoTask() {
+module.exports = async function taskInfo() {
 
     let exitCode = 0;
 

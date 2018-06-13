@@ -115,7 +115,6 @@ async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors)
         console.error(`Failed to read processed_bundles.csv`);
     }
 
-
     if (data) {
         _outputFailedBundles(data, modName);
     }
@@ -123,8 +122,7 @@ async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors)
     if (ignoreBuildErrors) {
         console.log(`Ignoring build errors`);
     }
-
-    if (!ignoreBuildErrors && (code || !data)) {
+    else if (code || !data) {
         throw new Error(`Failed to build ${modName}`);
     }
 }
@@ -142,22 +140,22 @@ function _outputFailedBundles(data, modName) {
             continue;
         }
 
-        /* jshint ignore:start */
         if (bundle[3] == 0) {
             console.error('Failed to build %s/%s/%s.%s', config.get('modsDir'), modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
         }
-        /* jshint ignore:end */
     };
 }
 
 // Returns mod's directory in workshop folder
 async function _getModWorkshopDir(modName, modId) {
+
     if (modId) {
         console.log(`Using specified item ID`);
     }
     else {
         modId = await modTools.getModId(modName);
     }
+
     console.log(`Item ID: ${modId}`);
 
     let workshopDir = await modTools.getWorkshopDir();

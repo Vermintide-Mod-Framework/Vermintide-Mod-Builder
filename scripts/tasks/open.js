@@ -7,7 +7,7 @@ const config = require('../config');
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
 
-module.exports = async function openTask() {
+module.exports = async function taskOpen() {
 
     let exitCode = 0;
 

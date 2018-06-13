@@ -5,7 +5,7 @@ const config = require('../config');
 const modTools = require('../mod_tools');
 const buildMod = require('../builder');
 
-module.exports = async function watchTask() {
+module.exports = async function taskWatch() {
 
     let exitCode = 0;
 
