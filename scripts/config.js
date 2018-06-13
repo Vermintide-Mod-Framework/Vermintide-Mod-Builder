@@ -113,10 +113,19 @@ async function readData() {
         dir = exeDir;
     }
 
-    data = await _readData(path.combine(dir, filename), cl.get('reset'));
-    if (!data || typeof data != 'object') {
+    let newData = await _readData(path.combine(dir, filename), cl.get('reset'));
+    if (!newData || typeof newData != 'object') {
         throw new Error(`Invalid config data in ${filename}`);
     }
+
+    for(let key of Object.keys(defaultData)) {
+
+        if (newData[key] === undefined) {
+            newData[key] = defaultData[key];
+        }
+    }
+
+    data = Object.assign({}, newData);
 }
 
 async function parseData() {
@@ -139,21 +148,17 @@ async function parseData() {
     values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir') || '');
     values.ignoredDirs = data.ignored_dirs || [];
 
-    values.templateDir = _getTemplateDir(data.template_dir || defaultData.template_dir);
-    values.itemPreview = data.template_preview_image || defaultData.template_preview_image;
+    values.templateDir = _getTemplateDir(data.template_dir || '');
+    values.itemPreview = data.template_preview_image || '';
 
     // Files in template
     let { coreSrc, modSrc } = _getTemplateSrc(data.template_core_files, values.templateDir);
     values.coreSrc = coreSrc;
     values.modSrc = modSrc;
 
-    values.useFallback = cl.get('use-fallback') === undefined && data.use_fallback === undefined ?
-        defaultData.use_fallback :
-        cl.get('use-fallback') || data.use_fallback;
+    values.useFallback = cl.get('use-fallback') || data.use_fallback;
 
-    values.ignoreBuildErrors = data.ignore_build_errors === undefined ?
-        defaultData.ignore_build_errors :
-        data.ignore_build_errors;
+    values.ignoreBuildErrors = data.ignore_build_errors;
 }
 
 function getData() {
@@ -161,6 +166,7 @@ function getData() {
 }
 
 function setData() {
+
     for (let key of Object.keys(defaultData)) {
 
         let value = cl.get(key);
@@ -187,6 +193,7 @@ async function writeData() {
 async function _readData(filepath, shouldReset) {
 
     if (shouldReset && await pfs.accessible(filepath)) {
+
         try {
             console.log(`Deleting ${path.basename(filepath)}`);
             await pfs.unlink(filepath);
@@ -198,6 +205,7 @@ async function _readData(filepath, shouldReset) {
     }
 
     if (!await pfs.accessible(filepath)) {
+
         try {
             console.log(`Creating default ${path.basename(filepath)}`);
             await pfs.writeFile(filepath, JSON.stringify(defaultData, null, '\t'));
@@ -232,7 +240,6 @@ async function _getModsDir(modsDir, tempDir) {
     modsDir = (typeof modsDir == 'string' && modsDir !== '') ? path.fix(modsDir) : 'mods';
     tempDir = (typeof tempDir == 'string' && tempDir !== '') ? path.fix(tempDir) : '';
 
-
     let unspecifiedTempDir = !tempDir;
     if (unspecifiedTempDir) {
         tempDir = path.combine(modsDir, defaultTempDir);
@@ -241,8 +248,10 @@ async function _getModsDir(modsDir, tempDir) {
     let newModsDir = cl.get('f') || cl.get('folder');
 
     if (newModsDir) {
+
         if (typeof newModsDir == 'string') {
             modsDir = path.fix(newModsDir);
+
             if (unspecifiedTempDir) {
                 tempDir = path.combine(modsDir, defaultTempDir);
             }
@@ -299,7 +308,9 @@ function _getTemplateSrc(configCoreSrc, templateDir) {
     let coreSrc = [
         path.combine(templateDir, values.itemPreview)
     ];
+
     if (Array.isArray(configCoreSrc)) {
+
         for (let src of configCoreSrc) {
             coreSrc.push(path.combine(templateDir, src));
         };
