@@ -8,14 +8,15 @@ const cfg = require('./cfg');
 const modTools = require('./mod_tools');
 const str = require('./lib/str');
 const del = require('del');
+const print = require('./print');
 
 // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
 async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
 
-    let modTempDir = path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
+    let modTempDir = modTools.getTempDir(modName);
     let dataDir = path.combine(modTempDir, 'compile');
     let buildDir = path.combine(modTempDir, 'bundle');
 
@@ -29,28 +30,37 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
     let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
+    let bundleDir;
+    try {
+        bundleDir = await modTools.getBundleDir(modName);
+    }
+    catch (error) {
+        print.warn(error);
+        bundleDir = modTools.getDefaultBundleDir(modName);
+    }
+
     let modWorkshopDir = makeWorkshopCopy && await _getModWorkshopDir(modName, modId);
-    await _cleanBundleDirs(modName, modWorkshopDir);
-    await _moveMod(modName, buildDir, modWorkshopDir);
+    await _cleanBundleDirs(bundleDir, modWorkshopDir);
+    await _copyBundle(modName, buildDir, bundleDir, modWorkshopDir);
 
     console.log(`Successfully built ${modName}`);
 }
 
 // Checks if temp folder exists, optionally removes it
 async function _checkTempFolder(modName, shouldRemove) {
-    let tempPath = path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
-    let tempExists = await pfs.accessible(tempPath);
+    let tempDir = modTools.getTempDir(modName);
+    let tempExists = await pfs.accessible(tempDir);
 
     if (tempExists && shouldRemove) {
         return await new Promise((resolve, reject) => {
-            child_process.exec(`rmdir /s /q "${tempPath}"`, error => {
+            child_process.exec(`rmdir /s /q "${tempDir}"`, error => {
 
                 if (error) {
                     error.message += '\nFailed to delete temp folder';
                     return reject(error);
                 }
 
-                console.log(`Removed ${tempPath}`);
+                console.log(`Removed ${tempDir}`);
                 return resolve();
             });
         });
@@ -103,7 +113,7 @@ async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
     if (code) {
-        console.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
+        print.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
     }
 
     let data = '';
@@ -111,8 +121,8 @@ async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors)
         data = await pfs.readFile(path.combine(dataDir, 'processed_bundles.csv'), 'utf8');
     }
     catch (error) {
-        console.error(error);
-        console.error(`Failed to read processed_bundles.csv`);
+        print.error(error);
+        print.error(`Failed to read processed_bundles.csv`);
     }
 
     if (data) {
@@ -136,12 +146,14 @@ function _outputFailedBundles(data, modName) {
         let bundle = line.split(', ');
 
         if (bundle.length < 4) {
-            console.error(`Incorrect processed_bundles.csv string`, bundle);
+            print.error(`Incorrect processed_bundles.csv string`, bundle);
             continue;
         }
 
         if (bundle[3] == 0) {
-            console.error('Failed to build %s/%s/%s.%s', config.get('modsDir'), modName, bundle[1].replace(/"/g, ''), bundle[2].replace(/"/g, ''));
+            let name = bundle[1].replace(/"/g, '');
+            let ext = bundle[2].replace(/"/g, '');
+            print.error(`Failed to build ${modTools.getModDir(modName)}/${name}.${ext}`);
         }
     };
 }
@@ -163,11 +175,10 @@ async function _getModWorkshopDir(modName, modId) {
     return path.combine(workshopDir, String(modId));
 }
 
-// Copies the mod to the config.get('modsDir') and modName/bundle
-async function _moveMod(modName, buildDir, modWorkshopDir) {
+async function _copyBundle(modName, buildDir, bundleDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
-        let modBundleDir = path.combine(config.get('modsDir'), modName, config.get('bundleDir'));
+        console.log(`Copying to "${bundleDir}"`);
 
         let gulpStream = vinyl.src([
             buildDir + '/*([0-f])',
@@ -178,11 +189,11 @@ async function _moveMod(modName, buildDir, modWorkshopDir) {
                 p.extname = config.get('bundleExtension');
             }))
             .on('error', reject)
-            .pipe(vinyl.dest(modBundleDir))
+            .pipe(vinyl.dest(bundleDir))
             .on('error', reject);
 
         if (modWorkshopDir) {
-            console.log(`Copying to ${modWorkshopDir}`);
+            console.log(`Copying to "${modWorkshopDir}"`);
             gulpStream = gulpStream.pipe(vinyl.dest(modWorkshopDir)).on('error', reject);
         }
 
@@ -192,10 +203,10 @@ async function _moveMod(modName, buildDir, modWorkshopDir) {
     });
 }
 
-async function _cleanBundleDirs(modName, modWorkshopDir) {
+async function _cleanBundleDirs(bundleDir, modWorkshopDir) {
 
     let bundleMask = '*' + config.get('bundleExtension');
-    let modBundleMask = path.combine(config.get('modsDir'), modName, config.get('bundleDir'), bundleMask);
+    let modBundleMask = path.combine(bundleDir, bundleMask);
     let workshopBundleMask = modWorkshopDir ? path.combine(modWorkshopDir, bundleMask) : null;
 
     await del([modBundleMask], { force: true });

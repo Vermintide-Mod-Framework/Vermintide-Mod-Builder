@@ -4,6 +4,7 @@ const str = require('../lib/str');
 const cl = require('../cl');
 const config = require('../config');
 const cfg = require('../cfg');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
@@ -29,12 +30,12 @@ module.exports = async function taskInfo() {
     for(let { modName, modDir, cfgExists, error } of await modTools.validateModNames(modNames, false)) {
 
         if (error) {
-            console.error(`\n${error}`);
+            print.error(`\n${error}`);
             exitCode = 1;
             continue;
         }
 
-        let cfgDir = cfg.getDir(modDir);
+        let cfgDir = cfg.getDir(modName);
         let cfgBase = cfg.getBase();
 
         console.log(`\n${modName} information:`);
@@ -50,24 +51,44 @@ module.exports = async function taskInfo() {
                 `"published_id" not found in "${cfgDir}/${cfgBase}"` :
                 `"${cfgDir}/${cfgBase}" not found`;
 
-            console.warn(`Not published (${errExplanation})`);
+            print.warn(`Not published (${errExplanation})`);
         }
 
         let bundleName = modTools.hashModName(modName) + config.get('bundleExtension');
-        let bundleDir = path.combine(modDir, config.get('bundleDir'));
+        let bundleDir = null;
+
+        let reason = '';
+        if(cfgExists) {
+
+            try {
+                bundleDir = await modTools.getBundleDir(modName);
+            }
+            catch(err) {
+                reason = err.message;
+            }
+        }
+        else {
+            reason = `${bundleName} not found in "${bundleDir}"`;
+        }
+
+        if(!bundleDir) {
+            bundleDir = modTools.getDefaultBundleDir(modName);
+        }
+
         let bundlePath = path.combine(bundleDir, bundleName);
+
         try {
             let stat = await pfs.stat(bundlePath);
             let lastModified = stat.mtime;
             console.log(`Last built: ${lastModified} ("${bundleDir}/${bundleName}")`);
         }
         catch (err) {
-            console.warn(`Not built (${bundleName} not found in "${bundleDir}")`);
+            print.warn(`Not built (${reason})`);
         }
 
         if (showCfg && cfgExists) {
             console.log(`${cfgBase} in "${cfgDir}":`);
-            let cfgData = await pfs.readFile(path.combine(cfgDir, cfgBase), 'utf8');
+            let cfgData = await cfg.readFile(modName);
             cfgData = str.rmn(cfgData).replace(/^/gm, '  ');
             console.log(cfgData);
         }
@@ -75,7 +96,7 @@ module.exports = async function taskInfo() {
             console.log(`Found ${cfgBase} in "${cfgDir}"`);
         }
         else {
-            console.warn(`No ${cfgBase} in "${cfgDir}"`);
+            print.warn(`No ${cfgBase} in "${cfgDir}"`);
         }
     };
 

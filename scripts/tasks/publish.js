@@ -3,6 +3,7 @@ const path = require('../lib/path');
 const opn = require('opn');
 const cl = require('../cl');
 const config = require('../config');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const buildMod = require('../builder');
@@ -21,12 +22,12 @@ module.exports = async function taskPublish() {
         await _validateParams(params);
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         return { exitCode: 1, finished: true };
     }
 
     let modName = params.name;
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
 
     try {
 
@@ -47,7 +48,7 @@ module.exports = async function taskPublish() {
         await opn(modUrl);
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         exitCode = 1;
     }
 
@@ -57,7 +58,7 @@ module.exports = async function taskPublish() {
 async function _validateParams(params) {
 
     let modName = params.name;
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
 
     if (!modTools.validModName(modName)) {
         throw new Error(`Folder name "${modDir}" is invalid`);
@@ -82,7 +83,7 @@ async function _validateParams(params) {
         if (cfg.getValue(cfgData, 'published_id', 'number')) {
 
             throw new Error(
-                `Mod has already been published for Vermintide ${config.get('gameNumber')} with item cfg "${cfg.getPath(modName)}".\n` +
+                `Mod has already been published with item cfg "${cfg.getPath(modName)}".\n` +
                 `Use 'vmb upload' or specify a different item cfg file with --cfg instead.`
             );
         }

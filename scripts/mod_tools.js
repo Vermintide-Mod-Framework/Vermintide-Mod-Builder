@@ -6,6 +6,7 @@ const reg = require('./lib/reg');
 const crypto = require('crypto');
 const vdf = require('vdf');
 const cfg = require('./cfg');
+const print = require('./print');
 
 let modTools = {
 
@@ -19,7 +20,7 @@ let modTools = {
                 continue;
             }
 
-            let modDir = path.combine(config.get('modsDir'), modName);
+            let modDir = modTools.getModDir(modName);
 
             let error = '';
             let cfgExists = await cfg.fileExists(modName);
@@ -46,19 +47,21 @@ let modTools = {
 
     async getModId(modName) {
 
-        if(!await cfg.fileExists(modName)) {
+        let cfgData;
+        try {
+            cfgData = await cfg.readFile(modName);
+        }
+        catch(error) {
             throw new Error(`${cfg.getBase()} not found in ${cfg.getDir(modName)}`);
         }
 
-        let cfgData = await cfg.readFile(modName);
-        let modId = cfgData.match(/^published_id *=? *(\d*)\D*$/m);
-        modId = modId && modId[1];
+        let modId = cfg.getValue(cfgData, 'published_id', 'number');
 
-        if (!modId) {
+        if (typeof modId != 'string') {
             throw new Error(
-                `Item ID not found in "${cfg.getPath()}" file.\n` +
+                `Item ID not found in "${cfg.getPath(modName)}".\n` +
                 `You need to publish your mod to workshop before you can build/view it.\n` +
-                `Alternatively you can specify the workshop item id with --id param.`
+                `Alternatively, you can specify the workshop item id with --id param.`
             );
         }
 
@@ -148,15 +151,16 @@ let modTools = {
             console.log(`Using fallback mod tools folder.`);
         }
         else{
+
             try {
                 toolsDir = await modTools.getAppDir(config.get('toolsId'));
             }
             catch (err) {
-                console.error(err);
+                print.error(err);
             }
 
             if (!toolsDir || typeof toolsDir != 'string') {
-                console.error('Vermintide mod SDK folder not found, using fallback.');
+                print.error('Vermintide mod SDK folder not found, using fallback.');
             }
         }
 
@@ -165,8 +169,13 @@ let modTools = {
         }
 
         if (!await pfs.accessible(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
-            throw new Error(`Mod tools not found in "${toolsDir}".\nYou need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`);
+
+            throw new Error(
+                `Mod tools not found in "${toolsDir}".\n` +
+                `You need to install Vermintide Mod Tools from Steam client or specify a valid fallback path.`
+            );
         }
+
         console.log(`Mod tools folder "${toolsDir}"`);
         return toolsDir;
     },
@@ -181,15 +190,16 @@ let modTools = {
             console.log(`Using fallback SteamApps folder.`);
         }
         else {
+
             try {
                 steamAppsDir = await modTools.getSteamAppsDir(gameId);
             }
             catch (err) {
-                console.error(err);
+                print.error(err);
             }
 
             if (!steamAppsDir || typeof steamAppsDir != 'string') {
-                console.error('SteamApps folder not found, using fallback.');
+                print.error('SteamApps folder not found, using fallback.');
             }
         }
 
@@ -204,6 +214,29 @@ let modTools = {
         steamAppsDir = path.combine(steamAppsDir, 'workshop/content', gameId);
         console.log(`Workshop folder ${steamAppsDir}`);
         return steamAppsDir;
+    },
+
+    getModDir(modName) {
+        return path.combine(config.get('modsDir'), modName);
+    },
+
+    getTempDir(modName) {
+        return path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
+    },
+
+    async getBundleDir(modName) {
+        let cfgData = await cfg.readFile(modName);
+
+        let bundleDir = cfg.getValue(cfgData, 'content', 'string');
+        if(typeof bundleDir != 'string') {
+            throw new Error(`No 'content' value specified in "${cfg.getPath(modName)}"`);
+        }
+
+        return path.absolutify(bundleDir, modTools.getModDir(modName));
+    },
+
+    getDefaultBundleDir(modName) {
+        return path.absolutify(config.get('defaultBundleDir'), modTools.getModDir(modName));
     },
 
     hashModName(data) {

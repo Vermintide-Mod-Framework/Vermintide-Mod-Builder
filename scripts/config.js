@@ -1,6 +1,21 @@
+
+module.exports = function () {
+    module.exports.get = get;
+    module.exports.set = set;
+
+    module.exports.readData = readData;
+    module.exports.parseData = parseData;
+    module.exports.getData = getData;
+    module.exports.setData = setData;
+    module.exports.writeData = writeData;
+
+    return module.exports;
+};
+
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const cl = require('./cl');
+const print = require('./print');
 
 const defaultTempDir = '.temp';
 
@@ -69,7 +84,7 @@ let values = {
     itemPreview: undefined,
 
     // Folder in which the built bundle is gonna be stored before being copied to workshop folder
-    bundleDir: undefined,
+    defaultBundleDir: undefined,
     bundleExtension: undefined,
 
     // Files in template
@@ -113,6 +128,8 @@ async function readData() {
         dir = exeDir;
     }
 
+    values.dir = dir;
+
     let newData = await _readData(path.combine(dir, filename), cl.get('reset'));
     if (!newData || typeof newData != 'object') {
         throw new Error(`Invalid config data in ${filename}`);
@@ -140,7 +157,7 @@ async function parseData() {
     values.toolsId = _getGameSpecificKey('tools_id');
 
 
-    values.bundleDir = 'bundleV' + values.gameNumber;
+    values.defaultBundleDir = 'bundleV' + values.gameNumber;
     values.bundleExtension = _getGameSpecificKey('bundle_extension');
 
     // Other config params
@@ -175,9 +192,19 @@ function setData() {
             continue;
         }
 
-        if (typeof data[key] == 'object') {
-            console.error(`Cannot set key "${key}" because it is an object. Modify ${values.filename} directly.`);
+        if (typeof defaultData[key] == 'object') {
+            print.error(`Cannot set key "${key}" because it is an object. Modify ${values.filename} directly.`);
             continue;
+        }
+
+        if(typeof defaultData[key] == 'string') {
+            value = String(value);
+        }
+        else if (typeof defaultData[key] == 'number') {
+            value = Number(value);
+        }
+        else if(typeof defaultData[key] == 'boolean') {
+            value = value == 'false' ? false : Boolean(value);
         }
 
         console.log(`Set ${key} to ${value}`);
@@ -257,7 +284,7 @@ async function _getModsDir(modsDir, tempDir) {
             }
         }
         else {
-            console.warn(`Couldn't set mods folder "${newModsDir}""`);
+            print.warn(`Couldn't set mods folder "${newModsDir}""`);
         }
     }
 
@@ -328,17 +355,3 @@ function _getTemplateSrc(configCoreSrc, templateDir) {
 
     return { coreSrc, modSrc };
 }
-
-
-module.exports = function() {
-    module.exports.get = get;
-    module.exports.set = set;
-
-    module.exports.readData = readData;
-    module.exports.parseData = parseData;
-    module.exports.getData = getData;
-    module.exports.setData = setData;
-    module.exports.writeData = writeData;
-
-    return module.exports;
-};

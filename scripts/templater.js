@@ -23,7 +23,7 @@ let templater = {
     async copyTemplate(params) {
 
         let modName = params.name;
-        let modDir = path.combine(config.get('modsDir'), modName);
+        let modDir = modTools.getModDir(modName);
 
         await templater.validateTemplate(config.get('templateDir'));
 
@@ -58,11 +58,10 @@ let templater = {
 
     async copyPlaceholderBundle(modName) {
 
-        let modDir = path.combine(config.get('modsDir'), modName);
-        let modBundleDir = path.combine(modDir, config.get('bundleDir'));
+        let bundleDir = modTools.getDefaultBundleDir(modName);
 
-        if (!await pfs.accessible(modBundleDir)) {
-            await pfs.mkdir(modBundleDir);
+        if (!await pfs.accessible(bundleDir)) {
+            await pfs.mkdir(bundleDir);
         }
 
         let placeholderBundle = path.join(`${__dirname}`, `/../embedded/placeholderV${config.get('gameNumber')}`);
@@ -70,7 +69,7 @@ let templater = {
         return await new Promise((resolve, reject) => {
             fs.createReadStream(placeholderBundle)
                 .on('error', reject)
-                .pipe(fs.createWriteStream(path.combine(modBundleDir, modTools.hashModName(modName) + config.get('bundleExtension'))))
+                .pipe(fs.createWriteStream(path.combine(bundleDir, modTools.hashModName(modName) + config.get('bundleExtension'))))
                 .on('error', reject)
                 .on('close', () => {
                     resolve();

@@ -25,7 +25,7 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd] [--debug]
 
 `-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.   
 `-g {1|2}` or `--game {1|2}` - temporarily sets for which game the mods should be created, built and uploaded.  
@@ -33,7 +33,8 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 `--rc <config_folder>` - folder with .vmbrc. Can be relative or absolute. If not set to absolute, it will be relative to the current working directory. By default, it is the directory with vmb.exe. The path must already exist. To use current working directory put `.` as the path. If the file doesn't exist in the folder, a default config will be created.      
 `--reset` - resets .vmbrc before executing the command.  
 `--use-fallback` - uses fallback paths instead of looking them up in the registry. Can speed up building/uploading. You can also permanently set this in .vmbrc.  
-`--cwd` - forces all paths which are relative to the executable's directory to be relative to the current working directory instead. See **[relative paths clarification](#relative-paths-clarification)**.
+`--cwd` - forces all paths which are relative to the executable's directory to be relative to the current working directory instead. See **[relative paths clarification](#relative-paths-clarification)**.  
+`--debug` - prints stack trace with errors/warnings.
 
 Run without command to see version number and a list of commands with parameters.
 

@@ -1,8 +1,7 @@
 const pfs = require('../lib/pfs');
-const path = require('../lib/path');
 const opn = require('opn');
 const cl = require('../cl');
-const config = require('../config');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
@@ -12,7 +11,7 @@ module.exports = async function taskOpen() {
     let exitCode = 0;
 
     let modName = cl.getFirstModName();
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
     let modId = cl.get('id') || null;
 
     if (!modId) {
@@ -25,7 +24,7 @@ module.exports = async function taskOpen() {
         }
 
         if (error) {
-            console.error(error);
+            print.error(error);
             return { exitCode: 1, finished: true };
         }
     }
@@ -41,7 +40,7 @@ module.exports = async function taskOpen() {
         await opn(url);
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         exitCode = 1;
     }
 

@@ -1,6 +1,6 @@
 const watcher = require('glob-watcher');
 const cl = require('../cl');
-const config = require('../config');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const buildMod = require('../builder');
@@ -21,26 +21,34 @@ module.exports = async function taskWatch() {
         toolsDir = await modTools.getModToolsDir();
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         return { exitCode: 1, finished: true };
     };
 
     console.log();
 
-    for (let { modName, modDir, error } of await modTools.validateModNames(modNames, false)) {
+    for (let { modName, modDir, error } of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
 
         if (error) {
-            console.error(error);
+            print.error(error);
             exitCode = 1;
             continue;
         }
 
         console.log(`Watching ${modName}...`);
 
+        let bundleDir;
+        try {
+            bundleDir = await modTools.getBundleDir(modName);
+        }
+        catch (error) {
+            bundleDir = modTools.getDefaultBundleDir(modName);
+        }
+
         let src = [
             modDir,
-            '!' + config.get('modsDir') + '/' + modName + '/*.tmp',
-            '!' + config.get('modsDir') + '/' + modName + '/' + config.get('bundleDir') + '/*'
+            '!' + modDir + '/*.tmp',
+            '!' + bundleDir + '/*'
         ];
 
         watcher(src, async (callback) => {
@@ -49,7 +57,7 @@ module.exports = async function taskWatch() {
                 await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
             }
             catch (error) {
-                console.error(error);
+                print.error(error);
                 exitCode = 1;
             };
 

@@ -1,3 +1,21 @@
+
+module.exports = function cfg() {
+
+    module.exports.setBase = setBase;
+    module.exports.getBase = getBase;
+    module.exports.setRelativeDir = setRelativeDir;
+    module.exports.getPath = getPath;
+    module.exports.getDir = getDir;
+    module.exports.writeFile = writeFile;
+    module.exports.fileExists = fileExists;
+    module.exports.readFile = readFile;
+    module.exports.getValue = getValue;
+
+    init();
+
+    return module.exports;
+};
+
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
 const config = require('./config');
@@ -9,6 +27,7 @@ let relativeDir = '';
 
 function init() {
     let cfgArg = cl.get('cfg');
+
     if (cfgArg && typeof cfgArg == 'string') {
         let cfgPath = path.parse(cfgArg);
         setBase(cfgPath.base);
@@ -36,6 +55,8 @@ function getPath(modName) {
 }
 
 function getDir(modName) {
+
+    // TODO: use modTools.getModDir
     let modDir = path.combine(config.get('modsDir'), modName);
     return path.absolutify(relativeDir, modDir);
 }
@@ -61,7 +82,7 @@ async function writeFile(params) {
     let configText = `title = "${params.title}";\n` +
         `description = "${params.description}";\n` +
         `preview = "${config.get('itemPreview')}";\n` +
-        `content = "${config.get('bundleDir')}";\n` +
+        `content = "${config.get('defaultBundleDir')}";\n` +
         `language = "${params.language}";\n` +
         `visibility = "${params.visibility}";\n` +
         `tags = [${tags}]`;
@@ -89,28 +110,15 @@ function getValue(data, key, type) {
             break;
 
         case 'string':
-            regEx = `(?:^|;)\s*${key}\s*=\s*"([^"]*)"\s*;`;
+            regEx = `(?:^|;)\\s*${key}\\s*=\\s*"([^"]*)"\\s*;`;
+            break;
 
         default:
             throw new Error(`Unsupported cfg value type "${type}"`);
     }
 
-    return data.match(new RegExp(regEx, 'm'));
+    regEx = new RegExp(regEx);
+    let match = data.match(regEx);
+
+    return match && Array.isArray(match) && match.length > 1 ? match[1] : null;
 }
-
-module.exports = function cfg() {
-
-    module.exports.setBase = setBase;
-    module.exports.getBase = getBase;
-    module.exports.setRelativeDir = setRelativeDir;
-    module.exports.getPath = getPath;
-    module.exports.getDir = getDir;
-    module.exports.writeFile = writeFile;
-    module.exports.fileExists = fileExists;
-    module.exports.readFile = readFile;
-    module.exports.getValue = getValue;
-
-    init();
-
-    return module.exports;
-};

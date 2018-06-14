@@ -1,3 +1,4 @@
+const print = require('./print');
 
 // vmb driver
 async function vmb(argv) {
@@ -21,7 +22,7 @@ async function vmb(argv) {
         await config.readData();
     }
     catch (err) {
-        console.error(err);
+        print.error(err);
         return { exitCode: 2, finished: true };
     }
 
@@ -35,7 +36,7 @@ async function vmb(argv) {
         await config.parseData();
     }
     catch (err) {
-        console.error(err);
+        print.error(err);
         return { exitCode: 3, finished: true };
     }
 

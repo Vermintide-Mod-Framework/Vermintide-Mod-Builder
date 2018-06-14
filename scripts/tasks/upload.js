@@ -1,5 +1,6 @@
 const opn = require('opn');
 const cl = require('../cl');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
@@ -9,7 +10,7 @@ module.exports = async function taskUpload() {
     let exitCode = 0;
 
     if (cl.getPlainArgs().length === 0 && !cl.get('all')) {
-        console.error('To upload all mods, use --all flag.');
+        print.error('To upload all mods, use --all flag.');
         return { exitCode: 1, finished: true };
     }
 
@@ -17,6 +18,7 @@ module.exports = async function taskUpload() {
 
     if (modNames.length > 1) {
         console.log(`Mods to upload:`);
+
         for (let modName of modNames) {
             console.log(`  ${modName}`);
         }
@@ -26,6 +28,7 @@ module.exports = async function taskUpload() {
     }
 
     let changenote = cl.get('n') || cl.get('note') || cl.get('changenote') || '';
+
     if (typeof changenote != 'string') {
         changenote = '';
     }
@@ -39,14 +42,14 @@ module.exports = async function taskUpload() {
         modToolsDir = await modTools.getModToolsDir();
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         return { exitCode: 1, finished: true };
     }
 
     for (let { modName, error } of await modTools.validateModNames(modNames, true)) {
 
         if(error) {
-            console.error(`\n${error}`);
+            print.error(`\n${error}`);
             exitCode = 1;
             continue;
         }
@@ -67,7 +70,7 @@ module.exports = async function taskUpload() {
 
         }
         catch (error) {
-            console.error(error);
+            print.error(error);
             exitCode = 1;
         }
     };

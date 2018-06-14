@@ -1,4 +1,5 @@
 const config = require('../config');
+const print = require('../print');
 
 module.exports = async function taskConfig() {
 
@@ -8,8 +9,8 @@ module.exports = async function taskConfig() {
         await config.writeData();
     }
     catch (err) {
-        console.error(err);
-        console.error(`Couldn't save config`);
+        print.error(err);
+        print.error(`Couldn't save config`);
         return { exitCode: 1, finished: false };
     }
 

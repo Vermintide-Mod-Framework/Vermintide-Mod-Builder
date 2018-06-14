@@ -1,5 +1,24 @@
+
+module.exports = function (args) {
+
+    module.exports.get = get;
+    module.exports.set = set;
+
+    module.exports.getPlainArgs = getPlainArgs;
+    module.exports.setPlainArgs = setPlainArgs;
+    module.exports.getWorkshopParams = getWorkshopParams;
+    module.exports.getFirstModName = getFirstModName;
+    module.exports.getModNames = getModNames;
+    module.exports.getBuildParams = getBuildParams;
+
+    init(args);
+
+    return module.exports;
+};
+
 const pfs = require('./lib/pfs');
-//const config = require('./config');
+const config = require('./config');
+const print = require('./print');
 
 // Commandline arguments
 const minimist = require('./lib/minimist');
@@ -12,10 +31,6 @@ function init(args) {
 
 function get(key) {
     return argv[key];
-}
-
-function getKeys() {
-    return Object.keys(argv);
 }
 
 function set(key, value) {
@@ -56,7 +71,6 @@ function getFirstModName() {
 }
 
 async function getModNames() {
-    let config = require('./config');
     let modNames = plainArgs.slice();
 
     if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
@@ -64,7 +78,7 @@ async function getModNames() {
             modNames = await pfs.getDirs(config.get('modsDir'), config.get('ignoredDirs'));
         }
         catch (err) {
-            console.error(err);
+            print.error(err);
         }
     }
 
@@ -73,8 +87,6 @@ async function getModNames() {
 
 // Returns an object with all build params
 async function getBuildParams() {
-
-    let config = require('./config');
 
     let verbose = argv.verbose || false;
     let shouldRemoveTemp = argv.clean || false;
@@ -87,20 +99,4 @@ async function getBuildParams() {
     return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
 }
 
-module.exports = function(args) {
 
-    module.exports.get = get;
-    module.exports.getKeys = getKeys;
-    module.exports.set = set;
-
-    module.exports.getPlainArgs = getPlainArgs;
-    module.exports.setPlainArgs = setPlainArgs;
-    module.exports.getWorkshopParams = getWorkshopParams;
-    module.exports.getFirstModName = getFirstModName;
-    module.exports.getModNames = getModNames;
-    module.exports.getBuildParams = getBuildParams;
-
-    init(args);
-
-    return module.exports;
-};

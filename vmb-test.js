@@ -7,60 +7,39 @@ const vmb = require('./scripts/vmb');
 
     await runTest('create', [
         'create',
-        'test',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        'test'
     ]);
 
     await runTest('build', [
         'build',
-        'test',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        'test'
     ]);
 
     await runTest('publish', [
         'publish',
         'test',
         '-g',
-        '1',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        '1'
     ]);
 
     await runTest('config', [
         'config',
         '--game',
-        '1',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        '1'
     ]);
 
     await runTest('upload 1', [
         'upload',
-        'test',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        'test'
     ]);
 
     await runTest('reset', [
-        '--reset',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        '--reset'
     ]);
 
     await runTest('upload 2', [
         'upload',
-        'test',
-        '--rc',
-        '.vscode',
-        '--cwd'
+        'test'
     ]);
 
     console.log(`Succesfully finished all tests`);
@@ -77,11 +56,22 @@ async function cleanup() {
 
 async function runTest(name, params) {
     console.log(`Running test ${name} with params "${params.join(' ')}"`);
+
+    let defaultParams = [
+        '--rc',
+        '.vscode',
+        '--cwd',
+        '--debug'
+    ];
+    params.concat(defaultParams);
+
     let { exitCode } = await vmb(params);
+
     if (exitCode) {
         console.error(`Failed upload ${name} with code ${exitCode}`);
         await cleanup();
         process.exit(exitCode);
     }
+
     console.log(`Succesfully finished test ${name}\n`);
 }

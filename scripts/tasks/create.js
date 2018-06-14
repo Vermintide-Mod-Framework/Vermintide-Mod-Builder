@@ -1,8 +1,8 @@
 const pfs = require('../lib/pfs');
-const path = require('../lib/path');
 const opn = require('opn');
 const cl = require('../cl');
 const config = require('../config');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const uploader = require('../uploader');
@@ -15,7 +15,7 @@ module.exports = async function taskCreate() {
 
     let params = cl.getWorkshopParams();
     let modName = params.name;
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
 
     let error = '';
     if (!modTools.validModName(modName)) {
@@ -26,7 +26,7 @@ module.exports = async function taskCreate() {
     }
 
     if (error) {
-        console.error(new Error(error));
+        print.error(new Error(error));
         return { exitCode: 1, finished: true };
     }
 
@@ -45,17 +45,17 @@ module.exports = async function taskCreate() {
         await opn(modUrl);
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         exitCode = 1;
 
         // Cleanup directory if it has been created
-        let modDir = path.combine(config.get('modsDir'), modName);
+        let modDir = modTools.getModDir(modName);
         if (await pfs.accessible(modDir)) {
             try {
                 await pfs.deleteDirectory(modDir);
             }
             catch (error) {
-                console.error(error);
+                print.error(error);
             }
         }
     }

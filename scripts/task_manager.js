@@ -1,3 +1,16 @@
+
+module.exports = function (tasks) {
+
+    module.exports.addTask = addTask;
+    module.exports.getCurrentTask = getCurrentTask;
+    module.exports.runTask = runTask;
+
+    init(tasks);
+
+    return module.exports;
+};
+
+
 let tasks = {};
 
 function init(tasks) {
@@ -36,14 +49,3 @@ function getCurrentTask(args) {
 async function runTask(taskName) {
     return await tasks[taskName]();
 }
-
-module.exports = function(tasks) {
-
-    module.exports.addTask = addTask;
-    module.exports.getCurrentTask = getCurrentTask;
-    module.exports.runTask = runTask;
-
-    init(tasks);
-
-    return module.exports;
-};

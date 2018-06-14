@@ -1,4 +1,5 @@
 const cl = require('../cl');
+const print = require('../print');
 
 const modTools = require('../mod_tools');
 const buildMod = require('../builder');
@@ -25,14 +26,14 @@ module.exports = async function taskBuild() {
         toolsDir = await modTools.getModToolsDir();
     }
     catch (error) {
-        console.error(error);
+        print.error(error);
         return { exitCode: 1, finished: true };
     }
 
     for (let { modName, error } of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
 
         if (error) {
-            console.error(`\n${error}`);
+            print.error(`\n${error}`);
             exitCode = 1;
             continue;
         }
@@ -41,7 +42,7 @@ module.exports = async function taskBuild() {
             await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
         }
         catch (error) {
-            console.error(error);
+            print.error(error);
             exitCode = 1;
         }
     }
