@@ -232,7 +232,7 @@ let modTools = {
             throw new Error(`No 'content' value specified in "${cfg.getPath(modName)}"`);
         }
 
-        return path.absolutify(bundleDir, modTools.getModDir(modName));
+        return path.absolutify(path.fix(bundleDir), modTools.getModDir(modName));
     },
 
     getDefaultBundleDir(modName) {
