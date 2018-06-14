@@ -1,13 +1,14 @@
-
-const pfs = require('./lib/pfs');
-const path = require('./lib/path');
-const config = require('./config');
-const reg = require('./lib/reg');
-const crypto = require('crypto');
 const vdf = require('vdf');
-const cfg = require('./cfg');
-const print = require('./print');
-const cl = require('./cl');
+const crypto = require('crypto');
+
+const pfs = require('../lib/pfs');
+const path = require('../lib/path');
+const reg = require('../lib/reg');
+
+const config = require('../config');
+const cfg = require('../cfg');
+const print = require('../print');
+const cl = require('../cl');
 
 let modTools = module.exports;
 

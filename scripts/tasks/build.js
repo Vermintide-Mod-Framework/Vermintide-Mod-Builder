@@ -1,7 +1,7 @@
 const print = require('../print');
 
-const modTools = require('../mod_tools');
-const buildMod = require('../builder');
+const modTools = require('../tools/mod_tools');
+const buildMod = require('../tools/builder');
 
 module.exports = async function taskBuild() {
 

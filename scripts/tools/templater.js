@@ -2,9 +2,12 @@ const vinyl = require('vinyl-fs');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
 const fs = require('fs');
-const pfs = require('./lib/pfs');
-const path = require('./lib/path');
-const config = require('./config');
+
+const pfs = require('../lib/pfs');
+const path = require('../lib/path');
+
+const config = require('../config');
+
 const modTools = require('./mod_tools');
 
 let templater = module.exports = {
@@ -64,7 +67,7 @@ let templater = module.exports = {
             await pfs.mkdir(bundleDir);
         }
 
-        let placeholderBundle = path.join(`${__dirname}`, `/../embedded/placeholderV${config.get('gameNumber')}`);
+        let placeholderBundle = path.join(`${__dirname}`, `/../../embedded/placeholderV${config.get('gameNumber')}`);
 
         return await new Promise((resolve, reject) => {
             fs.createReadStream(placeholderBundle)

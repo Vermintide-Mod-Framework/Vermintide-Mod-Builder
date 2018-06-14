@@ -1,9 +1,11 @@
 const child_process = require('child_process');
-const pfs = require('./lib/pfs');
-const path = require('./lib/path');
-const config = require('./config');
-const str = require('./lib/str');
-const cfg = require('./cfg');
+
+const pfs = require('../lib/pfs');
+const path = require('../lib/path');
+const str = require('../lib/str');
+
+const config = require('../config');
+const cfg = require('../cfg');
 
 let uploader = {
 

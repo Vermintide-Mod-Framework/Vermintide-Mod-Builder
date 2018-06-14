@@ -1,10 +1,12 @@
-const pfs = require('../lib/pfs');
 const opn = require('opn');
+
+const pfs = require('../lib/pfs');
+
 const cl = require('../cl');
 const print = require('../print');
 
-const modTools = require('../mod_tools');
-const uploader = require('../uploader');
+const modTools = require('../tools/mod_tools');
+const uploader = require('../tools/uploader');
 
 module.exports = async function taskOpen() {
 

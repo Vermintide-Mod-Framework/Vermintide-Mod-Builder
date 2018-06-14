@@ -1,12 +1,14 @@
-const pfs = require('../lib/pfs');
 const opn = require('opn');
+
+const pfs = require('../lib/pfs');
+
+const cfg = require('../cfg');
 const config = require('../config');
 const print = require('../print');
 
-const modTools = require('../mod_tools');
-const uploader = require('../uploader');
-const templater = require('../templater');
-const cfg = require('../cfg');
+const modTools = require('../tools/mod_tools');
+const uploader = require('../tools/uploader');
+const templater = require('../tools/templater');
 
 module.exports = async function taskCreate() {
 

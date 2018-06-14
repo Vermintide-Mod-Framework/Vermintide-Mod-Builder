@@ -56,7 +56,7 @@ async function cleanup() {
 }
 
 async function runTest(name, params, config) {
-    console.log(`Running test ${name} with params "${params.join(' ')}"`);
+    console.log(`Running test '${name}' with params "${params.join(' ')}"`);
 
     let defaultParams = [
         '--cwd',
@@ -68,10 +68,10 @@ async function runTest(name, params, config) {
     let { exitCode } = await vmb(params, config);
 
     if (exitCode) {
-        console.error(`Failed upload ${name} with code ${exitCode}`);
+        console.error(`Failed test '${name}' with code ${exitCode}`);
         await cleanup();
         process.exit(exitCode);
     }
 
-    console.log(`Succesfully finished test ${name}\n`);
+    console.log(`Succesfully finished test '${name}'\n`);
 }

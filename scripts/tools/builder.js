@@ -1,14 +1,17 @@
 const child_process = require('child_process');
 const vinyl = require('vinyl-fs');
 const rename = require('gulp-rename');
-const pfs = require('./lib/pfs');
-const path = require('./lib/path');
-const config = require('./config');
-const cfg = require('./cfg');
-const modTools = require('./mod_tools');
-const str = require('./lib/str');
 const del = require('del');
-const print = require('./print');
+
+const pfs = require('../lib/pfs');
+const path = require('../lib/path');
+const str = require('../lib/str');
+
+const config = require('../config');
+const cfg = require('../cfg');
+const print = require('../print');
+
+const modTools = require('./mod_tools');
 
 // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
 async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {

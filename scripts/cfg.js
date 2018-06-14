@@ -18,10 +18,12 @@ module.exports = function cfg() {
 
 const pfs = require('./lib/pfs');
 const path = require('./lib/path');
-const config = require('./config');
 const str = require('./lib/str');
+
+const config = require('./config');
 const cl = require('./cl');
-const modTools = require('./mod_tools');
+
+const modTools = require('./tools/mod_tools');
 
 let base = '';
 let relativeDir = '';

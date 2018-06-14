@@ -1,14 +1,16 @@
+const opn = require('opn');
+
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
-const opn = require('opn');
+
+const cfg = require('../cfg');
 const config = require('../config');
 const print = require('../print');
 
-const modTools = require('../mod_tools');
-const buildMod = require('../builder');
-const uploader = require('../uploader');
-const templater = require('../templater');
-const cfg = require('../cfg');
+const modTools = require('../tools/mod_tools');
+const buildMod = require('../tools/builder');
+const uploader = require('../tools/uploader');
+const templater = require('../tools/templater');
 
 module.exports = async function taskPublish() {
 
