@@ -5,42 +5,44 @@ const vmb = require('./scripts/vmb');
 
     await cleanup();
 
+    let config = {};
+
     await runTest('create', [
         'create',
         'test'
-    ]);
+    ], config);
 
     await runTest('build', [
         'build',
         'test'
-    ]);
+    ], config);
 
     await runTest('publish', [
         'publish',
         'test',
         '-g',
         '1'
-    ]);
+    ], config);
 
     await runTest('config', [
         'config',
         '--game',
         '1'
-    ]);
+    ], config);
 
     await runTest('upload 1', [
         'upload',
         'test'
-    ]);
+    ], config);
 
     await runTest('reset', [
         '--reset'
-    ]);
+    ], config);
 
     await runTest('upload 2', [
         'upload',
         'test'
-    ]);
+    ], config);
 
     console.log(`Succesfully finished all tests`);
 
@@ -50,22 +52,20 @@ const vmb = require('./scripts/vmb');
 
 
 async function cleanup() {
-    await pfs.deleteFile('.vscode', '.vmbrc').catch(err => { });
     await pfs.deleteDirectory('mods/test').catch(err => { });
 }
 
-async function runTest(name, params) {
+async function runTest(name, params, config) {
     console.log(`Running test ${name} with params "${params.join(' ')}"`);
 
     let defaultParams = [
-        '--rc',
-        '.vscode',
         '--cwd',
         '--debug'
     ];
+
     params.concat(defaultParams);
 
-    let { exitCode } = await vmb(params);
+    let { exitCode } = await vmb(params, config);
 
     if (exitCode) {
         console.error(`Failed upload ${name} with code ${exitCode}`);

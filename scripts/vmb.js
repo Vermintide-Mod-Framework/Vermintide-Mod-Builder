@@ -1,7 +1,7 @@
 const print = require('./print');
 
 // vmb driver
-async function vmb(argv) {
+async function vmb(argv, configData) {
 
     // Read command line parameters
     const cl = require('./cl')(argv);
@@ -17,9 +17,9 @@ async function vmb(argv) {
     // Init config
     const config = require('./config')();
 
-    // Read config from file
+    // Read config from file or object
     try {
-        await config.readData();
+        await config.readData(configData);
     }
     catch (err) {
         print.error(err);

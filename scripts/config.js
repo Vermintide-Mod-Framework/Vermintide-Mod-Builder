@@ -1,5 +1,6 @@
 
 module.exports = function () {
+
     module.exports.get = get;
     module.exports.set = set;
 
@@ -114,11 +115,11 @@ function set(...pairs) {
     }
 }
 
-async function readData() {
+async function readData(optionalData) {
 
     let exeDir = cl.get('cwd') ? process.cwd() : path.dirname(process.execPath);
     let dir;
-    let filename = values.filename;
+    let filename = optionalData ? optionalData.toString() : values.filename;
 
     if(cl.get('rc')){
         dir = path.absolutify(cl.get('rc'));
@@ -130,19 +131,19 @@ async function readData() {
 
     values.dir = dir;
 
-    let newData = await _readData(path.combine(dir, filename), cl.get('reset'));
-    if (!newData || typeof newData != 'object') {
+    let shouldReset = cl.get('reset');
+    data = optionalData || await _readData(path.combine(dir, filename), shouldReset);
+
+    if (!data || typeof data != 'object') {
         throw new Error(`Invalid config data in ${filename}`);
     }
 
     for(let key of Object.keys(defaultData)) {
 
-        if (newData[key] === undefined) {
-            newData[key] = defaultData[key];
+        if (shouldReset || data[key] === undefined) {
+            data[key] = defaultData[key];
         }
     }
-
-    data = Object.assign({}, newData);
 }
 
 async function parseData() {
@@ -213,6 +214,11 @@ function setData() {
 }
 
 async function writeData() {
+
+    if(values.filename == data.toString()) {
+        return;
+    }
+
     await pfs.writeFile(path.combine(values.dir, values.filename), JSON.stringify(data, null, '\t'));
 }
 
