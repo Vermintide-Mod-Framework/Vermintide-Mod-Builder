@@ -10,7 +10,7 @@ module.exports = async function taskOpen() {
 
     let exitCode = 0;
 
-    let modName = cl.getFirstModName();
+    let modName = modTools.getFirstModName();
     let modDir = modTools.getModDir(modName);
     let modId = cl.get('id') || null;
 

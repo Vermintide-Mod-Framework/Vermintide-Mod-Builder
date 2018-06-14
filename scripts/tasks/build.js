@@ -1,4 +1,3 @@
-const cl = require('../cl');
 const print = require('../print');
 
 const modTools = require('../mod_tools');
@@ -8,7 +7,7 @@ module.exports = async function taskBuild() {
 
     let exitCode = 0;
 
-    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await cl.getBuildParams();
+    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await modTools.getBuildParams();
 
     if (modNames.length > 1) {
         console.log(`Mods to build:`);

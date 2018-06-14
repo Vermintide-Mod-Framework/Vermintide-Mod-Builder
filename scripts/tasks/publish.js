@@ -1,7 +1,6 @@
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const opn = require('opn');
-const cl = require('../cl');
 const config = require('../config');
 const print = require('../print');
 
@@ -15,8 +14,8 @@ module.exports = async function taskPublish() {
 
     let exitCode = 0;
 
-    let params = cl.getWorkshopParams();
-    let buildParams = await cl.getBuildParams();
+    let params = modTools.getWorkshopParams();
+    let buildParams = await modTools.getBuildParams();
 
     try {
         await _validateParams(params);
@@ -32,7 +31,7 @@ module.exports = async function taskPublish() {
     try {
 
         let toolsDir = await modTools.getModToolsDir();
-        await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, params.verbose, buildParams.ignoreBuildErrors, null);
+        await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, buildParams.verbose, buildParams.ignoreBuildErrors, null);
 
         console.log();
         await pfs.copyIfDoesntExist(

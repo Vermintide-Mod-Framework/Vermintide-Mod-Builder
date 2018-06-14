@@ -14,7 +14,7 @@ module.exports = async function taskUpload() {
         return { exitCode: 1, finished: true };
     }
 
-    let modNames = await cl.getModNames();
+    let modNames = await modTools.getModNames();
 
     if (modNames.length > 1) {
         console.log(`Mods to upload:`);

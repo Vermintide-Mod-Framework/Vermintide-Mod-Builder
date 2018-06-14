@@ -180,7 +180,7 @@ async function parseData() {
 }
 
 function getData() {
-    return data;
+    return Object.assign({}, data);
 }
 
 function setData() {

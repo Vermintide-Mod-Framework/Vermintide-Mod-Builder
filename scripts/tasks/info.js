@@ -13,7 +13,7 @@ module.exports = async function taskInfo() {
 
     let exitCode = 0;
 
-    let modNames = await cl.getModNames();
+    let modNames = await modTools.getModNames();
     let showCfg = cl.get('cfg') || false;
 
     if (modNames.length > 1) {

@@ -21,6 +21,7 @@ const path = require('./lib/path');
 const config = require('./config');
 const str = require('./lib/str');
 const cl = require('./cl');
+const modTools = require('./mod_tools');
 
 let base = '';
 let relativeDir = '';
@@ -55,9 +56,7 @@ function getPath(modName) {
 }
 
 function getDir(modName) {
-
-    // TODO: use modTools.getModDir
-    let modDir = path.combine(config.get('modsDir'), modName);
+    let modDir = modTools.getModDir(modName);
     return path.absolutify(relativeDir, modDir);
 }
 

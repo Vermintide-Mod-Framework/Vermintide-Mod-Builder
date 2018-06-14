@@ -1,6 +1,5 @@
 const pfs = require('../lib/pfs');
 const opn = require('opn');
-const cl = require('../cl');
 const config = require('../config');
 const print = require('../print');
 
@@ -13,7 +12,7 @@ module.exports = async function taskCreate() {
 
     let exitCode = 0;
 
-    let params = cl.getWorkshopParams();
+    let params = modTools.getWorkshopParams();
     let modName = params.name;
     let modDir = modTools.getModDir(modName);
 

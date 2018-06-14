@@ -7,7 +7,7 @@ const path = require('./lib/path');
 const config = require('./config');
 const modTools = require('./mod_tools');
 
-let templater = {
+let templater = module.exports = {
 
     async validateTemplate(templateDir) {
         if (!await pfs.accessible(templateDir)) {
@@ -77,5 +77,3 @@ let templater = {
         });
     }
 };
-
-module.exports = templater;
