@@ -34,7 +34,7 @@ async function validateModNames(modNames, cfgMustExist) {
             error = `Folder "${modDir}" doesn't exist`;
         }
         else if (!cfgExists && cfgMustExist) {
-            error = `${cfg.getBase()} not found in "${cfg.getDir(modDir)}"`;
+            error = `${cfg.getBase()} not found in "${cfg.getDir(modName)}"`;
         }
 
         modInfo.push({ modName, modDir, cfgExists, error });

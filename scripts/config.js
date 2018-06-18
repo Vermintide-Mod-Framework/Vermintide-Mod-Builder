@@ -130,6 +130,7 @@ async function readData(optionalData) {
         dir = exeDir;
     }
 
+    values.exeDir = exeDir;
     values.dir = dir;
 
     let shouldReset = cl.get('reset');
