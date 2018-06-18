@@ -1,6 +1,6 @@
 {
   "name": "vmb",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Vermintide Mod Builder",
   "main": "vmb.js",
   "bin": "vmb.js",
