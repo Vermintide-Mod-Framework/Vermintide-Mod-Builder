@@ -8,6 +8,25 @@ let names = ['access', 'readFile', 'writeFile', 'close', 'open', 'read', 'write'
 
 let pfs = promisify.some(fs, names);
 
+pfs.getFileNames = async function (dir, except) {
+    let fileNames = [];
+
+    for (let fileName of await pfs.readdir(dir)) {
+
+        if (except && except.includes(fileName)) {
+            continue;
+        }
+
+        let fileStats = await pfs.stat(path.combine(dir, fileName));
+
+        if (!fileStats.isDirectory()) {
+            fileNames.push(fileName);
+        }
+    }
+
+    return fileNames;
+};
+
 // Returns an array of folders in dir, except the ones in second param
 pfs.getDirs = async function(dir, except) {
     let dirs = [];

@@ -55,28 +55,48 @@ module.exports = async function taskInfo() {
             print.warn(`Not published (${errExplanation})`);
         }
 
-        let bundleName = modTools.hashModName(modName) + config.get('bundleExtension');
         let bundleDir = null;
 
-        let reason = '';
+        let reason = `bundle not found`;
         if(cfgExists) {
 
             try {
                 bundleDir = await modTools.getBundleDir(modName);
             }
             catch(err) {
-                reason = err.message;
+                reason = `bundle folder not found`;
             }
-        }
-        else {
-            reason = `${bundleName} not found in "${bundleDir}"`;
         }
 
         if(!bundleDir) {
             bundleDir = modTools.getDefaultBundleDir(modName);
         }
 
-        let bundlePath = path.combine(bundleDir, bundleName);
+        let bundleNames = null;
+        let bundleName = null;
+
+        try {
+            bundleNames = await pfs.getFileNames(bundleDir);
+        }
+        catch(err) {
+            reason = `bundle folder "${bundleDir}" not found`;
+        }
+
+        if (bundleNames) {
+
+            for (let fileName of bundleNames) {
+                if (path.parse(fileName).ext == config.get('bundleExtension')) {
+                    bundleName = fileName;
+                    break;
+                }
+            }
+
+            if(!bundleName) {
+                reason = `bundle not found in "${bundleDir}"`;
+            }
+        }
+
+        let bundlePath = bundleDir && bundleName && path.combine(bundleDir, bundleName);
 
         try {
             let stat = await pfs.stat(bundlePath);

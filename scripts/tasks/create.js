@@ -7,6 +7,7 @@ const config = require('../config');
 const print = require('../print');
 
 const modTools = require('../tools/mod_tools');
+const buildMod = require('../tools/builder');
 const uploader = require('../tools/uploader');
 const templater = require('../tools/templater');
 
@@ -35,9 +36,12 @@ module.exports = async function taskCreate() {
 
     try {
         await templater.copyTemplate(params);
-        await templater.copyPlaceholderBundle(params.name);
+        let toolsDir = await modTools.getModToolsDir();
+        console.log();
         await cfg.writeFile(params);
+        await buildMod(toolsDir, modName, true, false, false, true);
 
+        console.log();
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
 
         let modUrl = uploader.formUrl(modId);

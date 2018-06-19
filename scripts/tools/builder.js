@@ -188,7 +188,6 @@ async function _copyBundle(modName, buildDir, bundleDir, modWorkshopDir) {
             '!' + buildDir + '/dlc'
         ], { base: buildDir })
             .pipe(rename(p => {
-                p.basename = modTools.hashModName(modName);
                 p.extname = config.get('bundleExtension');
             }))
             .on('error', reject)
