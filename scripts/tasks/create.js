@@ -19,6 +19,7 @@ module.exports = async function taskCreate() {
     let modName = params.name;
     let modDir = modTools.getModDir(modName);
 
+    // Validate modName
     let error = '';
     if (!modTools.validModName(modName)) {
         error = `Folder name "${modDir}" is invalid`;
@@ -32,11 +33,13 @@ module.exports = async function taskCreate() {
         return { exitCode: 1, finished: true };
     }
 
-    console.log(`Copying template from "${config.get('templateDir')}"`);
-
     try {
+
+        // Copy and customize template
+        console.log(`Copying template from "${config.get('templateDir')}"`);
         await templater.copyTemplate(params);
 
+        // Copy placeholder bundle or .mod file depending on format used
         if (config.get('useNewFormat')) {
             await templater.createPlaceholderModFile(modName);
         }
@@ -44,10 +47,13 @@ module.exports = async function taskCreate() {
             await templater.createPlaceholderBundle(modName);
         }
 
+        // Create .cfg file
         await cfg.writeFile(params);
 
+        // Get path tosdk and upload mod
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
 
+        // Print and optionally open url if -o flag was set
         let modUrl = uploader.formUrl(modId);
         console.log(`Now you need to subscribe to ${modUrl} in order to be able to build and test your mod.`);
         console.log(`Opening url...`);
@@ -60,6 +66,7 @@ module.exports = async function taskCreate() {
         // Cleanup directory if it has been created
         let modDir = modTools.getModDir(modName);
         if (await pfs.accessible(modDir)) {
+
             try {
                 await pfs.deleteDirectory(modDir);
             }

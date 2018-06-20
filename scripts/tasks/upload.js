@@ -18,6 +18,7 @@ module.exports = async function taskUpload() {
 
     let modNames = await modTools.getModNames();
 
+    // Only print what we're gonna upload if there's more than one mod
     if (modNames.length > 1) {
         console.log(`Mods to upload:`);
 
@@ -39,6 +40,7 @@ module.exports = async function taskUpload() {
 
     let skip = cl.get('s') || cl.get('skip');
 
+    // Get path to sdk
     let modToolsDir;
     try {
         modToolsDir = await modTools.getModToolsDir();
@@ -59,12 +61,15 @@ module.exports = async function taskUpload() {
         try {
             console.log(`\nUploading ${modName}`);
 
+            // Upload mod
             await uploader.uploadMod(modToolsDir, modName, changenote, skip);
 
+            // Show mod url
             let modId = await modTools.getModId(modName);
             let modUrl = uploader.formUrl(modId);
             console.log(`Uploaded to ${modUrl}`);
 
+            // Open mod url
             if (openUrl) {
                 console.log(`Opening url...`);
                 await opn(modUrl);

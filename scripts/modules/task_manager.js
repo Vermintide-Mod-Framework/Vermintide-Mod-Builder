@@ -24,7 +24,7 @@ function addTask(name, action) {
     tasks[name] = action;
 }
 
-// Returns first task specified in commandline arguments
+// Returns first task name specified in commandline arguments or name of default task ('help')
 function getCurrentTask(args) {
     let plainArgs = [];
 

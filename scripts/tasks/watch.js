@@ -1,4 +1,4 @@
-const watcher = require('glob-watcher');
+const watch = require('glob-watcher');
 
 const print = require('../print');
 
@@ -16,6 +16,7 @@ module.exports = async function taskWatch() {
         return { exitCode, finished: true };
     }
 
+    // Get path to sdk
     let toolsDir;
     try {
         toolsDir = await modTools.getModToolsDir();
@@ -37,6 +38,7 @@ module.exports = async function taskWatch() {
 
         console.log(`Watching ${modName}...`);
 
+        // Determine where built mod is gonna be put
         let bundleDir;
         try {
             bundleDir = await modTools.getBundleDir(modName);
@@ -45,13 +47,16 @@ module.exports = async function taskWatch() {
             bundleDir = modTools.getDefaultBundleDir(modName);
         }
 
+        // These files will be watched
         let src = [
             modDir,
+
+            // Ignore temp files stingray creates and folder with built files
             '!' + modDir + '/*.tmp',
             '!' + bundleDir + '/*'
         ];
 
-        watcher(src, async (callback) => {
+        watch(src, async (callback) => {
 
             try {
                 await builder.buildMod(toolsDir, modName, {

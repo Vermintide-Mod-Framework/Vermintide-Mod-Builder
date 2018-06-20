@@ -17,6 +17,7 @@ module.exports = async function taskOpen() {
     let modDir = modTools.getModDir(modName);
     let modId = cl.get('id') || null;
 
+    // Validate modName if id wasn't provided
     if (!modId) {
         let error = '';
         if (!modTools.validModName(modName)) {
@@ -34,10 +35,12 @@ module.exports = async function taskOpen() {
 
     try {
 
+        // Get mod id if it wasn't provided
         if (!modId) {
             modId = await modTools.getModId(modName);
         }
 
+        // Form and open mod url
         let url = uploader.formUrl(modId);
         console.log(`Opening ${url}`);
         await opn(url);
