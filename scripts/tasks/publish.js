@@ -1,11 +1,12 @@
 const opn = require('opn');
 
+const print = require('../print');
+
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 
-const cfg = require('../cfg');
-const config = require('../config');
-const print = require('../print');
+const cfg = require('../modules/cfg');
+const config = require('../modules/config');
 
 const modTools = require('../tools/mod_tools');
 const builder = require('../tools/builder');

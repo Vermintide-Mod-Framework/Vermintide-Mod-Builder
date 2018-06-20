@@ -13,7 +13,8 @@ module.exports = function (args) {
 };
 
 // Commandline arguments
-const minimist = require('./lib/minimist');
+const minimist = require('../lib/minimist');
+
 let argv = null;
 let plainArgs = [];
 

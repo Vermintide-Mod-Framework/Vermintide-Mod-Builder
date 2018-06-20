@@ -2,10 +2,11 @@ const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const str = require('../lib/str');
 
-const cl = require('../cl');
-const config = require('../config');
-const cfg = require('../cfg');
 const print = require('../print');
+
+const cl = require('../modules/cl');
+const config = require('../modules/config');
+const cfg = require('../modules/cfg');
 
 const modTools = require('../tools/mod_tools');
 const uploader = require('../tools/uploader');

@@ -4,13 +4,14 @@ const rename = require('gulp-rename');
 const del = require('del');
 const merge = require('merge-stream');
 
+const print = require('../print');
+
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const str = require('../lib/str');
 
-const config = require('../config');
-const cfg = require('../cfg');
-const print = require('../print');
+const config = require('../modules/config');
+const cfg = require('../modules/cfg');
 
 const modTools = require('./mod_tools');
 

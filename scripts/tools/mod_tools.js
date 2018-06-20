@@ -1,14 +1,15 @@
 const vdf = require('vdf');
 const crypto = require('crypto');
 
+const print = require('../print');
+
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const reg = require('../lib/reg');
 
-const config = require('../config');
-const cfg = require('../cfg');
-const print = require('../print');
-const cl = require('../cl');
+const config = require('../modules/config');
+const cfg = require('../modules/cfg');
+const cl = require('../modules/cl');
 
 async function validateModNames(modNames, cfgMustExist) {
 

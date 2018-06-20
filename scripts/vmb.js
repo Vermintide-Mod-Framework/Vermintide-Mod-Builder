@@ -4,18 +4,18 @@ const print = require('./print');
 async function vmb(argv, configData) {
 
     // Read command line parameters
-    const cl = require('./cl')(argv);
+    const cl = require('./modules/cl')(argv);
 
     // Init tasks
     const tasks = require('./tasks');
-    const taskManager = require('./task_manager')(tasks);
+    const taskManager = require('./modules/task_manager')(tasks);
 
     // Get current task from commandline
     const { taskName, plainArgs } = taskManager.getCurrentTask(cl.get('_'));
     cl.setPlainArgs(plainArgs);
 
     // Init config
-    const config = require('./config')();
+    const config = require('./modules/config')();
 
     // Read config from file or object
     try {
@@ -41,7 +41,7 @@ async function vmb(argv, configData) {
     }
 
     // Init item cfg reader
-    require('./cfg')();
+    require('./modules/cfg')();
 
 
     // Run task

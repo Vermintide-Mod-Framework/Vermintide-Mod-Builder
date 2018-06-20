@@ -1,4 +1,4 @@
-const cl = require('./cl');
+const cl = require('./modules/cl');
 
 function print(error, func) {
     if (!error.stack) {

@@ -1,5 +1,6 @@
-const config = require('../config');
 const print = require('../print');
+
+const config = require('../modules/config');
 
 module.exports = async function taskConfig() {
 

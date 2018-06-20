@@ -16,14 +16,14 @@ module.exports = function cfg() {
     return module.exports;
 };
 
-const pfs = require('./lib/pfs');
-const path = require('./lib/path');
-const str = require('./lib/str');
+const pfs = require('../lib/pfs');
+const path = require('../lib/path');
+const str = require('../lib/str');
 
 const config = require('./config');
 const cl = require('./cl');
 
-const modTools = require('./tools/mod_tools');
+const modTools = require('../tools/mod_tools');
 
 let base = '';
 let relativeDir = '';

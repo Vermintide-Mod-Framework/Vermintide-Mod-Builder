@@ -4,8 +4,8 @@ const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const str = require('../lib/str');
 
-const config = require('../config');
-const cfg = require('../cfg');
+const config = require('../modules/config');
+const cfg = require('../modules/cfg');
 
 // Uploads mod to the workshop
 async function uploadMod(toolsDir, modName, changenote, skip) {

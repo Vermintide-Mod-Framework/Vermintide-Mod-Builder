@@ -1,9 +1,10 @@
 const opn = require('opn');
 
+const print = require('../print');
+
 const pfs = require('../lib/pfs');
 
-const cl = require('../cl');
-const print = require('../print');
+const cl = require('../modules/cl');
 
 const modTools = require('../tools/mod_tools');
 const uploader = require('../tools/uploader');
