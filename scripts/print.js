@@ -1,11 +1,14 @@
 const cl = require('./modules/cl');
 
 function print(error, func) {
+
+    // If this isn't an error, just print it as is
     if (!error.stack) {
         func.call(console, error.message ? error.message : error);
         return;
     }
 
+    // Print error stack if in debug mode, otherwise print just the message
     if (cl.get('debug')) {
         func.call(console, error.stack);
     }

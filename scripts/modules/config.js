@@ -270,7 +270,7 @@ function _getGameSpecificKey(key, type = 'string'){
     let value = data[key + values.gameNumber];
 
     if(value === undefined) {
-        value = defaultData[key + values.gameNumber]
+        value = defaultData[key + values.gameNumber];
     }
 
     if (typeof value != type) {

@@ -54,7 +54,13 @@ module.exports = async function taskWatch() {
         watcher(src, async (callback) => {
 
             try {
-                await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                await builder.buildMod(toolsDir, modName, {
+                    shouldRemoveTemp,
+                    makeWorkshopCopy,
+                    verbose,
+                    ignoreBuildErrors,
+                    modId
+                });
             }
             catch (error) {
                 print.error(error);

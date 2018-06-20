@@ -28,9 +28,13 @@ const modTools = require('../tools/mod_tools');
 let base = '';
 let relativeDir = '';
 
+// Sets up paths based on cl and config
 function init() {
+
+    // Get custom .cfg file path from cl args
     let cfgArg = cl.get('cfg');
 
+    // Set paths to custom cfg path, or use default one
     if (cfgArg && typeof cfgArg == 'string') {
         let cfgPath = path.parse(cfgArg);
         setBase(cfgPath.base);
@@ -41,22 +45,27 @@ function init() {
     }
 }
 
+// Sets the name of .cfg file
 function setBase(newBase) {
     base = newBase;
 }
 
+// Returns name of .cfg file
 function getBase() {
     return base;
 }
 
+// Sets dir path of .cfg file
 function setRelativeDir(newDir) {
     relativeDir = newDir;
 }
 
+// Gets full path of .cfg file
 function getPath(modName) {
     return path.combine(getDir(modName), base);
 }
 
+// Gets dir path of .cfg file
 function getDir(modName) {
     let modDir = modTools.getModDir(modName);
     return path.absolutify(relativeDir, modDir);
@@ -65,6 +74,7 @@ function getDir(modName) {
 // Creates item.cfg file
 async function writeFile(params) {
 
+    // Construct tags string
     let tagArray = String(params.tags).split(/;\s*/);
     let tags = '';
     for (let tag of tagArray) {
@@ -80,6 +90,7 @@ async function writeFile(params) {
         tags += `"${tag}"`;
     };
 
+    // Construct .cfg file content
     let configText = `title = "${params.title}";\n` +
         `description = "${params.description}";\n` +
         `preview = "${config.get('itemPreview')}";\n` +
@@ -87,20 +98,24 @@ async function writeFile(params) {
         `language = "${params.language}";\n` +
         `visibility = "${params.visibility}";\n` +
         `tags = [${tags}]`;
+
     console.log(`${base}:`);
     console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
 
     return await pfs.writeFile(getPath(params.name), configText);
 }
 
+// Check if .cfg file exists
 async function fileExists(modName) {
     return await pfs.accessible(getPath(modName));
 }
 
+// Returns .cfg file's data
 async function readFile(modName) {
     return await pfs.readFile(getPath(modName), 'utf8');
 }
 
+// Gets key value from .cfg file data
 function getValue(data, key, type) {
     let regEx;
 

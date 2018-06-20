@@ -11,6 +11,8 @@ const config = require('../modules/config');
 const cfg = require('../modules/cfg');
 const cl = require('../modules/cl');
 
+// Checks an array of mod names, returns a new array 
+// that contains modName, modDir, whether mod has .cfg file and an error message
 async function validateModNames(modNames, cfgMustExist) {
 
     let modInfo = [];
@@ -42,12 +44,15 @@ async function validateModNames(modNames, cfgMustExist) {
     return modInfo;
 }
 
+// Returns whether mod name is valid
 function validModName(modName) {
     return typeof modName == 'string' && !!modName && modName.match(/^[0-9a-zA-Z_\- %]+$/);
 }
 
+// Gets workshop item id from .cfg file
 async function getModId(modName) {
 
+    // Read .cfg file
     let cfgData;
     try {
         cfgData = await cfg.readFile(modName);
@@ -56,12 +61,13 @@ async function getModId(modName) {
         throw new Error(`${cfg.getBase()} not found in ${cfg.getDir(modName)}`);
     }
 
+    // Get id from .cfg file
     let modId = cfg.getValue(cfgData, 'published_id', 'number');
 
     if (typeof modId != 'string') {
         throw new Error(
             `Item ID not found in "${cfg.getPath(modName)}".\n` +
-            `You need to publish your mod to workshop before you can build/view it.\n` +
+            `You need to publish your mod to workshop before you can work with it.\n` +
             `Alternatively, you can specify the workshop item id with --id param.`
         );
     }
@@ -69,12 +75,14 @@ async function getModId(modName) {
     return modId;
 }
 
+// Return steamapps folder path of a specific app
 async function getSteamAppsDir(appId){
 
     let appKey = 'HKEY_CURRENT_USER\\Software\\Valve\\Steam';
     let value = 'SteamPath';
     let steamDir;
 
+    // Find steam installation directory in win registry
     try {
         steamDir = await reg.get(appKey, value);
     }
@@ -85,6 +93,7 @@ async function getSteamAppsDir(appId){
     let appManifestName = `appmanifest_${appId}.acf`;
     let steamAppsDir = path.combine(steamDir, 'SteamApps');
 
+    // Check if the main steam folder has a manifest file for the requested app in it
     if (await pfs.accessible(path.combine(steamAppsDir, appManifestName))) {
         return steamAppsDir;
     }
@@ -92,8 +101,9 @@ async function getSteamAppsDir(appId){
     let vdfName = 'libraryfolders.vdf';
     let data;
 
+    // Read other steam library folders from libraryfolders.vdf
     try {
-        data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, 'libraryfolders.vdf'), 'utf-8'));
+        data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, vdfName), 'utf-8'));
     }
     catch (err) {
         throw new Error(`${err}\nCoudln't parse ${vdfName}`);
@@ -103,6 +113,7 @@ async function getSteamAppsDir(appId){
         throw new Error(`Coudln't parse ${vdfName}`);
     }
 
+    // Check all other steam library folders for app's manifest file
     let i = 0;
     while(++i) {
         let libraryDir = data.LibraryFolders[String(i)];
@@ -120,11 +131,16 @@ async function getSteamAppsDir(appId){
     throw new Error(`SteamApps folder for app ${appId} not found`);
 }
 
+// Returns the folder of a steam app
 async function getAppDir(appId) {
+
+    // Find in which steamapps folder the app manifest file is
     let steamAppsDir = await getSteamAppsDir(appId);
+
     let appManifestName = `appmanifest_${appId}.acf`;
     let data;
 
+    // Read and parse app manifest file
     try {
         data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, appManifestName), 'utf-8'));
     }
@@ -132,6 +148,7 @@ async function getAppDir(appId) {
         throw new Error(`${err}\nCoudln't parse ${appManifestName}`);
     }
 
+    // Get intall dir name from app manifest data
     let installDir;
     try {
         installDir = data.AppState.installdir;
@@ -140,10 +157,11 @@ async function getAppDir(appId) {
         throw new Error(`Coudln't parse ${appManifestName}`);
     }
 
+    // Return absolute path to app install dir
     return path.combine(steamAppsDir, 'common', installDir);
 }
 
-// Gets mod tools placement from Vermintide Mod Tools install location
+// Gets mod tools placement for current game from steam's intall location
 async function getModToolsDir() {
 
     let toolsDir;
@@ -153,6 +171,7 @@ async function getModToolsDir() {
     }
     else{
 
+        // Get app location
         try {
             toolsDir = await getAppDir(config.get('toolsId'));
         }
@@ -165,10 +184,12 @@ async function getModToolsDir() {
         }
     }
 
+    // Use fallback path if no found
     if (!toolsDir) {
         toolsDir = config.get('fallbackToolsDir');
     }
 
+    // Check that the path is correct by finding stingray exe inside the app
     if (!await pfs.accessible(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
 
         throw new Error(
@@ -181,7 +202,7 @@ async function getModToolsDir() {
     return toolsDir;
 }
 
-// Gets the steam workshop folder from vermintide's install location
+// Gets workshop folder placement for the current game from steam's install location
 async function getWorkshopDir() {
     let gameId = config.get('gameId');
 
@@ -192,6 +213,7 @@ async function getWorkshopDir() {
     }
     else {
 
+        // Get steamapps folder location
         try {
             steamAppsDir = await getSteamAppsDir(gameId);
         }
@@ -204,27 +226,33 @@ async function getWorkshopDir() {
         }
     }
 
+    // Use fallback path if no found
     if (!steamAppsDir) {
         steamAppsDir = config.get('fallbackSteamAppsDir');
     }
 
+    // Check that steamapps path is valid
     if (!await pfs.accessible(steamAppsDir)) {
         throw new Error(`SteamApps folder "${steamAppsDir}" not found.\nYou need to specify a valid fallback path.`);
     }
 
+    // workshop/content/gameId might not exist, so we append it after checking that the path is valid
     steamAppsDir = path.combine(steamAppsDir, 'workshop/content', gameId);
     console.log(`Workshop folder ${steamAppsDir}`);
     return steamAppsDir;
 }
 
+// Returns modsDir/modName
 function getModDir(modName) {
     return path.combine(config.get('modsDir'), modName);
 }
 
+// returns tempDir/modNameVgameNumber
 function getTempDir(modName) {
     return path.combine(config.get('tempDir'), `${modName}V${config.get('gameNumber')}`);
 }
 
+// Gets bundle dir location from mod's .cfg file
 async function getBundleDir(modName) {
     let cfgData = await cfg.readFile(modName);
 
@@ -236,6 +264,7 @@ async function getBundleDir(modName) {
     return path.absolutify(path.fix(bundleDir), getModDir(modName));
 }
 
+// Returns defaultBundleDir/modName
 function getDefaultBundleDir(modName) {
     return path.absolutify(config.get('defaultBundleDir'), getModDir(modName));
 }
@@ -256,14 +285,19 @@ function getWorkshopParams() {
     };
 }
 
+// Returns first modName from command line params
 function getFirstModName() {
     let modName = cl.getPlainArgs()[0] || '';
     return modName;
 }
 
+// Returns an array of mod names either from command line params or from scanning modDir folder
 async function getModNames() {
+
+    // Get mod names from cl params
     let modNames = cl.getPlainArgs();
 
+    // No mod names in cl params
     if (!modNames || !Array.isArray(modNames) || modNames.length === 0) {
         try {
             modNames = await pfs.getDirs(config.get('modsDir'), config.get('ignoredDirs'));
@@ -290,13 +324,15 @@ async function getBuildParams() {
     return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
 }
 
+// Returns modsDir/modName/modName.mod
 function getModFilePath(modName) {
     return path.combine(getModDir(modName), modName + config.get('modFileExtension'));
 }
 
-function hashModName(data) {
-    data = String(data).toLowerCase();
-    var hash = crypto.createHash('md5').update(data, 'utf-8').digest('hex');
+// Returns first 16 chars from md5 hex hash of lower case converted modName
+function hashModName(modName) {
+    modName = String(modName).toLowerCase();
+    var hash = crypto.createHash('md5').update(modName, 'utf-8').digest('hex');
     return hash.substring(0, 16);
 }
 

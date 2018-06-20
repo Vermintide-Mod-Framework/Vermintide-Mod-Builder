@@ -34,7 +34,13 @@ module.exports = async function taskPublish() {
     try {
 
         let toolsDir = await modTools.getModToolsDir();
-        await builder.buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, buildParams.verbose, buildParams.ignoreBuildErrors, null);
+        await builder.buildMod(toolsDir, modName, {
+            shouldRemoveTemp: buildParams.shouldRemoveTemp,
+            makeWorkshopCopy: false,
+            verbose: buildParams.verbose,
+            ignoreBuildErrors: buildParams.ignoreBuildErrors,
+            modId: null
+        });
 
         console.log();
         await pfs.copyIfDoesntExist(

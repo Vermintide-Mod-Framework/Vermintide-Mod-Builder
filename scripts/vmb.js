@@ -43,7 +43,6 @@ async function vmb(argv, configData) {
     // Init item cfg reader
     require('./modules/cfg')();
 
-
     // Run task
     return await taskManager.runTask(taskName);
 }

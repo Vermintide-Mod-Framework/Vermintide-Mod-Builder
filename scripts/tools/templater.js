@@ -9,7 +9,9 @@ const config = require('../modules/config');
 
 const modTools = require('./mod_tools');
 
+// Throws if template folder doesn't exist or doesn't have itemPreview file in it
 async function validateTemplate(templateDir) {
+
     if (!await pfs.accessible(templateDir)) {
         throw new Error(`Template folder "${templateDir}" doesn't exist.`);
     }
@@ -19,19 +21,24 @@ async function validateTemplate(templateDir) {
     }
 }
 
-// Copies and renames mod template from %%template folder
+// Copies and renames mod template folder and its contents
 async function copyTemplate(params) {
 
     let modName = params.name;
     let modDir = modTools.getModDir(modName);
 
+    // Check that template is valid
     await validateTemplate(config.get('templateDir'));
 
     return await new Promise((resolve, reject) => {
 
+        // RegEx's to replace %%name, %%title and %%description
         let regexName = new RegExp(config.get('templateName'), 'g');
         let regexTitle = new RegExp(config.get('templateTitle'), 'g');
         let regexDescription = new RegExp(config.get('templateDescription'), 'g');
+
+        // Copy folder, renaming files and dirs and replacing contents
+        // config already has a blob definition for which files should be copied and modified
         vinyl.src(config.get('modSrc'), { base: config.get('templateDir') })
             .pipe(replace(regexName, modName))
             .pipe(replace(regexTitle, params.title))
@@ -43,6 +50,8 @@ async function copyTemplate(params) {
             .pipe(vinyl.dest(modDir))
             .on('error', reject)
             .on('end', () => {
+
+                // Copy files that shouldn't be modified
                 if (config.get('coreSrc').length > 0) {
                     vinyl.src(config.get('coreSrc'), { base: config.get('templateDir') })
                         .pipe(vinyl.dest(modDir))
@@ -56,6 +65,7 @@ async function copyTemplate(params) {
     });
 }
 
+// Copies contents of placeholder.mod file to modsDir/modName/bundleDir/modName.mod
 async function createPlaceholderModFile(modName) {
 
     let bundleDir = await _setUpBundleDir(modName);
@@ -67,6 +77,7 @@ async function createPlaceholderModFile(modName) {
     await pfs.copyFile(placeholderModFilePath, modFilePath);
 }
 
+// Copies contents of placeholder bundle to modsDir/modName/bundleDir/
 async function createPlaceholderBundle(modName) {
 
     let bundleDir = await _setUpBundleDir(modName);
@@ -77,7 +88,7 @@ async function createPlaceholderBundle(modName) {
     await pfs.copyFile(placeholderBundle, bundleFilePath);
 }
 
-
+// Creates bundle dir if it doesn't exist, return its path
 async function _setUpBundleDir(modName) {
     let bundleDir = modTools.getDefaultBundleDir(modName);
 

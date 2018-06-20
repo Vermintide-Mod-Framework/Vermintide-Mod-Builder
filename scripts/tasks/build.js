@@ -9,6 +9,7 @@ module.exports = async function taskBuild() {
 
     let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await modTools.getBuildParams();
 
+    // Only print what we're gonna build if there's more than one mod
     if (modNames.length > 1) {
         console.log(`Mods to build:`);
         for (let modName of modNames) {
@@ -20,6 +21,7 @@ module.exports = async function taskBuild() {
         return { exitCode, finished: true };
     }
 
+    // Find where mod sdk is
     let toolsDir;
     try {
         toolsDir = await modTools.getModToolsDir();
@@ -29,6 +31,7 @@ module.exports = async function taskBuild() {
         return { exitCode: 1, finished: true };
     }
 
+    // Batch build mods
     for (let { modName, error } of await modTools.validateModNames(modNames, false)) {
 
         if (error) {
@@ -38,7 +41,13 @@ module.exports = async function taskBuild() {
         }
 
         try {
-            await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+            await builder.buildMod(toolsDir, modName, {
+                shouldRemoveTemp,
+                makeWorkshopCopy,
+                verbose,
+                ignoreBuildErrors,
+                modId
+            });
         }
         catch (error) {
             print.error(error);
