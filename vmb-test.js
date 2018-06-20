@@ -63,7 +63,7 @@ async function runTest(name, params, config) {
         '--debug'
     ];
 
-    params.concat(defaultParams);
+    params = params.concat(defaultParams);
 
     let { exitCode } = await vmb(params, config);
 
