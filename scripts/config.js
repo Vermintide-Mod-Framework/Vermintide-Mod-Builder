@@ -44,6 +44,9 @@ let defaultData = {
     bundle_extension1: '',
     bundle_extension2: '.mod_bundle',
 
+    use_external_mod_file1: false,
+    use_external_mod_file2: false,
+
     template_dir: ".template-vmf",
 
     template_preview_image: "item_preview.jpg",
@@ -88,6 +91,8 @@ let values = {
     // Folder in which the built bundle is gonna be stored before being copied to workshop folder
     defaultBundleDir: undefined,
     bundleExtension: undefined,
+    modFileExtension: '.mod',
+    useExternalModFile: undefined,
 
     // Files in template
     coreSrc: undefined,
@@ -159,13 +164,13 @@ async function parseData() {
     values.gameId = _getGameSpecificKey('game_id');
     values.toolsId = _getGameSpecificKey('tools_id');
 
-
     values.defaultBundleDir = 'bundleV' + values.gameNumber;
     values.bundleExtension = _getGameSpecificKey('bundle_extension');
+    values.useExternalModFile = _getGameSpecificKey('use_external_mod_file', 'boolean');
 
     // Other config params
-    values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir') || '');
-    values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir') || '');
+    values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir'));
+    values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir'));
     values.ignoredDirs = data.ignored_dirs || [];
 
     values.templateDir = _getTemplateDir(data.template_dir || '');
@@ -260,11 +265,11 @@ async function _readData(filepath, shouldReset) {
     }
 }
 
-function _getGameSpecificKey(key){
+function _getGameSpecificKey(key, type = 'string'){
     let id = data[key + values.gameNumber] || defaultData[key + values.gameNumber];
 
-    if (typeof id != 'string') {
-        throw new Error(`Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a string.`);
+    if (typeof id != type) {
+        throw new Error(`Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a ${type}.`);
     }
 
     return id;

@@ -1,4 +1,5 @@
 const vdf = require('vdf');
+const crypto = require('crypto');
 
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
@@ -290,6 +291,12 @@ async function getBuildParams() {
     return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
 }
 
+function hashModName(data) {
+    data = String(data).toLowerCase();
+    var hash = crypto.createHash('md5').update(data, 'utf-8').digest('hex');
+    return hash.substring(0, 16);
+}
+
 
 modTools.validateModNames = validateModNames;
 modTools.validModName = validModName;
@@ -302,6 +309,7 @@ modTools.getModDir = getModDir;
 modTools.getTempDir = getTempDir;
 modTools.getBundleDir = getBundleDir;
 modTools.getDefaultBundleDir = getDefaultBundleDir;
+modTools.hashModName = hashModName;
 
 modTools.getWorkshopParams = getWorkshopParams;
 modTools.getFirstModName = getFirstModName;

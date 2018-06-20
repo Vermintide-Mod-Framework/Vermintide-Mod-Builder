@@ -2,6 +2,7 @@ const child_process = require('child_process');
 const vinyl = require('vinyl-fs');
 const rename = require('gulp-rename');
 const del = require('del');
+const merge = require('merge-stream');
 
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
@@ -44,7 +45,7 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
 
     let modWorkshopDir = makeWorkshopCopy && await _getModWorkshopDir(modName, modId);
     await _cleanBundleDirs(bundleDir, modWorkshopDir);
-    await _copyBundle(modName, buildDir, bundleDir, modWorkshopDir);
+    await _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir);
 
     console.log(`Successfully built ${modName}`);
 }
@@ -178,28 +179,39 @@ async function _getModWorkshopDir(modName, modId) {
     return path.combine(workshopDir, String(modId));
 }
 
-async function _copyBundle(modName, buildDir, bundleDir, modWorkshopDir) {
+async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
         console.log(`Copying to "${bundleDir}"`);
 
-        let gulpStream = vinyl.src([
+        let useExternalModFile = config.get('useExternalModFile');
+
+        let modFileStream = null;
+        if (useExternalModFile) {
+            modFileStream = vinyl.src([
+                modTools.getModDir(modName) + '/*' + config.get('modFileExtension')
+            ], { base: modTools.getModDir(modName)});
+        }
+
+        let bundleStream = vinyl.src([
             buildDir + '/*([0-f])',
             '!' + buildDir + '/dlc'
         ], { base: buildDir })
             .pipe(rename(p => {
                 p.extname = config.get('bundleExtension');
             }))
-            .on('error', reject)
-            .pipe(vinyl.dest(bundleDir))
             .on('error', reject);
+
+        let mergedStream = useExternalModFile ? merge(modFileStream, bundleStream) : bundleStream;
+
+        mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
 
         if (modWorkshopDir) {
             console.log(`Copying to "${modWorkshopDir}"`);
-            gulpStream = gulpStream.pipe(vinyl.dest(modWorkshopDir)).on('error', reject);
+            mergedStream = mergedStream.pipe(vinyl.dest(modWorkshopDir)).on('error', reject);
         }
 
-        gulpStream.on('end', () => {
+        mergedStream.on('end', () => {
             resolve();
         });
     });
@@ -208,13 +220,22 @@ async function _copyBundle(modName, buildDir, bundleDir, modWorkshopDir) {
 async function _cleanBundleDirs(bundleDir, modWorkshopDir) {
 
     let bundleMask = '*' + config.get('bundleExtension');
-    let modBundleMask = path.combine(bundleDir, bundleMask);
-    let workshopBundleMask = modWorkshopDir ? path.combine(modWorkshopDir, bundleMask) : null;
+    let modMask = '*' + config.get('modFileExtension');
 
-    await del([modBundleMask], { force: true });
+    let modBundleMask = [
+        path.combine(bundleDir, bundleMask),
+        path.combine(bundleDir, modMask),
+    ];
+
+    let workshopBundleMask = modWorkshopDir ? [
+        path.combine(modWorkshopDir, bundleMask),
+        path.combine(modWorkshopDir, modMask),
+    ] : null;
+
+    await del(modBundleMask, { force: true });
 
     if (workshopBundleMask) {
-        await del([workshopBundleMask], { force: true });
+        await del(workshopBundleMask, { force: true });
     }
 }
 

@@ -7,7 +7,6 @@ const config = require('../config');
 const print = require('../print');
 
 const modTools = require('../tools/mod_tools');
-const buildMod = require('../tools/builder');
 const uploader = require('../tools/uploader');
 const templater = require('../tools/templater');
 
@@ -36,6 +35,14 @@ module.exports = async function taskCreate() {
 
     try {
         await templater.copyTemplate(params);
+
+        if (config.get('useExternalModFile')) {
+            await templater.createPlaceholderModFile(modName);
+        }
+        else {
+            await templater.createPlaceholderBundle(modName);
+        }
+
         await cfg.writeFile(params);
 
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);

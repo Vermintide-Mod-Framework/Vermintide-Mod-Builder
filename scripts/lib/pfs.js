@@ -104,4 +104,16 @@ pfs.copyIfDoesntExist = async function (sourceFile, destFile) {
     });
 };
 
+pfs.copyFile = async function (sourceFile, destFile) {
+    return await new Promise((resolve, reject) => {
+        fs.createReadStream(sourceFile)
+            .on('error', reject)
+            .pipe(fs.createWriteStream(destFile))
+            .on('error', reject)
+            .on('close', () => {
+                resolve();
+            });
+    });
+};
+
 module.exports = pfs;

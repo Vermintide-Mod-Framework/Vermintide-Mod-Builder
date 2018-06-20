@@ -1,7 +1,6 @@
 const vinyl = require('vinyl-fs');
 const replace = require('gulp-replace');
 const rename = require('gulp-rename');
-const fs = require('fs');
 
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
@@ -59,24 +58,35 @@ let templater = module.exports = {
         });
     },
 
-    async copyPlaceholderBundle(modName) {
+    async createPlaceholderModFile(modName) {
 
-        let bundleDir = modTools.getDefaultBundleDir(modName);
+        let bundleDir = await _setUpBundleDir(modName);
 
-        if (!await pfs.accessible(bundleDir)) {
-            await pfs.mkdir(bundleDir);
-        }
+        let modFileExtenstion = config.get('modFileExtension');
+        let placeholderModFilePath = path.join(`${__dirname}`, `/../../embedded/placeholder${modFileExtenstion}`);
+        let modFilePath = path.combine(bundleDir, modName + modFileExtenstion);
+
+        await pfs.copyFile(placeholderModFilePath, modFilePath);
+    },
+
+    async createPlaceholderBundle(modName) {
+
+        let bundleDir = await _setUpBundleDir(modName);
 
         let placeholderBundle = path.join(`${__dirname}`, `/../../embedded/placeholderV${config.get('gameNumber')}`);
+        let bundleFilePath = path.combine(bundleDir, modTools.hashModName(modName) + config.get('bundleExtension'));
 
-        return await new Promise((resolve, reject) => {
-            fs.createReadStream(placeholderBundle)
-                .on('error', reject)
-                .pipe(fs.createWriteStream(path.combine(bundleDir, modTools.hashModName(modName) + config.get('bundleExtension'))))
-                .on('error', reject)
-                .on('close', () => {
-                    resolve();
-                });
-        });
+        await pfs.copyFile(placeholderBundle, bundleFilePath);
     }
 };
+
+
+async function _setUpBundleDir(modName) {
+    let bundleDir = modTools.getDefaultBundleDir(modName);
+
+    if (!await pfs.accessible(bundleDir)) {
+        await pfs.mkdir(bundleDir);
+    }
+
+    return bundleDir;
+}
