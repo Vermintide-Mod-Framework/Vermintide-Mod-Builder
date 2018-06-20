@@ -46,7 +46,7 @@ let defaultData = {
     bundle_extension2: '.mod_bundle',
 
     use_new_format1: false,
-    use_new_format2: true,
+    use_new_format2: false,
 
     template_dir: ".template-vmf",
 
