@@ -125,7 +125,7 @@ async function readData(optionalData) {
 
     let exeDir = cl.get('cwd') ? process.cwd() : path.dirname(process.execPath);
     let dir;
-    let filename = optionalData ? optionalData.toString() : values.filename;
+    let filename = values.filename = optionalData ? optionalData.toString() : values.filename;
 
     if(cl.get('rc')){
         dir = path.absolutify(cl.get('rc'));
