@@ -8,7 +8,7 @@ const config = require('../config');
 const print = require('../print');
 
 const modTools = require('../tools/mod_tools');
-const buildMod = require('../tools/builder');
+const builder = require('../tools/builder');
 const uploader = require('../tools/uploader');
 const templater = require('../tools/templater');
 
@@ -33,7 +33,7 @@ module.exports = async function taskPublish() {
     try {
 
         let toolsDir = await modTools.getModToolsDir();
-        await buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, buildParams.verbose, buildParams.ignoreBuildErrors, null);
+        await builder.buildMod(toolsDir, modName, buildParams.shouldRemoveTemp, false, buildParams.verbose, buildParams.ignoreBuildErrors, null);
 
         console.log();
         await pfs.copyIfDoesntExist(

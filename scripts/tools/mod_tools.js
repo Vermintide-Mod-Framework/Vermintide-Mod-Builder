@@ -10,8 +10,6 @@ const cfg = require('../cfg');
 const print = require('../print');
 const cl = require('../cl');
 
-let modTools = module.exports;
-
 async function validateModNames(modNames, cfgMustExist) {
 
     let modInfo = [];
@@ -22,12 +20,12 @@ async function validateModNames(modNames, cfgMustExist) {
             continue;
         }
 
-        let modDir = modTools.getModDir(modName);
+        let modDir = getModDir(modName);
 
         let error = '';
         let cfgExists = await cfg.fileExists(modName);
 
-        if (!modTools.validModName(modName)) {
+        if (!validModName(modName)) {
             error = `Folder name "${modDir}" is invalid`;
         }
         else if (!await pfs.accessible(modDir + '/')) {
@@ -122,7 +120,7 @@ async function getSteamAppsDir(appId){
 }
 
 async function getAppDir(appId) {
-    let steamAppsDir = await modTools.getSteamAppsDir(appId);
+    let steamAppsDir = await getSteamAppsDir(appId);
     let appManifestName = `appmanifest_${appId}.acf`;
     let data;
 
@@ -155,7 +153,7 @@ async function getModToolsDir() {
     else{
 
         try {
-            toolsDir = await modTools.getAppDir(config.get('toolsId'));
+            toolsDir = await getAppDir(config.get('toolsId'));
         }
         catch (err) {
             print.error(err);
@@ -194,7 +192,7 @@ async function getWorkshopDir() {
     else {
 
         try {
-            steamAppsDir = await modTools.getSteamAppsDir(gameId);
+            steamAppsDir = await getSteamAppsDir(gameId);
         }
         catch (err) {
             print.error(err);
@@ -234,11 +232,11 @@ async function getBundleDir(modName) {
         throw new Error(`No 'content' value specified in "${cfg.getPath(modName)}"`);
     }
 
-    return path.absolutify(path.fix(bundleDir), modTools.getModDir(modName));
+    return path.absolutify(path.fix(bundleDir), getModDir(modName));
 }
 
 function getDefaultBundleDir(modName) {
-    return path.absolutify(config.get('defaultBundleDir'), modTools.getModDir(modName));
+    return path.absolutify(config.get('defaultBundleDir'), getModDir(modName));
 }
 
 // Returns an object with all create/upload/publish params
@@ -292,7 +290,7 @@ async function getBuildParams() {
 }
 
 function getModFilePath(modName) {
-    return path.combine(modTools.getModDir(modName), modName + config.get('modFileExtension'));
+    return path.combine(getModDir(modName), modName + config.get('modFileExtension'));
 }
 
 function hashModName(data) {
@@ -302,21 +300,21 @@ function hashModName(data) {
 }
 
 
-modTools.validateModNames = validateModNames;
-modTools.validModName = validModName;
-modTools.getModId = getModId;
-modTools.getSteamAppsDir = getSteamAppsDir;
-modTools.getAppDir = getAppDir;
-modTools.getModToolsDir = getModToolsDir;
-modTools.getWorkshopDir = getWorkshopDir;
-modTools.getModDir = getModDir;
-modTools.getTempDir = getTempDir;
-modTools.getBundleDir = getBundleDir;
-modTools.getDefaultBundleDir = getDefaultBundleDir;
-modTools.getModFilePath = getModFilePath;
-modTools.hashModName = hashModName;
+exports.validateModNames = validateModNames;
+exports.validModName = validModName;
+exports.getModId = getModId;
+exports.getSteamAppsDir = getSteamAppsDir;
+exports.getAppDir = getAppDir;
+exports.getModToolsDir = getModToolsDir;
+exports.getWorkshopDir = getWorkshopDir;
+exports.getModDir = getModDir;
+exports.getTempDir = getTempDir;
+exports.getBundleDir = getBundleDir;
+exports.getDefaultBundleDir = getDefaultBundleDir;
+exports.getModFilePath = getModFilePath;
+exports.hashModName = hashModName;
 
-modTools.getWorkshopParams = getWorkshopParams;
-modTools.getFirstModName = getFirstModName;
-modTools.getModNames = getModNames;
-modTools.getBuildParams = getBuildParams;
+exports.getWorkshopParams = getWorkshopParams;
+exports.getFirstModName = getFirstModName;
+exports.getModNames = getModNames;
+exports.getBuildParams = getBuildParams;

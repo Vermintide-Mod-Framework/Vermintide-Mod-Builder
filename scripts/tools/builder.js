@@ -247,4 +247,4 @@ async function _cleanBundleDirs(bundleDir, modWorkshopDir) {
     }
 }
 
-module.exports = buildMod;
+exports.buildMod = buildMod;

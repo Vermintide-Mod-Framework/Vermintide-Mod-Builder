@@ -3,7 +3,7 @@ const watcher = require('glob-watcher');
 const print = require('../print');
 
 const modTools = require('../tools/mod_tools');
-const buildMod = require('../tools/builder');
+const builder = require('../tools/builder');
 
 module.exports = async function taskWatch() {
 
@@ -54,7 +54,7 @@ module.exports = async function taskWatch() {
         watcher(src, async (callback) => {
 
             try {
-                await buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
+                await builder.buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId);
             }
             catch (error) {
                 print.error(error);
