@@ -17,11 +17,16 @@ module.exports = async function taskPublish() {
 
     let exitCode = 0;
 
-    let params = modTools.getWorkshopParams();
+    // Publish and build params
+    let params;
     let buildParams = await modTools.getBuildParams();
 
+    // Make sure that params are valid and mod hasn't been published already
     try {
-        await _validateParams(params);
+        params = await _getPublishParams(params);
+
+        // Validate template - we'll be copying image preview from it
+        await templater.validateTemplate(config.get('templateDir'));
     }
     catch (error) {
         print.error(error);
@@ -33,7 +38,10 @@ module.exports = async function taskPublish() {
 
     try {
 
+        // Get path to sdk
         let toolsDir = await modTools.getModToolsDir();
+
+        // Build mod
         await builder.buildMod(toolsDir, modName, {
             shouldRemoveTemp: buildParams.shouldRemoveTemp,
             makeWorkshopCopy: false,
@@ -43,12 +51,17 @@ module.exports = async function taskPublish() {
         });
 
         console.log();
+
+        // Copy item preview file if it doesn't exist so that uploading works
         await pfs.copyIfDoesntExist(
             path.combine(config.get('templateDir'), config.get('itemPreview')),
-            path.combine(modDir, config.get('itemPreview'))
+            path.combine(modDir, params.itemPreview)
         );
+
+        // Upload mod
         await uploader.uploadMod(toolsDir, modName);
 
+        // Print and open mod url
         let modId = await modTools.getModId(modName);
         let modUrl = uploader.formUrl(modId);
         console.log(`Uploaded to ${modUrl}`);
@@ -63,21 +76,29 @@ module.exports = async function taskPublish() {
     return { exitCode, finished: true };
 };
 
-async function _validateParams(params) {
+// Gets and validates publising params based on workshop uploading params
+async function _getPublishParams() {
+
+    // Get workshop uploading params
+    let params = modTools.getWorkshopParams();
+
+    // Default item preview image file name - we need it so uploading works
+    params.itemPreview = config.get('itemPreview');
 
     let modName = params.name;
     let modDir = modTools.getModDir(modName);
 
+    // Validate mod name
     if (!modTools.validModName(modName)) {
         throw new Error(`Folder name "${modDir}" is invalid`);
     }
 
+    // Make sure mod folder exists
     if (!await pfs.accessible(modDir + '/')) {
         throw new Error(`Folder "${modDir}" doesn't exist`);
     }
 
-    await templater.validateTemplate(config.get('templateDir'));
-
+    // Read .cfg file if it exists, or create it based on params
     let cfgData = '';
     try {
         cfgData = await cfg.readFile(modName);
@@ -88,6 +109,10 @@ async function _validateParams(params) {
 
     if (cfgData) {
 
+        // Take image preview file name from .cfg
+        params.itemPreview = cfg.getValue(cfgData, 'preview', 'string') || params.itemPreview;
+
+        // Check if mod has been published already
         if (cfg.getValue(cfgData, 'published_id', 'number')) {
 
             throw new Error(
@@ -96,6 +121,8 @@ async function _validateParams(params) {
             );
         }
 
-        console.log(`Using existing ${cfg.getBase()}`);
+        console.log(`Using existing ${cfg.getBase()}. Command line arguments will be ignored.`);
     }
+
+    return params;
 }
