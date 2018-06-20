@@ -1,6 +1,6 @@
 return {
 	run = function()
-		fassert(rawget(_G, "new_mod"), "%%name must be lower than Vermintide Mod Framework in your launcher's load order.")
+		fassert(rawget(_G, "new_mod"), "%%title must be lower than Vermintide Mod Framework in your launcher's load order.")
 
 		new_mod("%%name", {
 			mod_script       = "scripts/mods/%%name/%%name",
