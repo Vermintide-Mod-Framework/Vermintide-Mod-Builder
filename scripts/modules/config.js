@@ -326,8 +326,8 @@ function _getGameSpecificKey(key){
 // Gets absolute mods dir and temp dir from cl/config data
 async function _getModsDir(modsDir, tempDir) {
 
-    modsDir = path.fix(modsDir);
-    tempDir = path.fix(tempDir);
+    modsDir = modsDir ? path.fix(modsDir) : '';
+    tempDir = tempDir ? path.fix(tempDir) : '';
 
     // Set tempDir to modsDir/defaultTempDir if unspecified
     let unspecifiedTempDir = !tempDir;
@@ -348,6 +348,10 @@ async function _getModsDir(modsDir, tempDir) {
             tempDir = path.combine(modsDir, defaultTempDir);
         }
 
+    }
+
+    if(!modsDir) {
+        throw new Error(`Mods folder unspecified. Use "." to point to current folder.`);
     }
 
     modsDir = path.absolutify(modsDir);
