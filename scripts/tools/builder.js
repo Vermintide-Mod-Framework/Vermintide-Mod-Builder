@@ -20,17 +20,18 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
     console.log(`\nPreparing to build ${modName}`);
 
     let modFilePath = modTools.getModFilePath(modName);
-    if (config.get('useExternalModFile') && !await pfs.accessible(modFilePath)) {
+    if (config.get('useNewFormat') && !await pfs.accessible(modFilePath)) {
         throw new Error(`File "${modFilePath}" not found`);
     }
 
     let modTempDir = modTools.getTempDir(modName);
     let dataDir = path.combine(modTempDir, 'compile');
     let buildDir = path.combine(modTempDir, 'bundle');
+    let cfgExists = await cfg.fileExists(modName);
 
     await _checkTempFolder(modName, shouldRemoveTemp);
 
-    if (!modId && makeWorkshopCopy && !await cfg.fileExists(modName)) {
+    if (!modId && makeWorkshopCopy && !cfgExists) {
         throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
     }
 
@@ -40,17 +41,25 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
     let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
-    let bundleDir;
-    try {
-        bundleDir = await modTools.getBundleDir(modName);
-    }
-    catch (error) {
-        print.warn(error);
-        bundleDir = modTools.getDefaultBundleDir(modName);
+    let bundleDir = modTools.getDefaultBundleDir(modName);
+    if (cfgExists) {
+        try {
+            bundleDir = await modTools.getBundleDir(modName);
+        }
+        catch (error) {
+            error.message += `\nDefault bundle folder "${bundleDir}" will be used.`;
+            print.warn(error);
+        }
     }
 
-    let modWorkshopDir = makeWorkshopCopy && await _getModWorkshopDir(modName, modId);
-    await _cleanBundleDirs(bundleDir, modWorkshopDir);
+    await _cleanBundleDir(bundleDir);
+
+    let modWorkshopDir;
+    if(makeWorkshopCopy) {
+        modWorkshopDir = await _getModWorkshopDir(modName, modId);
+        await _cleanBundleDir(modWorkshopDir);
+    }
+
     await _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir);
 
     console.log(`Successfully built ${modName}`);
@@ -193,10 +202,10 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
 
         console.log(`Copying to "${bundleDir}"`);
 
-        let useExternalModFile = config.get('useExternalModFile');
+        let useNewFormat = config.get('useNewFormat');
 
         let modFileStream = null;
-        if (useExternalModFile) {
+        if (useNewFormat) {
             modFileStream = vinyl.src([
                 modTools.getModFilePath(modName)
             ], { base: modTools.getModDir(modName)});
@@ -207,11 +216,16 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
             '!' + buildDir + '/dlc'
         ], { base: buildDir })
             .pipe(rename(p => {
+
+                if(!config.get('useNewFormat')) {
+                    p.basename = modTools.hashModName(modName);
+                }
+
                 p.extname = config.get('bundleExtension');
             }))
             .on('error', reject);
 
-        let mergedStream = useExternalModFile ? merge(modFileStream, bundleStream) : bundleStream;
+        let mergedStream = useNewFormat ? merge(modFileStream, bundleStream) : bundleStream;
 
         mergedStream = mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
 
@@ -226,7 +240,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
     });
 }
 
-async function _cleanBundleDirs(bundleDir, modWorkshopDir) {
+async function _cleanBundleDir(bundleDir) {
 
     let bundleMask = '*' + config.get('bundleExtension');
     let modMask = '*' + config.get('modFileExtension');
@@ -236,16 +250,7 @@ async function _cleanBundleDirs(bundleDir, modWorkshopDir) {
         path.combine(bundleDir, modMask),
     ];
 
-    let workshopBundleMask = modWorkshopDir ? [
-        path.combine(modWorkshopDir, bundleMask),
-        path.combine(modWorkshopDir, modMask),
-    ] : null;
-
     await del(modBundleMask, { force: true });
-
-    if (workshopBundleMask) {
-        await del(workshopBundleMask, { force: true });
-    }
 }
 
 exports.buildMod = buildMod;

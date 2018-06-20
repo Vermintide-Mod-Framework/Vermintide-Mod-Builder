@@ -27,7 +27,7 @@ module.exports = async function taskWatch() {
 
     console.log();
 
-    for (let { modName, modDir, error } of await modTools.validateModNames(modNames, makeWorkshopCopy)) {
+    for (let { modName, modDir, error } of await modTools.validateModNames(modNames, makeWorkshopCopy && !modId)) {
 
         if (error) {
             print.error(error);

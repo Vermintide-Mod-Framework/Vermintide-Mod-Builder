@@ -45,8 +45,8 @@ let defaultData = {
     bundle_extension1: '',
     bundle_extension2: '.mod_bundle',
 
-    use_external_mod_file1: false,
-    use_external_mod_file2: false,
+    use_new_format1: false,
+    use_new_format2: true,
 
     template_dir: ".template-vmf",
 
@@ -93,7 +93,7 @@ let values = {
     defaultBundleDir: undefined,
     bundleExtension: undefined,
     modFileExtension: '.mod',
-    useExternalModFile: undefined,
+    useNewFormat: undefined,
 
     // Files in template
     coreSrc: undefined,
@@ -167,7 +167,7 @@ async function parseData() {
 
     values.defaultBundleDir = 'bundleV' + values.gameNumber;
     values.bundleExtension = _getGameSpecificKey('bundle_extension');
-    values.useExternalModFile = _getGameSpecificKey('use_external_mod_file', 'boolean');
+    values.useNewFormat = _getGameSpecificKey('use_new_format', 'boolean');
 
     // Other config params
     values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir'));
@@ -267,13 +267,17 @@ async function _readData(filepath, shouldReset) {
 }
 
 function _getGameSpecificKey(key, type = 'string'){
-    let id = data[key + values.gameNumber] || defaultData[key + values.gameNumber];
+    let value = data[key + values.gameNumber];
 
-    if (typeof id != type) {
+    if(value === undefined) {
+        value = defaultData[key + values.gameNumber]
+    }
+
+    if (typeof value != type) {
         throw new Error(`Failed to find '${key + values.gameNumber}' in ${values.filename}. It must be a ${type}.`);
     }
 
-    return id;
+    return value;
 }
 
 async function _getModsDir(modsDir, tempDir) {

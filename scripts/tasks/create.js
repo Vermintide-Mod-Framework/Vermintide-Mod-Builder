@@ -37,7 +37,7 @@ module.exports = async function taskCreate() {
     try {
         await templater.copyTemplate(params);
 
-        if (config.get('useExternalModFile')) {
+        if (config.get('useNewFormat')) {
             await templater.createPlaceholderModFile(modName);
         }
         else {
