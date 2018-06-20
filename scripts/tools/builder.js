@@ -18,7 +18,10 @@ const modTools = require('./mod_tools');
 async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let modDir = modTools.getModDir(modName);
+    let modFilePath = modTools.getModFilePath(modName);
+    if (config.get('useExternalModFile') && !await pfs.accessible(modFilePath)) {
+        throw new Error(`File "${modFilePath}" not found`);
+    }
 
     let modTempDir = modTools.getTempDir(modName);
     let dataDir = path.combine(modTempDir, 'compile');
@@ -31,6 +34,8 @@ async function buildMod(toolsDir, modName, shouldRemoveTemp, makeWorkshopCopy, v
     }
 
     console.log(`Building ${modName}`);
+
+    let modDir = modTools.getModDir(modName);
     let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
@@ -117,7 +122,10 @@ async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors) {
 
     if (code) {
-        print.error(`Stingray exited with error code: ${code}. Please check your scripts for syntax errors.`);
+        print.error(
+            `Stingray exited with error code: ${code}.\n` +
+            `Please check your scripts for syntax errors and .package files for invalid resource paths.`
+        );
     }
 
     let data = '';
@@ -189,7 +197,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
         let modFileStream = null;
         if (useExternalModFile) {
             modFileStream = vinyl.src([
-                modTools.getModDir(modName) + '/*' + config.get('modFileExtension')
+                modTools.getModFilePath(modName)
             ], { base: modTools.getModDir(modName)});
         }
 
@@ -204,7 +212,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
 
         let mergedStream = useExternalModFile ? merge(modFileStream, bundleStream) : bundleStream;
 
-        mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
+        mergedStream = mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
 
         if (modWorkshopDir) {
             console.log(`Copying to "${modWorkshopDir}"`);

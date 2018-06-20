@@ -291,6 +291,10 @@ async function getBuildParams() {
     return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
 }
 
+function getModFilePath(modName) {
+    return path.combine(modTools.getModDir(modName), modName + config.get('modFileExtension'));
+}
+
 function hashModName(data) {
     data = String(data).toLowerCase();
     var hash = crypto.createHash('md5').update(data, 'utf-8').digest('hex');
@@ -309,6 +313,7 @@ modTools.getModDir = getModDir;
 modTools.getTempDir = getTempDir;
 modTools.getBundleDir = getBundleDir;
 modTools.getDefaultBundleDir = getDefaultBundleDir;
+modTools.getModFilePath = getModFilePath;
 modTools.hashModName = hashModName;
 
 modTools.getWorkshopParams = getWorkshopParams;
