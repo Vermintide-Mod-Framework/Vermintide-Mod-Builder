@@ -35,8 +35,8 @@ function init() {
     let cfgArg = cl.get('cfg');
 
     // Set paths to custom cfg path, or use default one
-    if (cfgArg && typeof cfgArg == 'string') {
-        let cfgPath = path.parse(cfgArg);
+    if (cfgArg) {
+        let cfgPath = path.parse(String(cfgArg));
         setBase(cfgPath.base);
         setRelativeDir(cfgPath.dir);
     }
