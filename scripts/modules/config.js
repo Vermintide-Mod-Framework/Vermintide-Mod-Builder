@@ -163,13 +163,13 @@ async function readData(optionalData) {
     let shouldReset = cl.get('reset');
     data = optionalData || await _readData(path.combine(dir, filename), shouldReset);
 
-    _validateData();
+    _validateData(shouldReset);
 }
 
-function _validateData() {
+function _validateData(shouldReset) {
 
     if (!data || typeof data != 'object') {
-        throw new Error(`Invalid config data in ${filename}`);
+        throw new Error(`Invalid config data in ${values.filename}`);
     }
 
     // Merge with default values, overwrite if --reset flag was set
@@ -186,14 +186,14 @@ function _validateData() {
             // Check that value has the same type as default value
             if (!Array.isArray(value) && Array.isArray(defaultValue)) {
                 throw new Error(
-                    `Invalid value in ${filename}: ` +
+                    `Invalid value in ${values.filename}: ` +
                     `"${key}" must be of type array, was ${typeof value} instead.`
                 );
             }
 
             if (typeof value != typeof defaultValue) {
                 throw new Error(
-                    `Invalid value in ${filename}: ` +
+                    `Invalid value in ${values.filename}: ` +
                     `"${key}" must be of type ${typeof defaultValue}, was ${typeof value} instead.`
                 );
             }
