@@ -5,9 +5,9 @@ const gulp = require('gulp'),
 
 gulp.task('build', async function(callback) {
     try {
-        await applyVersion();
+        let version = await applyVersion();
         await pkg(['.']);
-        await zipVmb();
+        await zipVmb(version);
     }
     catch(err) {
         console.error(err);
@@ -15,7 +15,7 @@ gulp.task('build', async function(callback) {
     callback();
 });
 
-function zipVmb() {
+function zipVmb(version) {
     return new Promise((resolve, reject) => {
         gulp.src(
             [
@@ -28,7 +28,7 @@ function zipVmb() {
             ],
             { base: '.' }
         )
-            .pipe(zip('vmb.zip'))
+            .pipe(zip(`vmb-${version}.zip`))
             .pipe(gulp.dest('.'))
             .on('end', () => resolve())
             .on('error', (err) => {
@@ -43,4 +43,5 @@ async function applyVersion() {
     config = JSON.parse(config);
     let content = `module.exports = '${config.version}';\n`;
     await pfs.writeFile('./scripts/version.js', content);
+    return config.version;
 }
