@@ -49,6 +49,13 @@ async function _runUploader(toolsDir, uploaderParams) {
         }
     );
 
+    // Try loading robotjs module
+    let robotjs;
+    try {
+        robotjs = require('robotjs');
+    }
+    catch(err) {}
+
     let modId = '';
     ugc_tool.stdout.on('data', data => {
         data = String(data);
@@ -62,6 +69,11 @@ async function _runUploader(toolsDir, uploaderParams) {
                 modId = data.match(/publisher_id: (\d*)/)[1];
             }
             catch (err) { }
+        }
+        else if (robotjs && data.includes('Vermintide 2 End User License Agreement')) {
+
+            // Agree to EULA by simulating keypress
+            robotjs.keyTap('Y');
         }
     });
 

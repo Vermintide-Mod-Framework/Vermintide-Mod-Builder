@@ -21,13 +21,14 @@
     "merge-stream": "^1.0.1",
     "normalize-path": "^3.0.0",
     "opn": "^5.2.0",
+    "robotjs": "^0.5.1",
     "vdf": "0.0.2",
     "vinyl-fs": "^3.0.3"
   },
   "devDependencies": {
-    "pkg": "^4.3.1",
     "gulp": "^4.0.0",
-    "gulp-vinyl-zip": "^2.1.0"
+    "gulp-vinyl-zip": "^2.1.0",
+    "pkg": "^4.3.1"
   },
   "scripts": {
     "start": "node vmb.js",

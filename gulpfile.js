@@ -1,4 +1,5 @@
 const gulp = require('gulp'),
+      merge = require('merge-stream'),
       pfs = require('./scripts/lib/pfs'),
       zip = require('gulp-vinyl-zip').zip,
       pkg = require('pkg').exec;
@@ -17,7 +18,8 @@ gulp.task('build', async function(callback) {
 
 function zipVmb(version) {
     return new Promise((resolve, reject) => {
-        gulp.src(
+
+        let s1 = gulp.src(
             [
                 '.template/**/*',
                 '.template-vmf/**/*',
@@ -27,8 +29,16 @@ function zipVmb(version) {
                 'LICENSE'
             ],
             { base: '.' }
-        )
-            .pipe(zip(`vmb-${version}.zip`))
+        );
+
+        let s2 = gulp.src(
+            [
+                'node_modules/robotjs/build/Release/robotjs.node'
+            ],
+            { base: './node_modules/robotjs/build/Release/' }
+        );
+
+        merge(s1, s2).pipe(zip(`vmb-${version}.zip`))
             .pipe(gulp.dest('.'))
             .on('end', () => resolve())
             .on('error', (err) => {
