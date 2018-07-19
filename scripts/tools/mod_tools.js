@@ -11,7 +11,7 @@ const config = require('../modules/config');
 const cfg = require('../modules/cfg');
 const cl = require('../modules/cl');
 
-// Checks an array of mod names, returns a new array 
+// Checks an array of mod names, returns a new array
 // that contains modName, modDir, whether mod has .cfg file and an error message
 async function validateModNames(modNames, cfgMustExist) {
 
@@ -254,10 +254,13 @@ function getTempDir(modName) {
 
 // Gets bundle dir location from mod's .cfg file
 async function getBundleDir(modName) {
-    let cfgData = await cfg.readFile(modName);
+    return getBundleDirFromData(await cfg.readFile(modName));
+}
+
+function getBundleDirFromData(modName, cfgData) {
 
     let bundleDir = cfg.getValue(cfgData, 'content', 'string');
-    if(typeof bundleDir != 'string') {
+    if (typeof bundleDir != 'string') {
         throw new Error(`No 'content' value specified in "${cfg.getPath(modName)}"`);
     }
 
@@ -347,6 +350,7 @@ exports.getWorkshopDir = getWorkshopDir;
 exports.getModDir = getModDir;
 exports.getTempDir = getTempDir;
 exports.getBundleDir = getBundleDir;
+exports.getBundleDirFromData = getBundleDirFromData;
 exports.getDefaultBundleDir = getDefaultBundleDir;
 exports.getModFilePath = getModFilePath;
 exports.hashModName = hashModName;

@@ -19,7 +19,7 @@ const modTools = require('./mod_tools');
 async function buildMod(toolsDir, modName, params) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId } = params;
+    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource } = params;
 
     // Check that modName.mod file exists in the mod folder
     let modFilePath = modTools.getModFilePath(modName);
@@ -35,20 +35,13 @@ async function buildMod(toolsDir, modName, params) {
     // Print if temp folder exists, optionally remove it
     await _checkTempFolder(modName, shouldRemoveTemp);
 
-    // Since this method if used in publish task that doesn't have use modTools.validateModNames,
+    // Since this method, if used in publish task, doesn't use modTools.validateModNames,
     // we need to check that .cfg file exists here
     // --id=<item_id> and --no-workshop allow .cfg to be absent
     let cfgExists = await cfg.fileExists(modName);
     if (!modId && makeWorkshopCopy && !cfgExists) {
         throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
     }
-
-    console.log(`Building ${modName}`);
-
-    // Run stingray and process its output
-    let modDir = modTools.getModDir(modName);
-    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
-    await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
     // Only read bundle folder from .cfg file if it exists, otherwise use default folder
     let bundleDir = modTools.getDefaultBundleDir(modName);
@@ -62,6 +55,19 @@ async function buildMod(toolsDir, modName, params) {
         }
     }
 
+    let sourcePath = path.combine(bundleDir, 'source');
+    if (await pfs.accessible(sourcePath)) {
+        console.log('Deleting source folder');
+        await pfs.deleteDirectory(sourcePath);
+    }
+
+    console.log(`Building ${modName}`);
+
+    // Run stingray and process its output
+    let modDir = modTools.getModDir(modName);
+    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
+    await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
+
     // Remove bundle and .mod files from bundle folders
     await _cleanBundleDir(bundleDir);
 
@@ -73,6 +79,11 @@ async function buildMod(toolsDir, modName, params) {
 
     // Copy bundle and .mod file to bundleDir and optionally modWorkshopDir
     await _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir);
+
+    copySource = true;
+    if (copySource) {
+        await _copySourceCode(modName, bundleDir);
+    }
 
     console.log(`Successfully built ${modName}`);
 }
@@ -277,6 +288,62 @@ async function _cleanBundleDir(bundleDir) {
     ];
 
     await del(modBundleMask, { force: true });
+}
+
+async function _copySourceCode(modName, targetBundleDir) {
+    let modDir = modTools.getModDir(modName);
+    let fileNames = await pfs.getFileNames(modDir);
+    let bundleDirs = [targetBundleDir];
+    let itemPreviews = [];
+
+    for(let fileName of fileNames) {
+
+        let filePath = path.combine(modDir, fileName);
+
+        if (path.parse(filePath).ext == '.cfg' && await pfs.accessible(filePath)) {
+            try {
+                let cfgData = await pfs.readFile(filePath, 'utf8');
+
+                let bundleDir = modTools.getBundleDirFromData(modName, cfgData);
+                bundleDirs.push(bundleDir);
+
+                let itemPreview = cfg.getValue(cfgData, 'preview', 'string');
+                itemPreviews.push(path.combine(modDir, itemPreview));
+            }
+            catch (err) {
+                print.warn(err);
+            }
+        }
+
+    }
+
+    let src = [
+        path.combine(modDir, '/**/*'),
+        '!' + path.combine(modDir, '/*.cfg')
+    ];
+
+    for(let bundleDir of bundleDirs) {
+        if(bundleDir) {
+            src.push('!' + bundleDir);
+            src.push('!' + bundleDir + '/**');
+        }
+    }
+
+    for (let itemPreview of itemPreviews) {
+        if (itemPreview) {
+            src.push('!' + itemPreview);
+        }
+    }
+
+    let sourcePath = path.combine(targetBundleDir, 'source');
+    return await new Promise(function(resolve, reject) {
+        vinyl.src(src, {base: modDir})
+            .pipe(vinyl.dest(sourcePath))
+            .on('error', reject)
+            .on('end', () => {
+                resolve();
+            });
+    });
 }
 
 exports.buildMod = buildMod;
