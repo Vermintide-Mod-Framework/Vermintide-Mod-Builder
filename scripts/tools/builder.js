@@ -60,6 +60,7 @@ async function buildMod(toolsDir, modName, params) {
         }
         print.warn(error);
     }
+
     // Get bundle dirs and item previews from all .cfg files
     let { bundleDirs, itemPreviews } = await getRelevantCfgParams(modName, bundleDir, itemPreview);
 
@@ -99,18 +100,16 @@ async function _checkTempFolder(modName, shouldRemove) {
     let tempExists = await pfs.accessible(tempDir);
 
     if (tempExists && shouldRemove) {
-        return await new Promise((resolve, reject) => {
-            child_process.exec(`rmdir /s /q "${tempDir}"`, error => {
 
-                if (error) {
-                    error.message += '\nFailed to delete temp folder';
-                    return reject(error);
-                }
+        try {
+            await pfs.deleteDirectory(tempDir);
+        }
+        catch (error) {
+            error.message += '\nFailed to delete temp folder';
 
-                console.log(`Removed ${tempDir}`);
-                return resolve();
-            });
-        });
+        }
+
+        console.log(`Removed ${tempDir}`);
     }
     else if (tempExists) {
         console.log(`Overwriting temp folder`);
@@ -169,7 +168,7 @@ async function _processStingrayOutput(modName, dataDir, code, ignoreBuildErrors)
     if (code) {
         print.error(
             `Stingray exited with error code: ${code}.\n` +
-            `Please check your scripts for syntax errors and .package files for invalid resource paths.`
+            `Check your scripts for syntax errors and .package files for invalid resource paths.`
         );
     }
 
