@@ -389,7 +389,7 @@ function _getGameNumber(gameNumber) {
     return gameNumber;
 }
 
-// Gets absolute template path from cl/config data 
+// Gets absolute template path from cl/config data
 function _getTemplateDir(templateDir) {
     let newTemplateDir = cl.get('template') || '';
 

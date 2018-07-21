@@ -9,7 +9,7 @@ module.exports = async function taskWatch() {
 
     let exitCode = 0;
 
-    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors } = await modTools.getBuildParams();
+    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource } = await modTools.getBuildParams();
 
     if (modNames.length === 0) {
         console.log(`No mods to watch`);
@@ -47,14 +47,20 @@ module.exports = async function taskWatch() {
             bundleDir = modTools.getDefaultBundleDir(modName);
         }
 
+        let { bundleDirs } = await builder.getRelevantCfgParams(modName, bundleDir);
+
         // These files will be watched
         let src = [
             modDir,
 
-            // Ignore temp files stingray creates and folder with built files
-            '!' + modDir + '/*.tmp',
-            '!' + bundleDir + '/*'
+            // Ignore temp files stingray creates
+            '!' + modDir + '/*.tmp'
         ];
+
+        // Ignore folders with built files
+        for (let bundleDir of bundleDirs) {
+            src.push('!' + bundleDir + '/**');
+        }
 
         watch(src, async (callback) => {
 
@@ -64,7 +70,8 @@ module.exports = async function taskWatch() {
                     makeWorkshopCopy,
                     verbose,
                     ignoreBuildErrors,
-                    modId
+                    modId,
+                    copySource
                 });
             }
             catch (error) {

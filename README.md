@@ -6,7 +6,6 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 ### Prerequisites
 
 1. Vermintide Mod SDK must be installed. Look for *"Warhammer: End Times - Vermintide Mod SDK Pre-Alpha"* for Vermintide 1 and *"Warhammer: Vermintide 2 SDK (Alpha)"* for Vermintide 2 in the Tools section in your Steam library.  
-5. [V2 ONLY] Switch Vermintide 2 Mod SDK to the *latest* branch in Properties > Betas.  
 4. [V1 ONLY] For now, to enable mods in the launcher, find `launcher.config` in `%AppData%\Fatshark\Warhammer End Times Vermintide` and set `ModsEnabled` to `true`, or add `ModsEnabled = true` if it is missing.  
 3. Steam must be running for creating, publishing and uploading mods. 
 4. Subscribe to Vermintide Mod Framework on Steam workshop ([V1 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1289946781), [V2 version](https://steamcommunity.com/sharedfiles/filedetails/?id=1369573612)) and make sure that it is the first mod in the list in the launcher if you want VMF-dependent mods to work.
@@ -16,7 +15,7 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 1. Download and export **[the latest release](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/releases)**.  
 2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are going to be created, built and uploaded by default.   
-4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it. Note that the mod you're subscribing to is not functional at this stage and will prevent you from entering the game until you build it properly.   
+4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it.     
 5. The main functionality of your mod should be added to `<mod_name>/scripts/mods/<mod_name>/<mod_name>.lua`.  
 6. To build the mod, run `vmb build <mod_name>`.  
 7. To upload an updated version of your mod, run `vmb upload <mod_name>`.  
@@ -41,7 +40,7 @@ Run without command to see version number and a list of commands with parameters
 
 #### Create a mod from template:
 
-	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [-c <content_folder>] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload a placeholder mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
@@ -49,7 +48,7 @@ By default, the template is for VMF-dependent mods. To create a VMF-independent 
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [--tags "<tag1>; <tag2>;..."] [--ignore-errors] [--verbose] [--clean]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [-c <content_folder>] [--tags "<tag1>; <tag2>;..."] [--ignore-errors] [--verbose] [--clean] [--source]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
@@ -72,11 +71,11 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] 
+	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] [--source]
 
 #### Automatically build all or specified mods from current directory on changes:
 
-	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop]
+	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] [--source]
 
 Two of the commands above will build and copy the bundle to the bundleV1 or bundleV2 folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
@@ -86,6 +85,7 @@ You can also enable this parameter by default by setting `ignore_build_errors` i
 `--clean` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
 `--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the bundle folder in mod's folder.
+`--source` - this will copy the source code of the mod into `<bundle_folder>/source`. This includes all files inside the mod folder, except .cfg and item preview files, and excluding bundle folders.
 
 #### Quickly change configuration in .vmbrc:  
 	
@@ -96,10 +96,10 @@ Note that you can only set string, number and boolean-type options this way.
 
 #### Show information about all or some mods:  
 
-    vmb info [<mod_name1> <mod_name2>...] [--cfg]
+    vmb info [<mod_name1> <mod_name2>...] [--show-cfg]
 
 This will show the full path to the mod's folder, whether the mod has been published, when it was last built and whether `itemVX.cfg` file is present.  
-`--cfg` will also print the contents of the `itemVX.cfg` file.
+`--show-cfg` will also print the contents of the `itemVX.cfg` file.
 
 ### Configuration  
 

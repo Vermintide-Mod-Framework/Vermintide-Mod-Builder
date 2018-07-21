@@ -41,13 +41,14 @@ module.exports = async function taskCreate() {
 
         // Copy placeholder bundle or .mod file depending on format used
         if (config.get('useNewFormat')) {
-            await templater.createPlaceholderModFile(modName);
+            await templater.createPlaceholderModFile(modName, params.content);
         }
         else {
-            await templater.createPlaceholderBundle(modName);
+            await templater.createPlaceholderBundle(modName, params.content);
         }
 
         // Create .cfg file
+        params.filePath = cfg.getPath(modName);
         await cfg.writeFile(params);
 
         // Get path tosdk and upload mod

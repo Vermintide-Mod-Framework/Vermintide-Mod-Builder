@@ -26,7 +26,8 @@ async function validateModNames(modNames, cfgMustExist) {
         let modDir = getModDir(modName);
 
         let error = '';
-        let cfgExists = await cfg.fileExists(modName);
+        let cfgPath = cfg.getPath(modName);
+        let cfgExists = await pfs.accessible(cfgPath);
 
         if (!validModName(modName)) {
             error = `Folder name "${modDir}" is invalid`;
@@ -54,8 +55,9 @@ async function getModId(modName) {
 
     // Read .cfg file
     let cfgData;
+    let cfgPath = cfg.getPath(modName);
     try {
-        cfgData = await cfg.readFile(modName);
+        cfgData = await cfg.readFile(cfgPath);
     }
     catch(error) {
         throw new Error(`${cfg.getBase()} not found in ${cfg.getDir(modName)}`);
@@ -66,7 +68,7 @@ async function getModId(modName) {
 
     if (typeof modId != 'string') {
         throw new Error(
-            `Item ID not found in "${cfg.getPath(modName)}".\n` +
+            `Item ID not found in "${cfgPath}".\n` +
             `You need to publish your mod to workshop before you can work with it.\n` +
             `Alternatively, you can specify the workshop item id with --id param.`
         );
@@ -238,7 +240,7 @@ async function getWorkshopDir() {
 
     // workshop/content/gameId might not exist, so we append it after checking that the path is valid
     steamAppsDir = path.combine(steamAppsDir, 'workshop/content', gameId);
-    console.log(`Workshop folder ${steamAppsDir}`);
+    console.log(`Workshop folder "${steamAppsDir}"`);
     return steamAppsDir;
 }
 
@@ -254,16 +256,9 @@ function getTempDir(modName) {
 
 // Gets bundle dir location from mod's .cfg file
 async function getBundleDir(modName) {
-    return getBundleDirFromData(await cfg.readFile(modName));
-}
-
-function getBundleDirFromData(modName, cfgData) {
-
-    let bundleDir = cfg.getValue(cfgData, 'content', 'string');
-    if (typeof bundleDir != 'string') {
-        throw new Error(`No 'content' value specified in "${cfg.getPath(modName)}"`);
-    }
-
+    let cfgPath = cfg.getPath(modName);
+    let cfgData = await cfg.readFile(cfgPath);
+    let bundleDir = cfg.getMappedValue(cfgData, 'bundleDir', 'string');
     return path.absolutify(path.fix(bundleDir), getModDir(modName));
 }
 
@@ -284,6 +279,7 @@ function getWorkshopParams() {
         description: cl.get('d') || cl.get('desc') || cl.get('description') || modTitle + ' description',
         language: cl.get('l') || cl.get('language') || 'english',
         visibility: cl.get('v') || cl.get('visibility') || 'private',
+        content: cl.get('c') || cl.get('content'),
         tags: cl.get('tags') || ''
     };
 }
@@ -324,7 +320,9 @@ async function getBuildParams() {
     let makeWorkshopCopy = !cl.get('no-workshop');
     let ignoreBuildErrors = cl.get('e') || cl.get('ignore-errors') || cl.get('ignore-build-errors') || config.get('ignoreBuildErrors');
 
-    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors };
+    let copySource = cl.get('source');
+
+    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource };
 }
 
 // Returns modsDir/modName/modName.mod
@@ -350,7 +348,6 @@ exports.getWorkshopDir = getWorkshopDir;
 exports.getModDir = getModDir;
 exports.getTempDir = getTempDir;
 exports.getBundleDir = getBundleDir;
-exports.getBundleDirFromData = getBundleDirFromData;
 exports.getDefaultBundleDir = getDefaultBundleDir;
 exports.getModFilePath = getModFilePath;
 exports.hashModName = hashModName;

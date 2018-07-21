@@ -66,9 +66,9 @@ async function copyTemplate(params) {
 }
 
 // Copies contents of placeholder.mod file to modsDir/modName/bundleDir/modName.mod
-async function createPlaceholderModFile(modName) {
+async function createPlaceholderModFile(modName, bundleBase) {
 
-    let bundleDir = await _setUpBundleDir(modName);
+    let bundleDir = await _setUpBundleDir(modName, bundleBase);
 
     let modFileExtenstion = config.get('modFileExtension');
     let placeholderModFilePath = path.join(`${__dirname}`, `/../../embedded/placeholder${modFileExtenstion}`);
@@ -78,9 +78,9 @@ async function createPlaceholderModFile(modName) {
 }
 
 // Copies contents of placeholder bundle to modsDir/modName/bundleDir/
-async function createPlaceholderBundle(modName) {
+async function createPlaceholderBundle(modName, bundleBase) {
 
-    let bundleDir = await _setUpBundleDir(modName);
+    let bundleDir = await _setUpBundleDir(modName, bundleBase);
 
     let placeholderBundle = path.join(`${__dirname}`, `/../../embedded/placeholderV${config.get('gameNumber')}`);
     let bundleFilePath = path.combine(bundleDir, modTools.hashModName(modName) + config.get('bundleExtension'));
@@ -89,8 +89,15 @@ async function createPlaceholderBundle(modName) {
 }
 
 // Creates bundle dir if it doesn't exist, return its path
-async function _setUpBundleDir(modName) {
-    let bundleDir = modTools.getDefaultBundleDir(modName);
+async function _setUpBundleDir(modName, bundleBase) {
+    let bundleDir;
+
+    if (bundleBase) {
+        bundleDir = path.absolutify(path.fix(bundleBase), modTools.getModDir(modName));
+    }
+    else {
+        bundleDir = modTools.getDefaultBundleDir(modName);
+    }
 
     if (!await pfs.accessible(bundleDir)) {
         await pfs.mkdir(bundleDir);

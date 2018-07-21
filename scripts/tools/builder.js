@@ -38,28 +38,33 @@ async function buildMod(toolsDir, modName, params) {
     // Since this method, if used in publish task, doesn't use modTools.validateModNames,
     // we need to check that .cfg file exists here
     // --id=<item_id> and --no-workshop allow .cfg to be absent
-    let cfgExists = await cfg.fileExists(modName);
+    let cfgPath = cfg.getPath(modName);
+    let cfgData = await pfs.accessible(cfgPath) && await cfg.readFile(cfgPath);
+    let cfgExists = typeof cfgData == 'string';
     if (!modId && makeWorkshopCopy && !cfgExists) {
         throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
     }
 
     // Only read bundle folder from .cfg file if it exists, otherwise use default folder
-    let bundleDir = modTools.getDefaultBundleDir(modName);
-    if (cfgExists) {
-        try {
-            bundleDir = await modTools.getBundleDir(modName);
-        }
-        catch (error) {
-            error.message += `\nDefault bundle folder "${bundleDir}" will be used.`;
-            print.warn(error);
-        }
-    }
+    let { bundleDir, itemPreview, error } = cfgExists ? _getParamsFromCfgData(modName, cfgPath, cfgData) : {};
+    if (!bundleDir) {
 
-    let sourcePath = path.combine(bundleDir, 'source');
-    if (await pfs.accessible(sourcePath)) {
-        console.log('Deleting source folder');
-        await pfs.deleteDirectory(sourcePath);
+        bundleDir = modTools.getDefaultBundleDir(modName);
+
+        let errorMessage = `Default bundle folder "${bundleDir}" will be used.`;
+        if (error) {
+            error.message += `\n${errorMessage}`;
+        }
+        else {
+            error = errorMessage;
+        }
+        print.warn(error);
     }
+    // Get bundle dirs and item previews from all .cfg files
+    let { bundleDirs, itemPreviews } = await getRelevantCfgParams(modName, bundleDir, itemPreview);
+
+    // Remove source code from all bundle dirs
+    await _deleteSource(bundleDirs);
 
     console.log(`Building ${modName}`);
 
@@ -80,9 +85,9 @@ async function buildMod(toolsDir, modName, params) {
     // Copy bundle and .mod file to bundleDir and optionally modWorkshopDir
     await _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir);
 
-    copySource = true;
+    // Copy source code, ignoring bundle dirs, item previews and .cfg files
     if (copySource) {
-        await _copySourceCode(modName, bundleDir);
+        await _copySource(modName, bundleDir, bundleDirs, itemPreviews);
     }
 
     console.log(`Successfully built ${modName}`);
@@ -236,7 +241,7 @@ async function _getModWorkshopDir(modName, modId) {
 async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
     return await new Promise((resolve, reject) => {
 
-        console.log(`Copying to "${bundleDir}"`);
+        console.log(`Copying mod files to "${bundleDir}"`);
 
         let useNewFormat = config.get('useNewFormat');
 
@@ -266,7 +271,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
         mergedStream = mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
 
         if (modWorkshopDir) {
-            console.log(`Copying to "${modWorkshopDir}"`);
+            console.log(`Copying mod files to "${modWorkshopDir}"`);
             mergedStream = mergedStream.pipe(vinyl.dest(modWorkshopDir)).on('error', reject);
         }
 
@@ -290,32 +295,77 @@ async function _cleanBundleDir(bundleDir) {
     await del(modBundleMask, { force: true });
 }
 
-async function _copySourceCode(modName, targetBundleDir) {
+// Returns arrays with bundle dirs and item previews from all .cfg files
+async function getRelevantCfgParams(modName, targetBundleDir, targetItemPreview) {
     let modDir = modTools.getModDir(modName);
     let fileNames = await pfs.getFileNames(modDir);
-    let bundleDirs = [targetBundleDir];
-    let itemPreviews = [];
+    let bundleDirs = targetBundleDir ? [targetBundleDir] : [];
+    let itemPreviews = targetItemPreview ? [targetItemPreview] : [];
 
-    for(let fileName of fileNames) {
+    for (let fileName of fileNames) {
 
         let filePath = path.combine(modDir, fileName);
 
         if (path.parse(filePath).ext == '.cfg' && await pfs.accessible(filePath)) {
-            try {
-                let cfgData = await pfs.readFile(filePath, 'utf8');
+            let cfgData = await pfs.readFile(filePath, 'utf8');
 
-                let bundleDir = modTools.getBundleDirFromData(modName, cfgData);
+            let { bundleDir, itemPreview } = _getParamsFromCfgData(modName, filePath, cfgData);
+
+            if (bundleDir && !bundleDirs.includes(bundleDir)) {
                 bundleDirs.push(bundleDir);
-
-                let itemPreview = cfg.getValue(cfgData, 'preview', 'string');
-                itemPreviews.push(path.combine(modDir, itemPreview));
             }
-            catch (err) {
-                print.warn(err);
+
+            if(itemPreview && !itemPreviews.includes(itemPreview)) {
+                itemPreviews.push(itemPreview);
             }
         }
 
     }
+
+    return { bundleDirs, itemPreviews };
+}
+
+function _getParamsFromCfgData(modName, cfgPath, cfgData) {
+    let modDir = modTools.getModDir(modName);
+    let bundleDir, itemPreview, error;
+
+    try {
+        bundleDir = cfg.getMappedValue(cfgPath, cfgData, 'bundleDir');
+        bundleDir = path.absolutify(path.fix(bundleDir), modDir);
+    }
+    catch (err) {
+        bundleDir = null;
+        error = err;
+    }
+
+    try {
+        itemPreview = cfg.getMappedValue(cfgPath, cfgData, 'itemPreview');
+        itemPreview = path.absolutify(path.fix(itemPreview), modDir);
+    }
+    catch (err) {
+        itemPreview = null;
+    }
+
+    return {bundleDir, itemPreview, error};
+}
+
+async function _deleteSource(bundleDirs) {
+
+    console.log('Deleting old source files');
+
+    for(let bundleDir of bundleDirs) {
+        let sourcePath = path.combine(bundleDir, 'source');
+
+        if (await pfs.accessible(sourcePath)) {
+            console.log(`Deleting "${sourcePath}"`);
+            await pfs.deleteDirectory(sourcePath);
+        }
+    }
+}
+
+// Copies source code, ignoring bundle dirs, item previews and .cfg files
+async function _copySource(modName, targetBundleDir, bundleDirs, itemPreviews) {
+    let modDir = modTools.getModDir(modName);
 
     let src = [
         path.combine(modDir, '/**/*'),
@@ -323,19 +373,17 @@ async function _copySourceCode(modName, targetBundleDir) {
     ];
 
     for(let bundleDir of bundleDirs) {
-        if(bundleDir) {
-            src.push('!' + bundleDir);
-            src.push('!' + bundleDir + '/**');
-        }
+        src.push('!' + bundleDir);
+        src.push('!' + bundleDir + '/**');
     }
 
     for (let itemPreview of itemPreviews) {
-        if (itemPreview) {
-            src.push('!' + itemPreview);
-        }
+        src.push('!' + itemPreview);
     }
 
     let sourcePath = path.combine(targetBundleDir, 'source');
+
+    console.log(`Copying source files to "${sourcePath}"`);
     return await new Promise(function(resolve, reject) {
         vinyl.src(src, {base: modDir})
             .pipe(vinyl.dest(sourcePath))
@@ -347,3 +395,4 @@ async function _copySourceCode(modName, targetBundleDir) {
 }
 
 exports.buildMod = buildMod;
+exports.getRelevantCfgParams = getRelevantCfgParams;

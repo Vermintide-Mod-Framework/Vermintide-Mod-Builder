@@ -16,7 +16,7 @@ module.exports = async function taskInfo() {
     let exitCode = 0;
 
     let modNames = await modTools.getModNames();
-    let showCfg = cl.get('cfg') || false;
+    let showCfg = cl.get('show-cfg') || false;
 
     if (modNames.length > 1) {
         console.log(`Showing information for mods:`);
@@ -110,7 +110,7 @@ module.exports = async function taskInfo() {
 
         if (showCfg && cfgExists) {
             console.log(`${cfgBase} in "${cfgDir}":`);
-            let cfgData = await cfg.readFile(modName);
+            let cfgData = await cfg.readFile(cfg.getPath(modName));
             cfgData = str.rmn(cfgData).replace(/^/gm, '  ');
             console.log(cfgData);
         }

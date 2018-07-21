@@ -7,9 +7,9 @@ module.exports = function cfg() {
     module.exports.getPath = getPath;
     module.exports.getDir = getDir;
     module.exports.writeFile = writeFile;
-    module.exports.fileExists = fileExists;
     module.exports.readFile = readFile;
     module.exports.getValue = getValue;
+    module.exports.getMappedValue = getMappedValue;
 
     init();
 
@@ -28,6 +28,12 @@ const modTools = require('../tools/mod_tools');
 let base = '';
 let relativeDir = '';
 
+// Name of key in vmb source code - name and type of key in .cfg files
+let mappedKeys = {
+    bundleDir: { key: 'content', type: 'string' },
+    itemPreview: { key: 'preview', type: 'string' }
+};
+
 // Sets up paths based on cl and config
 function init() {
 
@@ -36,7 +42,7 @@ function init() {
 
     // Set paths to custom cfg path, or use default one
     if (cfgArg) {
-        let cfgPath = path.parse(String(cfgArg));
+        let cfgPath = path.parse(String(cfgArg) + '.cfg');
         setBase(cfgPath.base);
         setRelativeDir(cfgPath.dir);
     }
@@ -94,7 +100,7 @@ async function writeFile(params) {
     let configText = `title = "${params.title}";\n` +
         `description = "${params.description}";\n` +
         `preview = "${config.get('itemPreview')}";\n` +
-        `content = "${config.get('defaultBundleDir')}";\n` +
+        `content = "${params.content || config.get('defaultBundleDir')}";\n` +
         `language = "${params.language}";\n` +
         `visibility = "${params.visibility}";\n` +
         `tags = [${tags}]`;
@@ -102,17 +108,12 @@ async function writeFile(params) {
     console.log(`${base}:`);
     console.log(`  ${str.rmn(configText).replace(/\n/g, '\n  ')}`);
 
-    return await pfs.writeFile(getPath(params.name), configText);
-}
-
-// Check if .cfg file exists
-async function fileExists(modName) {
-    return await pfs.accessible(getPath(modName));
+    return await pfs.writeFile(params.filePath, configText);
 }
 
 // Returns .cfg file's data
-async function readFile(modName) {
-    return await pfs.readFile(getPath(modName), 'utf8');
+async function readFile(filePath) {
+    return await pfs.readFile(filePath, 'utf8');
 }
 
 // Gets key value from .cfg file data
@@ -137,4 +138,17 @@ function getValue(data, key, type) {
     let match = data.match(regEx);
 
     return match && Array.isArray(match) && match.length > 1 ? match[1] : null;
+}
+
+// Gets value of a keys from mappedKeys array, throws if value isn't found
+function getMappedValue(filePath, data, mappedKey) {
+
+    let { key, type } = mappedKeys[mappedKey];
+    let value = getValue(data, key, type);
+
+    if (typeof value != type) {
+        throw new Error(`No '${key}' value specified` + (filePath ? ` in "${filePath}"` : ''));
+    }
+
+    return value;
 }

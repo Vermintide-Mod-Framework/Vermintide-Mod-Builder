@@ -47,7 +47,8 @@ module.exports = async function taskPublish() {
             makeWorkshopCopy: false,
             verbose: buildParams.verbose,
             ignoreBuildErrors: buildParams.ignoreBuildErrors,
-            modId: null
+            modId: null,
+            copySource: buildParams.copySource
         });
 
         console.log();
@@ -69,6 +70,15 @@ module.exports = async function taskPublish() {
         await opn(modUrl);
     }
     catch (error) {
+
+        // Clean up .cfg file if it was created
+        if (params.cfgCreated) {
+            try {
+                await pfs.unlink(cfg.getPath(modName));
+            }
+            catch (err) {}
+        }
+
         print.error(error);
         exitCode = 1;
     }
@@ -99,24 +109,31 @@ async function _getPublishParams() {
     }
 
     // Read .cfg file if it exists, or create it based on params
+    let cfgPath = cfg.getPath(modName);
     let cfgData = '';
+    params.cfgCreated = false;
     try {
-        cfgData = await cfg.readFile(modName);
+        cfgData = await cfg.readFile(cfgPath);
     }
     catch (error) {
+        params.filePath = cfgPath;
         await cfg.writeFile(params);
+        params.cfgCreated = true;
     }
 
     if (cfgData) {
 
         // Take image preview file name from .cfg
-        params.itemPreview = cfg.getValue(cfgData, 'preview', 'string') || params.itemPreview;
+        try {
+            params.itemPreview = cfg.getMappedValue(cfgPath, cfgData, 'itemPreview');
+        }
+        catch (error) {}
 
         // Check if mod has been published already
         if (cfg.getValue(cfgData, 'published_id', 'number')) {
 
             throw new Error(
-                `Mod has already been published with item cfg "${cfg.getPath(modName)}".\n` +
+                `Mod has already been published with item cfg "${cfgPath}".\n` +
                 `Use 'vmb upload' or specify a different item cfg file with --cfg instead.`
             );
         }
