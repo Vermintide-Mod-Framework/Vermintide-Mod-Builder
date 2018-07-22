@@ -47,6 +47,3 @@ function setPlainArgs(args) {
         plainArgs.push(arg);
     }
 }
-
-
-
