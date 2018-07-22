@@ -205,7 +205,7 @@ function _outputFailedBundles(data, modName) {
 
         // Each line has to be bundle, "resource", "type", "bytes"
         if (bundle.length < 4) {
-            print.error(`Incorrect processed_bundles.csv string`, bundle);
+            print.error(`Incorrect processed_bundles.csv string\n${bundle}`);
             continue;
         }
 
