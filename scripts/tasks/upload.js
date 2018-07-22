@@ -30,15 +30,15 @@ module.exports = async function taskUpload() {
         console.log('No mods to upload');
     }
 
-    let changenote = cl.get('n') || cl.get('note') || cl.get('changenote') || '';
+    let changenote = cl.get('n', 'note', 'changenote') || '';
 
     if (typeof changenote != 'string') {
         changenote = '';
     }
 
-    let openUrl = cl.get('o') || cl.get('open');
+    let openUrl = cl.get('o', 'open');
 
-    let skip = cl.get('s') || cl.get('skip');
+    let skip = cl.get('s', 'skip');
 
     // Get path to sdk
     let modToolsDir;

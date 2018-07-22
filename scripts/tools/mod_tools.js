@@ -271,15 +271,15 @@ function getDefaultBundleDir(modName) {
 function getWorkshopParams() {
 
     let modName = getFirstModName();
-    let modTitle = cl.get('t') || cl.get('title') || modName;
+    let modTitle = cl.get('t', 'title') || modName;
 
     return {
         name: modName,
         title: modTitle,
-        description: cl.get('d') || cl.get('desc') || cl.get('description') || modTitle + ' description',
-        language: cl.get('l') || cl.get('language') || 'english',
-        visibility: cl.get('v') || cl.get('visibility') || 'private',
-        content: cl.get('c') || cl.get('content'),
+        description: cl.get('d', 'desc', 'description') || modTitle + ' description',
+        language: cl.get('l', 'language') || 'english',
+        visibility: cl.get('v', 'visibility') || 'private',
+        content: cl.get('c', 'content'),
         tags: cl.get('tags') || ''
     };
 }
@@ -318,7 +318,10 @@ async function getBuildParams() {
 
     let modId = modNames && modNames.length == 1 ? cl.get('id') : null;
     let makeWorkshopCopy = !cl.get('no-workshop');
-    let ignoreBuildErrors = cl.get('e') || cl.get('ignore-errors') || cl.get('ignore-build-errors') || config.get('ignoreBuildErrors');
+    let ignoreBuildErrors = cl.get('e', 'ignore-errors', 'ignore-build-errors');
+    if (ignoreBuildErrors === undefined) {
+        ignoreBuildErrors = config.get('ignoreBuildErrors');
+    }
 
     let copySource = cl.get('source');
 

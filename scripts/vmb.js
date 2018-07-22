@@ -22,7 +22,7 @@ async function vmb(argv, configData) {
     cl.setPlainArgs(plainArgs);
 
     // Early execution and exit for help task
-    if (cl.get('h') || cl.get('help') || !taskName || taskName == 'help') {
+    if (cl.get('h', 'help') || !taskName || taskName == 'help') {
         return await taskManager.runTask('help', taskName);
     }
 

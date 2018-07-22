@@ -341,7 +341,7 @@ async function _getModsDir(modsDir, tempDir) {
     }
 
     // Get mods dir from cl
-    let newModsDir = cl.get('f') || cl.get('folder') || '';
+    let newModsDir = cl.get('f', 'folder') || '';
 
     if (newModsDir) {
 
@@ -374,7 +374,7 @@ async function _getModsDir(modsDir, tempDir) {
 
 // Gets game number from cl/config data and validates it
 function _getGameNumber(gameNumber) {
-    let newGameNumber = cl.get('g') || cl.get('game');
+    let newGameNumber = cl.get('g', 'game');
 
     if (newGameNumber !== undefined) {
         gameNumber = Number(newGameNumber);

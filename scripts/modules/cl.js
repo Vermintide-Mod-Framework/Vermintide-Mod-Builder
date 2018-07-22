@@ -22,8 +22,15 @@ function init(args) {
     argv = minimist(args);
 }
 
-function get(key) {
-    return argv[key];
+function get(...keys) {
+    for(let key of keys) {
+
+        if(argv[key] !== undefined) {
+            return argv[key];
+        }
+    }
+
+    return undefined;
 }
 
 function set(key, value) {
