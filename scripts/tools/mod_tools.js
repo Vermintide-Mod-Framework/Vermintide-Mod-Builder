@@ -181,7 +181,7 @@ async function getModToolsDir() {
             print.error(err);
         }
 
-        if (!toolsDir || typeof toolsDir != 'string') {
+        if (!toolsDir) {
             print.error('Vermintide mod SDK folder not found, using fallback.');
         }
     }
@@ -223,7 +223,7 @@ async function getWorkshopDir() {
             print.error(err);
         }
 
-        if (!steamAppsDir || typeof steamAppsDir != 'string') {
+        if (!steamAppsDir) {
             print.error('SteamApps folder not found, using fallback.');
         }
     }
