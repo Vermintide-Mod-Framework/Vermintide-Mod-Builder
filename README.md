@@ -20,7 +20,11 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 6. To build the mod, run `vmb build <mod_name>`.  
 7. To upload an updated version of your mod, run `vmb upload <mod_name>`.  
 8. To re-publish a mod if you deleted it from the workshop, or to publish it for another game, run `vmb publish <mod_name> -g {1|2}`.
-
+You'll need to delete the `published_id` line from the mod's .cfg file when re-publishing.  
+9. To submit a mod for sanctioning, follow these steps:
+    1. Set `apply_for_sanctioned_status` to true in the mod's .cfg file.
+    2. `vmb build mod --source`
+    3. `vmb upload mod`
 
 ### Usage
 
