@@ -13,6 +13,7 @@
 !/mods/.gitkeep
 
 !/embedded
+!/logo
 
 !/.template
 !/.template-vmf

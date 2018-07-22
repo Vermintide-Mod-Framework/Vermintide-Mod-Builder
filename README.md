@@ -1,6 +1,9 @@
+<img align="right" alt="Vermintide Mod Builder" src="./logo/256.png">
+
 ## Vermintide Mod Builder  
 
 A Windows CLI program created to ease the ever-growing pain of creating, building and uploading mods for Vermintide. Works for both Vermintide 1 and 2.    
+
 Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.com/zeit/pkg).
 
 ### Prerequisites
