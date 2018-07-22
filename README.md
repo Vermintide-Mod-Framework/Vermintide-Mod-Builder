@@ -24,7 +24,8 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 
 ### Usage
 
-	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>] [--rc <config_folder>] [--reset] [--use-fallback] [--cwd] [--debug]
+	vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>]
+                                            [--rc <config_folder>] [--reset] [--use-fallback] [--cwd]
 
 `-f <mods_folder>` or `--folder <mods_folder>` - temporarily sets current mods folder. This path can be relative or absolute. If the path isn't absolute, it will be relative to the current working directory. The path must already exist. To use current working directory put `.` as the path.   
 `-g {1|2}` or `--game {1|2}` - temporarily sets for which game the mods should be created, built and uploaded.  
@@ -40,7 +41,8 @@ Run without command to see version number and a list of commands with parameters
 
 #### Create a mod from template:
 
-	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [-c <content_folder>] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
+	vmb create <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}]
+                          [-c <content_folder>] [--tags "<tag1>; <tag2>;..."] [--template <template_folder>]
 
 This will copy the template from specified template folder (either in .vmbrc or via the parameter) to a new folder, upload a placeholder mod to the workshop (the item is private by default), add its item ID to `itemV1.cfg` or `itemV2.cfg` (depending on which game is specified in the .vmbrc) in the new mod folder and open a browser window for you to subscribe to the mod.  
 This is needed for the game to recognize the mod.  
@@ -48,7 +50,9 @@ By default, the template is for VMF-dependent mods. To create a VMF-independent 
 
 #### Publish an existing mod to Steam Workshop:  
 
-	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}] [-c <content_folder>] [--tags "<tag1>; <tag2>;..."] [--ignore-errors] [--verbose] [--clean] [--source]
+	vmb publish <mod_name> [-d <description>] [-t <title>] [-l <language>] [-v {private|public|friends}]
+                           [-c <content_folder>] [--tags "<tag1>; <tag2>;..."]
+                           [--ignore-errors] [--verbose] [--clean] [--source]
 
 This will create `itemV1.cfg` or `itemV2.cfg`  for a mod if it doesn't exist then build and publish the mod to workshop as a new item.
 If .cfg file is present it shouldn't have `published_id` in it.  
@@ -71,11 +75,13 @@ I can't be bothered to add parameters to change the title, description etc. You 
 
 #### Build all or specified mods from current directory:
 	
-	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] [--source]
+	vmb build [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>]
+                                           [--no-workshop] [--source]
 
 #### Automatically build all or specified mods from current directory on changes:
 
-	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>] [--no-workshop] [--source]
+	vmb watch [<mod_name1> <mod_name2>...] [--ignore-errors] [--verbose] [--clean] [--id <item_id>]
+                                           [--no-workshop] [--source]
 
 Two of the commands above will build and copy the bundle to the bundleV1 or bundleV2 folder, as well as replace the old bundle in Steam Workshop folder with the new one. If no mod name is specified, all mods will be built/watched.  
 `itemV1.cfg` or `itemV2.cfg` needs to be in the folder with mod's source code and have `published_id` line.  
@@ -84,7 +90,7 @@ Two of the commands above will build and copy the bundle to the bundleV1 or bund
 You can also enable this parameter by default by setting `ignore_build_errors` in .vmbrc to true.  
 `--clean` - deletes the temp folder instead of overwriting it (builds slower, use to force building from scratch).  
 `--id` - forces item ID. This way you can build a mod without having a .cfg file in its folder. Can only be passed if building one mod.  
-`--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the bundle folder in mod's folder.
+`--no-workshop` - this will build the mod even if .cfg file isn't present but will only copy it to the bundle folder in mod's folder.  
 `--source` - this will copy the source code of the mod into `<bundle_folder>/source`. This includes all files inside the mod folder, except .cfg and item preview files, and excluding bundle folders.
 
 #### Quickly change configuration in .vmbrc:  

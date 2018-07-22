@@ -24,7 +24,7 @@ function addTask(name, action) {
     tasks[name] = action;
 }
 
-// Returns first task name specified in commandline arguments or name of default task ('help')
+// Returns first task name specified in commandline arguments
 function getCurrentTask(args) {
     let plainArgs = [];
 
@@ -42,10 +42,10 @@ function getCurrentTask(args) {
         }
     }
 
-    return { taskName: 'help', plainArgs };
+    return { taskName: '', plainArgs };
 }
 
 // Runs specified task
-async function runTask(taskName) {
-    return await tasks[taskName]();
+async function runTask(taskName, ...args) {
+    return await tasks[taskName](...args);
 }
