@@ -52,7 +52,7 @@ let defaultData = {
 
     template_dir: ".template-vmf",
 
-    template_preview_image: "item_preview.jpg",
+    template_preview_image: "item_preview.png",
 
     template_core_files: [
         'core/**'
