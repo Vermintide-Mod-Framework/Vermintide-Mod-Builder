@@ -39,8 +39,8 @@ async function buildMod(toolsDir, modName, params) {
     // we need to check that .cfg file exists here
     // --id=<item_id> and --no-workshop allow .cfg to be absent
     let cfgPath = cfg.getPath(modName);
-    let cfgData = await pfs.accessible(cfgPath) && await cfg.readFile(cfgPath);
-    let cfgExists = typeof cfgData == 'string';
+    let cfgExists = await pfs.accessible(cfgPath);
+    let cfgData = cfgExists && await cfg.readFile(cfgPath);
     if (!modId && makeWorkshopCopy && !cfgExists) {
         throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
     }
