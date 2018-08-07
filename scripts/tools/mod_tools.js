@@ -323,7 +323,7 @@ async function getBuildParams() {
         ignoreBuildErrors = config.get('ignoreBuildErrors');
     }
 
-    let copySource = cl.get('source');
+    let copySource = config.get('copySource');
 
     return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource };
 }

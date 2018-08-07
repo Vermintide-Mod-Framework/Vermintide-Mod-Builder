@@ -44,6 +44,8 @@ let defaultData = {
 
     use_fallback: false,
 
+    copy_source_code: false,
+
     bundle_extension1: '',
     bundle_extension2: '.mod_bundle',
 
@@ -104,6 +106,7 @@ let values = {
     useNewFormat: undefined,      // Determines whether bundle is renamed and whether .mod file is copied
     ignoreBuildErrors: undefined, // Determines whether stingray.exe exit code should be ignored
     useFallback: undefined,       // Determines whether config paths should be used instead of looking them up
+    copySource: undefined,        // Should source be copied when building mods
 
     // Paths to mod tools relative to the mod tools folder
     uploaderDir: 'ugc_uploader/',
@@ -234,6 +237,9 @@ async function parseData() {
 
     let useFallback = cl.get('use-fallback');
     values.useFallback = useFallback === undefined ? data.use_fallback : useFallback;
+
+    let copySource = cl.get('source', 'copy-source-code');
+    values.copySource = copySource === undefined ? data.copy_source_code : copySource;
 }
 
 // Returns a shallow copy of data
