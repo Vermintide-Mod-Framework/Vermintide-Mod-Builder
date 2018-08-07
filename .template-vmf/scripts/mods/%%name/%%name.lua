@@ -45,6 +45,9 @@ end)
 	Callbacks
 --]]
 
+-- All callbacks are called even when the mod is disabled
+-- Use mod:is_enabled() to check that the mod is enabled
+
 -- Called on every update to mods
 -- dt - time in milliseconds since last update
 mod.update = function(dt)
