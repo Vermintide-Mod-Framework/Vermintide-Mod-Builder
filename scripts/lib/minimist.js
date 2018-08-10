@@ -1,4 +1,4 @@
-module.exports = function (args, opts) {
+module.exports = function minimist(args, opts) {
     if (!opts) {
         opts = {};
     }

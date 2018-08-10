@@ -1,5 +1,5 @@
 
-module.exports = function (tasks) {
+module.exports = function taskManager(tasks) {
 
     module.exports.addTask = addTask;
     module.exports.getCurrentTask = getCurrentTask;

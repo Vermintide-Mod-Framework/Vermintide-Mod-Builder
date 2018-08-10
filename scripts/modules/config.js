@@ -1,5 +1,5 @@
 
-module.exports = function () {
+module.exports = function config() {
 
     module.exports.get = get;
     module.exports.set = set;

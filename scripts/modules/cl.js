@@ -1,5 +1,5 @@
 
-module.exports = function (args) {
+module.exports = function cl(args) {
 
     module.exports.get = get;
     module.exports.set = set;
