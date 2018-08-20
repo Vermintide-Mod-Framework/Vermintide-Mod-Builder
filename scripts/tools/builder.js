@@ -27,13 +27,12 @@ async function buildMod(toolsDir, modName, params) {
         throw new Error(`File "${modFilePath}" not found`);
     }
 
+    // Print if temp folder exists, optionally remove it
+    let modTempDir = await _getTempDir(modName, shouldRemoveTemp);
+
     // Folders where stingray output will be placed
-    let modTempDir = modTools.getTempDir(modName);
     let dataDir = path.combine(modTempDir, 'compile');
     let buildDir = path.combine(modTempDir, 'bundle');
-
-    // Print if temp folder exists, optionally remove it
-    await _checkTempFolder(modName, shouldRemoveTemp);
 
     // Since this method, if used in publish task, doesn't use modTools.validateModNames,
     // we need to check that .cfg file exists here
@@ -95,7 +94,7 @@ async function buildMod(toolsDir, modName, params) {
 }
 
 // Checks if temp folder exists, optionally removes it
-async function _checkTempFolder(modName, shouldRemove) {
+async function _getTempDir(modName, shouldRemove) {
     let tempDir = modTools.getTempDir(modName);
     let tempExists = await pfs.accessible(tempDir);
 
@@ -114,6 +113,8 @@ async function _checkTempFolder(modName, shouldRemove) {
     else if (tempExists) {
         console.log(`Overwriting temp folder`);
     }
+
+    return tempDir;
 }
 
 // Builds the bundle
@@ -348,7 +349,7 @@ function _getParamsFromCfgData(modName, cfgPath, cfgData) {
     return {bundleDir, itemPreview, error};
 }
 
-async function _deleteSource(bundleDirs) {
+async function _deleteSource(bundleDirs = []) {
 
     console.log('Deleting old source files');
 
@@ -363,7 +364,7 @@ async function _deleteSource(bundleDirs) {
 }
 
 // Copies source code, ignoring bundle dirs, item previews and .cfg files
-async function _copySource(modName, targetBundleDir, bundleDirs, itemPreviews) {
+async function _copySource(modName, targetBundleDir, bundleDirs = [], itemPreviews = []) {
     let modDir = modTools.getModDir(modName);
 
     let src = [
