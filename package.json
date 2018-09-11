@@ -1,6 +1,6 @@
 {
   "name": "vmb",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Vermintide Mod Builder",
   "main": "vmb.js",
   "bin": "vmb.js",
@@ -21,7 +21,6 @@
     "merge-stream": "^1.0.1",
     "normalize-path": "^3.0.0",
     "opn": "^5.2.0",
-    "robotjs": "^0.5.1",
     "vdf": "0.0.2",
     "vinyl-fs": "^3.0.3"
   },
