@@ -9,11 +9,11 @@ return {
 	mutator_settings = {},                          -- Extra settings, if it's mutator
 	options_widgets = {                             -- Widget settings for the mod options menu
 		{
-			["setting_name"] = "example_checkbox",
-			["widget_type"] = "checkbox",
-			["text"] = mod:localize("example_checkbox_option_name"),
-			["tooltip"] = mod:localize("example_checkbox_option_tooltip"),
-			["default_value"] = true
+			setting_name = "example_checkbox",
+			widget_type = "checkbox",
+			text = mod:localize("example_checkbox_option_name"),
+			tooltip = mod:localize("example_checkbox_option_tooltip"),
+			default_value = true
 		}
 	}
 }
