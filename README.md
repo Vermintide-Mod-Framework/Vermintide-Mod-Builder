@@ -15,7 +15,7 @@ Made in [Node.js](https://nodejs.org/en/). Compiled with [pkg](https://github.co
 
 ### Quickstart Guide
 
-1. Download and export **[the latest release](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/releases)**.  
+1. Download and export **[the latest release](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/releases/latest)**.  
 2. Run vmb.exe to create default .vmbrc config file in the folder with the executable.  
 3. Set `game` in .vmbrc to 1 or 2 to determine for which game mods are going to be created, built and uploaded by default.   
 4. Run `vmb create <mod_name>` to create a new mod. This will create a new VMF-dependent mod in the `mods` folder from a template and then open a steam workshop page where you will have to subscribe to the mod in order for the game to recognize it.     
