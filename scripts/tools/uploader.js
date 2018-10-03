@@ -14,9 +14,12 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 
     // Path to .cfg
     let uploaderParams = [
-        '-x',
         '-c', '"' + cfgPath + '"'
     ];
+
+    if (config.get('gameNumber') === 2) {
+        uploaderParams.push('-x');
+    }
 
     // Changenote
     if (changenote) {
