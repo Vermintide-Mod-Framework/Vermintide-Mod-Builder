@@ -56,9 +56,10 @@ module.exports = async function taskCreate() {
 
         // Print and optionally open url if -o flag was set
         let modUrl = uploader.formUrl(modId);
+        let modSteamUrl = uploader.formSteamUrl(modId);
         console.log(`Now you need to subscribe to ${modUrl} in order to be able to build and test your mod.`);
         console.log(`Opening url...`);
-        await opn(modUrl);
+        await opn(modSteamUrl);
     }
     catch (error) {
         print.error(error);

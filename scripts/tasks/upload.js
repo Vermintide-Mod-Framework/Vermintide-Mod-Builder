@@ -71,8 +71,9 @@ module.exports = async function taskUpload() {
 
             // Open mod url
             if (openUrl) {
+                let modSteamUrl = uploader.formSteamUrl(modId);
                 console.log(`Opening url...`);
-                await opn(modUrl);
+                await opn(modSteamUrl);
             }
 
         }

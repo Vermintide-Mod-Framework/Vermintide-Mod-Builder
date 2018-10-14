@@ -65,9 +65,10 @@ module.exports = async function taskPublish() {
         // Print and open mod url
         let modId = await modTools.getModId(modName);
         let modUrl = uploader.formUrl(modId);
+        let modSteamUrl = uploader.formSteamUrl(modId);
         console.log(`Uploaded to ${modUrl}`);
         console.log(`Opening url...`);
-        await opn(modUrl);
+        await opn(modSteamUrl);
     }
     catch (error) {
 

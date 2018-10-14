@@ -95,9 +95,14 @@ async function _runUploader(toolsDir, uploaderParams) {
 }
 
 // Returns steam workshop url for mod
-function formUrl(modId) {
+function formSteamUrl(modId) {
     return 'steam://url/CommunityFilePage/' + modId;
 }
 
+function formUrl(modId) {
+    return 'http://steamcommunity.com/sharedfiles/filedetails/?id=' + modId;
+}
+
 exports.uploadMod = uploadMod;
+exports.formSteamUrl = formSteamUrl;
 exports.formUrl = formUrl;
