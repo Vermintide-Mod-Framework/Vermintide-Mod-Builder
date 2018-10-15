@@ -23,7 +23,7 @@ async function buildMod(toolsDir, modName, params) {
 
     // Check that modName.mod file exists in the mod folder
     let modFilePath = modTools.getModFilePath(modName);
-    if (config.get('useNewFormat') && !await pfs.accessible(modFilePath)) {
+    if (config.get('useNewFormat') && !await pfs.accessibleFile(modFilePath)) {
         throw new Error(`File "${modFilePath}" not found`);
     }
 
@@ -38,7 +38,7 @@ async function buildMod(toolsDir, modName, params) {
     // we need to check that .cfg file exists here
     // --id=<item_id> and --no-workshop allow .cfg to be absent
     let cfgPath = cfg.getPath(modName);
-    let cfgExists = await pfs.accessible(cfgPath);
+    let cfgExists = await pfs.accessibleFile(cfgPath);
     let cfgData = cfgExists && await cfg.readFile(cfgPath);
     if (!modId && makeWorkshopCopy && !cfgExists) {
         throw new Error(`${cfg.getBase()} not found in "${cfg.getDir(modName)}"`);
@@ -96,7 +96,7 @@ async function buildMod(toolsDir, modName, params) {
 // Checks if temp folder exists, optionally removes it
 async function _getTempDir(modName, shouldRemove) {
     let tempDir = modTools.getTempDir(modName);
-    let tempExists = await pfs.accessible(tempDir);
+    let tempExists = await pfs.accessibleDir(tempDir);
 
     if (tempExists && shouldRemove) {
 
@@ -306,7 +306,7 @@ async function getRelevantCfgParams(modName, targetBundleDir, targetItemPreview)
 
         let filePath = path.combine(modDir, fileName);
 
-        if (path.parse(filePath).ext == '.cfg' && await pfs.accessible(filePath)) {
+        if (path.parse(filePath).ext == '.cfg' && await pfs.accessibleFile(filePath)) {
             let cfgData = await pfs.readFile(filePath, 'utf8');
 
             let { bundleDir, itemPreview } = _getParamsFromCfgData(modName, filePath, cfgData);
@@ -356,7 +356,7 @@ async function _deleteSource(bundleDirs = []) {
     for(let bundleDir of bundleDirs) {
         let sourcePath = path.combine(bundleDir, 'source');
 
-        if (await pfs.accessible(sourcePath)) {
+        if (await pfs.accessibleDir(sourcePath)) {
             console.log(`Deleting "${sourcePath}"`);
             await pfs.deleteDirectory(sourcePath);
         }

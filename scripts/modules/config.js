@@ -166,15 +166,15 @@ async function readData(optionalData) {
         // Use .vmbrc folder from cl params
         dir = path.absolutify(String(rcClPath));
     }
-    else if (rcModsDirPath && await pfs.accessible(rcModsDirPath)) {
+    else if (rcModsDirPath && await pfs.accessibleFile(rcModsDirPath)) {
         // Use .vmbrc from modsDir set via cl param
         dir = modsDir;
     }
-    else if (await pfs.accessible(rcCwdPath)) {
+    else if (await pfs.accessibleFile(rcCwdPath)) {
         // Use .vmbrc from current working directory
         dir = cwd;
     }
-    else if (rcHomePath && await pfs.accessible(rcHomePath)) {
+    else if (rcHomePath && await pfs.accessibleFile(rcHomePath)) {
         // Use .vmbrc from %userprofile%
         dir = homedir;
     }
@@ -322,7 +322,7 @@ async function writeData() {
 async function _readData(filepath, shouldReset) {
 
     // Reset config file if it exists
-    if (shouldReset && await pfs.accessible(filepath)) {
+    if (shouldReset && await pfs.accessibleFile(filepath)) {
 
         try {
             console.log(`Deleting ${path.basename(filepath)}`);
@@ -335,7 +335,7 @@ async function _readData(filepath, shouldReset) {
     }
 
     // Create default config if it doesn't exist
-    if (!await pfs.accessible(filepath)) {
+    if (!await pfs.accessibleFile(filepath)) {
 
         try {
             console.log(`Creating default ${path.basename(filepath)}`);
@@ -399,7 +399,7 @@ async function _getModsDir(modsDir, tempDir) {
     console.log(`Using mods folder "${modsDir}"`);
     console.log(`Using temp folder "${tempDir}"`);
 
-    if (!await pfs.accessible(modsDir + '/')) {
+    if (!await pfs.accessibleDir(modsDir)) {
         throw new Error(`Mods folder "${modsDir}" doesn't exist`);
     }
 

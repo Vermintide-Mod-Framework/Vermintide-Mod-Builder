@@ -58,6 +58,30 @@ pfs.accessible = async function (file) {
     }
 };
 
+pfs.accessibleFile = async function (file) {
+    return await pfs.accessibleFileOrDir(file, false);
+};
+
+pfs.accessibleDir = async function (file) {
+    return await pfs.accessibleFileOrDir(file, true);
+};
+
+pfs.accessibleFileOrDir = async function (file, isDir) {
+
+    try {
+        let stats = await pfs.stat(file);
+        if(isDir) {
+            return stats.isDirectory();
+        }
+        else {
+            return stats.isFile();
+        }
+    }
+    catch (err) {
+        return false;
+    }
+};
+
 // Safely deletes file or directory
 pfs.deleteFile = async function (dir, file) {
     let filePath = path.combine(dir, file);

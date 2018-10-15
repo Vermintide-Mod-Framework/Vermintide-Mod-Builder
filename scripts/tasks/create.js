@@ -24,7 +24,7 @@ module.exports = async function taskCreate() {
     if (!modTools.validModName(modName)) {
         error = `Folder name "${modDir}" is invalid`;
     }
-    else if (await pfs.accessible(modDir + '/')) {
+    else if (await pfs.accessibleDir(modDir)) {
         error = `Folder "${modDir}" already exists`;
     }
 
@@ -67,7 +67,7 @@ module.exports = async function taskCreate() {
 
         // Cleanup directory if it has been created
         let modDir = modTools.getModDir(modName);
-        if (await pfs.accessible(modDir)) {
+        if (await pfs.accessibleDir(modDir)) {
 
             try {
                 await pfs.deleteDirectory(modDir);

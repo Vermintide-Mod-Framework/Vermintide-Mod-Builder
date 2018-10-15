@@ -105,7 +105,7 @@ async function _getPublishParams() {
     }
 
     // Make sure mod folder exists
-    if (!await pfs.accessible(modDir + '/')) {
+    if (!await pfs.accessibleDir(modDir)) {
         throw new Error(`Folder "${modDir}" doesn't exist`);
     }
 

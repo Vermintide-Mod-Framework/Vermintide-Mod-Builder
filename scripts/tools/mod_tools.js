@@ -27,12 +27,12 @@ async function validateModNames(modNames, cfgMustExist) {
 
         let error = '';
         let cfgPath = cfg.getPath(modName);
-        let cfgExists = await pfs.accessible(cfgPath);
+        let cfgExists = await pfs.accessibleFile(cfgPath);
 
         if (!validModName(modName)) {
             error = `Folder name "${modDir}" is invalid`;
         }
-        else if (!await pfs.accessible(modDir + '/')) {
+        else if (!await pfs.accessibleDir(modDir)) {
             error = `Folder "${modDir}" doesn't exist`;
         }
         else if (!cfgExists && cfgMustExist) {
@@ -96,7 +96,7 @@ async function getSteamAppsDir(appId){
     let steamAppsDir = path.combine(steamDir, 'SteamApps');
 
     // Check if the main steam folder has a manifest file for the requested app in it
-    if (await pfs.accessible(path.combine(steamAppsDir, appManifestName))) {
+    if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
         return steamAppsDir;
     }
 
@@ -125,7 +125,7 @@ async function getSteamAppsDir(appId){
         }
 
         steamAppsDir = path.combine(libraryDir, 'SteamApps');
-        if (await pfs.accessible(path.combine(steamAppsDir, appManifestName))) {
+        if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
             return steamAppsDir;
         }
     }
@@ -192,7 +192,7 @@ async function getModToolsDir() {
     }
 
     // Check that the path is correct by finding stingray exe inside the app
-    if (!await pfs.accessible(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
+    if (!await pfs.accessibleFile(path.combine(toolsDir, config.get('stingrayDir'), config.get('stingrayExe')))) {
 
         throw new Error(
             `Mod tools not found in "${toolsDir}".\n` +
@@ -234,7 +234,7 @@ async function getWorkshopDir() {
     }
 
     // Check that steamapps path is valid
-    if (!await pfs.accessible(steamAppsDir)) {
+    if (!await pfs.accessibleDir(steamAppsDir)) {
         throw new Error(`SteamApps folder "${steamAppsDir}" not found.\nYou need to specify a valid fallback path.`);
     }
 

@@ -12,11 +12,11 @@ const modTools = require('./mod_tools');
 // Throws if template folder doesn't exist or doesn't have itemPreview file in it
 async function validateTemplate(templateDir) {
 
-    if (!await pfs.accessible(templateDir)) {
+    if (!await pfs.accessibleDir(templateDir)) {
         throw new Error(`Template folder "${templateDir}" doesn't exist.`);
     }
 
-    if (!await pfs.accessible(path.combine(templateDir, config.get('itemPreview')))) {
+    if (!await pfs.accessibleFile(path.combine(templateDir, config.get('itemPreview')))) {
         throw new Error(`Template folder "${templateDir}" doesn't have "${config.get('itemPreview')}" in it.`);
     }
 }
@@ -99,7 +99,7 @@ async function _setUpBundleDir(modName, bundleBase) {
         bundleDir = modTools.getDefaultBundleDir(modName);
     }
 
-    if (!await pfs.accessible(bundleDir)) {
+    if (!await pfs.accessibleDir(bundleDir)) {
         await pfs.mkdir(bundleDir);
     }
 

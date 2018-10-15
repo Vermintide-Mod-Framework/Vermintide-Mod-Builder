@@ -23,7 +23,7 @@ module.exports = async function taskOpen() {
         if (!modTools.validModName(modName)) {
             error = `Folder name "${modDir}" is invalid`;
         }
-        else if (!await pfs.accessible(modDir + '/')) {
+        else if (!await pfs.accessibleDir(modDir)) {
             error = `Folder "${modDir}" doesn't exist`;
         }
 
