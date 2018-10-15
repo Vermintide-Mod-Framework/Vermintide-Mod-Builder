@@ -36,6 +36,7 @@ const vmb = require('./scripts/vmb');
     ], config);
 
     await runTest('reset', [
+        'config',
         '--reset'
     ], config);
 
