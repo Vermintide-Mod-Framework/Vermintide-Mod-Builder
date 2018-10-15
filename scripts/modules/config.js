@@ -166,77 +166,6 @@ async function readData(optionalData) {
     _validateData(shouldReset);
 }
 
-async function _getConfigDir(filename, cwd, exeDir) {
-    let homedir = path.fix(os.homedir());
-
-    let rcClPath = cl.get('rc') || '';
-    let rcCwdPath = path.combine(cwd, filename);
-    let rcHomePath = homedir && path.combine(homedir, filename);
-    let rcClModsDirPath = '';
-
-    let clModsDir = cl.get('f', 'folder') || '';
-    if (clModsDir) {
-        clModsDir = path.absolutify(String(clModsDir));
-        rcClModsDirPath = path.combine(clModsDir, filename);
-    }
-
-    if (rcClPath) {
-        // Use .vmbrc folder from cl params
-        return path.absolutify(String(rcClPath));
-    }
-    else if (rcClModsDirPath && await pfs.accessibleFile(rcClModsDirPath)) {
-        // Use .vmbrc from modsDir set via cl param
-        return clModsDir;
-    }
-    else if (await pfs.accessibleFile(rcCwdPath)) {
-        // Use .vmbrc from current working directory
-        return cwd;
-    }
-    else if (rcHomePath && await pfs.accessibleFile(rcHomePath)) {
-        // Use .vmbrc from %userprofile%
-        return homedir;
-    }
-    else {
-        // Otherwise use exe location as .vmbrc file location
-        return exeDir;
-    }
-}
-
-function _validateData(shouldReset) {
-
-    if (!data || typeof data != 'object') {
-        throw new Error(`Invalid config data in ${values.filename}`);
-    }
-
-    // Merge with default values, overwrite if --reset flag was set
-    for (let key of Object.keys(defaultData)) {
-
-        if (shouldReset || data[key] === undefined || data[key] === null) {
-            data[key] = defaultData[key];
-        }
-        else {
-
-            let value = data[key];
-            let defaultValue = defaultData[key];
-
-            // Check that value has the same type as default value
-            if (!Array.isArray(value) && Array.isArray(defaultValue)) {
-                throw new Error(
-                    `Invalid value in ${values.filename}: ` +
-                    `"${key}" must be of type array, was ${typeof value} instead.`
-                );
-            }
-
-            if (typeof value != typeof defaultValue) {
-                throw new Error(
-                    `Invalid value in ${values.filename}: ` +
-                    `"${key}" must be of type ${typeof defaultValue}, was ${typeof value} instead.`
-                );
-            }
-        }
-    }
-}
-
 // Defines config values based on read data
 async function parseData() {
 
@@ -321,6 +250,80 @@ async function writeData() {
     }
 
     await pfs.writeFile(path.combine(values.dir, values.filename), JSON.stringify(data, null, '\t'));
+}
+
+
+// Returns path to .vmbrc
+async function _getConfigDir(filename, cwd, exeDir) {
+    let homedir = path.fix(os.homedir());
+
+    let rcClPath = cl.get('rc') || '';
+    let rcCwdPath = path.combine(cwd, filename);
+    let rcHomePath = homedir && path.combine(homedir, filename);
+    let rcClModsDirPath = '';
+
+    let clModsDir = cl.get('f', 'folder') || '';
+    if (clModsDir) {
+        clModsDir = path.absolutify(String(clModsDir));
+        rcClModsDirPath = path.combine(clModsDir, filename);
+    }
+
+    if (rcClPath) {
+        // Use .vmbrc folder from cl params
+        return path.absolutify(String(rcClPath));
+    }
+    else if (rcClModsDirPath && await pfs.accessibleFile(rcClModsDirPath)) {
+        // Use .vmbrc from modsDir set via cl param
+        return clModsDir;
+    }
+    else if (await pfs.accessibleFile(rcCwdPath)) {
+        // Use .vmbrc from current working directory
+        return cwd;
+    }
+    else if (rcHomePath && await pfs.accessibleFile(rcHomePath)) {
+        // Use .vmbrc from %userprofile%
+        return homedir;
+    }
+    else {
+        // Otherwise use exe location as .vmbrc file location
+        return exeDir;
+    }
+}
+
+// Merges and validates data from .vmbrc
+function _validateData(shouldReset) {
+
+    if (!data || typeof data != 'object') {
+        throw new Error(`Invalid config data in ${values.filename}`);
+    }
+
+    // Merge with default values, overwrite if --reset flag was set
+    for (let key of Object.keys(defaultData)) {
+
+        if (shouldReset || data[key] === undefined || data[key] === null) {
+            data[key] = defaultData[key];
+        }
+        else {
+
+            let value = data[key];
+            let defaultValue = defaultData[key];
+
+            // Check that value has the same type as default value
+            if (!Array.isArray(value) && Array.isArray(defaultValue)) {
+                throw new Error(
+                    `Invalid value in ${values.filename}: ` +
+                    `"${key}" must be of type array, was ${typeof value} instead.`
+                );
+            }
+
+            if (typeof value != typeof defaultValue) {
+                throw new Error(
+                    `Invalid value in ${values.filename}: ` +
+                    `"${key}" must be of type ${typeof defaultValue}, was ${typeof value} instead.`
+                );
+            }
+        }
+    }
 }
 
 // Reads and parses json data from file, writes default data to it if shouldReset is true
