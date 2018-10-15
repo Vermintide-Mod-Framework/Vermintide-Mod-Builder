@@ -20,6 +20,8 @@ const path = require('../lib/path');
 
 const cl = require('./cl');
 
+const os = require('os');
+
 const defaultTempDir = '.temp';
 
 // Data that's written to default .vmbrc
@@ -139,23 +141,49 @@ function set(...pairs) {
 async function readData(optionalData) {
 
     let dir;
+    let cwd = path.fix(process.cwd());
+    let execDir = path.fix(path.dirname(process.execPath));
+    let homedir = path.fix(os.homedir());
 
     // Set config filename to [object Object] if an object is provided
     let filename = optionalData ? optionalData.toString() : values.filename;
 
     // Set exe location as current working directory if --cwd flag is set
-    let exeDir = cl.get('cwd') ? process.cwd() : path.dirname(process.execPath);
+    let exeDir = cl.get('cwd') ? cwd : execDir;
 
-    // See if .vmbrc folder is specified in cl params
-    let rc = cl.get('rc') || '';
-    if (rc) {
-        dir = path.absolutify(String(rc));
-        console.log(`Using ${filename} in "${dir}"`);
+    let rcClPath = cl.get('rc') || '';
+    let rcCwdPath = path.combine(cwd, filename);
+    let rcHomePath = homedir && path.combine(homedir, filename);
+    let rcModsDirPath = '';
+
+    let modsDir = cl.get('f', 'folder') || '';
+    if (modsDir) {
+        modsDir = path.absolutify(String(modsDir));
+        rcModsDirPath = path.combine(modsDir, filename);
+    }
+
+    if (rcClPath) {
+        // Use .vmbrc folder from cl params
+        dir = path.absolutify(String(rcClPath));
+    }
+    else if (rcModsDirPath && await pfs.accessible(rcModsDirPath)) {
+        // Use .vmbrc from modsDir set via cl param
+        dir = modsDir;
+    }
+    else if (await pfs.accessible(rcCwdPath)) {
+        // Use .vmbrc from current working directory
+        dir = cwd;
+    }
+    else if (rcHomePath && await pfs.accessible(rcHomePath)) {
+        // Use .vmbrc from %userprofile%
+        dir = homedir;
     }
     else {
-        // Otherwise use exe location as config file location
+        // Otherwise use exe location as .vmbrc file location
         dir = exeDir;
     }
+
+    console.log(`Using ${filename} in "${dir}"`);
 
     // Save values
     values.dir = dir;
