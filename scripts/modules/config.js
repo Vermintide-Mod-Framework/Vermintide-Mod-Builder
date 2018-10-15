@@ -140,48 +140,17 @@ function set(...pairs) {
 // Path of the file is determined by cl params
 async function readData(optionalData) {
 
-    let dir;
-    let cwd = path.fix(process.cwd());
-    let execDir = path.fix(path.dirname(process.execPath));
-    let homedir = path.fix(os.homedir());
-
     // Set config filename to [object Object] if an object is provided
     let filename = optionalData ? optionalData.toString() : values.filename;
+
+    let execDir = path.fix(path.dirname(process.execPath));
+    let cwd = path.fix(process.cwd());
 
     // Set exe location as current working directory if --cwd flag is set
     let exeDir = cl.get('cwd') ? cwd : execDir;
 
-    let rcClPath = cl.get('rc') || '';
-    let rcCwdPath = path.combine(cwd, filename);
-    let rcHomePath = homedir && path.combine(homedir, filename);
-    let rcModsDirPath = '';
-
-    let modsDir = cl.get('f', 'folder') || '';
-    if (modsDir) {
-        modsDir = path.absolutify(String(modsDir));
-        rcModsDirPath = path.combine(modsDir, filename);
-    }
-
-    if (rcClPath) {
-        // Use .vmbrc folder from cl params
-        dir = path.absolutify(String(rcClPath));
-    }
-    else if (rcModsDirPath && await pfs.accessibleFile(rcModsDirPath)) {
-        // Use .vmbrc from modsDir set via cl param
-        dir = modsDir;
-    }
-    else if (await pfs.accessibleFile(rcCwdPath)) {
-        // Use .vmbrc from current working directory
-        dir = cwd;
-    }
-    else if (rcHomePath && await pfs.accessibleFile(rcHomePath)) {
-        // Use .vmbrc from %userprofile%
-        dir = homedir;
-    }
-    else {
-        // Otherwise use exe location as .vmbrc file location
-        dir = exeDir;
-    }
+    // Set directory with .vmbrc
+    let dir = await _getConfigDir(filename, cwd, exeDir);
 
     console.log(`Using ${filename} in "${dir}"`);
 
@@ -195,6 +164,42 @@ async function readData(optionalData) {
     data = optionalData || await _readData(path.combine(dir, filename), shouldReset);
 
     _validateData(shouldReset);
+}
+
+async function _getConfigDir(filename, cwd, exeDir) {
+    let homedir = path.fix(os.homedir());
+
+    let rcClPath = cl.get('rc') || '';
+    let rcCwdPath = path.combine(cwd, filename);
+    let rcHomePath = homedir && path.combine(homedir, filename);
+    let rcClModsDirPath = '';
+
+    let clModsDir = cl.get('f', 'folder') || '';
+    if (clModsDir) {
+        clModsDir = path.absolutify(String(clModsDir));
+        rcClModsDirPath = path.combine(clModsDir, filename);
+    }
+
+    if (rcClPath) {
+        // Use .vmbrc folder from cl params
+        return path.absolutify(String(rcClPath));
+    }
+    else if (rcClModsDirPath && await pfs.accessibleFile(rcClModsDirPath)) {
+        // Use .vmbrc from modsDir set via cl param
+        return clModsDir;
+    }
+    else if (await pfs.accessibleFile(rcCwdPath)) {
+        // Use .vmbrc from current working directory
+        return cwd;
+    }
+    else if (rcHomePath && await pfs.accessibleFile(rcHomePath)) {
+        // Use .vmbrc from %userprofile%
+        return homedir;
+    }
+    else {
+        // Otherwise use exe location as .vmbrc file location
+        return exeDir;
+    }
 }
 
 function _validateData(shouldReset) {
