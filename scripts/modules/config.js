@@ -257,7 +257,7 @@ async function parseData() {
     values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir'));
     values.ignoredDirs = data.ignored_dirs;
 
-    values.templateDir = _getTemplateDir(data.template_dir);
+    values.templateDir = await _getTemplateDir(data.template_dir);
     values.itemPreview = data.template_preview_image;
 
     // Files in template
@@ -429,14 +429,47 @@ function _getGameNumber(gameNumber) {
 }
 
 // Gets absolute template path from cl/config data
-function _getTemplateDir(templateDir) {
-    let newTemplateDir = cl.get('template') || '';
+async function _getTemplateDir(templateDir) {
 
-    if (newTemplateDir) {
-        return path.absolutify(String(newTemplateDir), values.exeDir);
+    // Owerwrite template dir with value from cl params
+    let templateClDir = cl.get('template') || '';
+    if (templateClDir) {
+        templateDir = path.fix(String(templateClDir));
     }
 
-    return path.absolutify(templateDir, values.exeDir);
+    // If template path is absolute, no need to search for it
+    if (path.isAbsolute(templateDir)) {
+        return templateDir;
+    }
+
+    let homedir = path.fix(os.homedir());
+    let templateCwdPath = path.combine(process.cwd(), templateDir);
+    let templateHomePath = homedir && path.combine(homedir, templateDir);
+    let templateExePath = path.combine(values.exeDir, templateDir);
+    let templateModsDir = path.combine(values.modsDir, templateDir);
+    let templateModsDirAccessible = await pfs.accessibleDir(templateModsDir);
+    let clModsDir = cl.get('f', 'folder') || '';
+
+    if (clModsDir && templateModsDirAccessible) {
+        // Use template from modsDir set via cl param
+        return templateModsDir;
+    }
+    else if (await pfs.accessibleDir(templateCwdPath)) {
+        // Use template from current working directory
+        return templateCwdPath;
+    }
+    else if (!clModsDir && templateModsDirAccessible) {
+        // Use template from modsDir set via .vmbrc
+        return templateModsDir;
+    }
+    else if (templateHomePath && await pfs.accessibleDir(templateHomePath)) {
+        // Use template from %userprofile%
+        return templateHomePath;
+    }
+    else {
+        // Use template from the folder with exe
+        return templateExePath;
+    }
 }
 
 function _getTemplateSrc(configCoreSrc, templateDir) {
