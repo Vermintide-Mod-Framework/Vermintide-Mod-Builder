@@ -442,7 +442,7 @@ async function _getTemplateDir(templateDir) {
 
     // If template path is absolute, no need to search for it
     if (path.isAbsolute(templateDir)) {
-        return templateDir;
+        return path.fix(templateDir);
     }
 
     let homedir = path.fix(os.homedir());
