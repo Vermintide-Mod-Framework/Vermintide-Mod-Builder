@@ -5,10 +5,13 @@ return {
 		new_mod("%%name", {
 			mod_script       = "scripts/mods/%%name/%%name",
 			mod_data         = "scripts/mods/%%name/%%name_data",
-			mod_localization = "scripts/mods/%%name/%%name_localization"
+			mod_localization = "scripts/mods/%%name/%%name_localization",
 		})
+
+		-- We return an empty table to silence warnings about not returning a callback table.
+		return { }
 	end,
 	packages = {
-		"resource_packages/%%name/%%name"
-	}
+		"resource_packages/%%name/%%name",
+	},
 }
