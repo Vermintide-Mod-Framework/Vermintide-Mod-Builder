@@ -37,7 +37,7 @@ module.exports = async function taskHelp(taskName) {
         console.log(
 
             `Usage:\n` +
-            `  vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>]\n` +
+            `  vmb <command> [command-specific params] [-f <mods_folder>] [-g {1|2}] [--cfg <path_to_item_cfg>] [--dot]\n` +
             `                                          [--rc <config_folder>] [--reset] [--use-fallback] [--cwd] [--debug]\n\n` +
 
             `Commands:\n` +

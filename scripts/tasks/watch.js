@@ -1,6 +1,10 @@
-const watch = require('glob-watcher');
 
 const print = require('../print');
+
+const watch = require('../lib/glob-debounced-watch');
+const path = require('../lib/path');
+
+const config = require('../modules/config');
 
 const modTools = require('../tools/mod_tools');
 const builder = require('../tools/builder');
@@ -28,6 +32,9 @@ module.exports = async function taskWatch() {
 
     console.log();
 
+    let isBuilding = false;
+    let buildQueue = [];
+
     for (let { modName, modDir, error } of await modTools.validateModNames(modNames, makeWorkshopCopy && !modId)) {
 
         if (error) {
@@ -50,38 +57,73 @@ module.exports = async function taskWatch() {
         let { bundleDirs } = await builder.getRelevantCfgParams(modName, bundleDir);
 
         // These files will be watched
-        let src = [
-            modDir,
+        let src = [modDir];
 
+        let ignoredSrc = [
             // Ignore temp files stingray creates
-            '!' + modDir + '/*.tmp'
+            modDir + '/*.tmp'
         ];
 
         // Ignore folders with built files
         for (let bundleDir of bundleDirs) {
-            src.push('!' + bundleDir + '/**');
+            ignoredSrc.push(bundleDir + '/**');
         }
 
-        watch(src, async (callback) => {
+        for (let ignoredDir of config.get('ignoredDirsPerMod')) {
+            ignoredDir = path.combine(modDir, ignoredDir);
+            ignoredSrc.push(ignoredDir + '/**');
+        }
 
-            try {
-                await builder.buildMod(toolsDir, modName, {
-                    shouldRemoveTemp,
-                    makeWorkshopCopy,
-                    verbose,
-                    ignoreBuildErrors,
-                    modId,
-                    copySource
-                });
+        for (let pattern of ignoredSrc) {
+            console.log(`   Ignoring "${pattern}"`);
+            src.push('!' + pattern);
+        }
+
+        let options = {};
+
+        // watch module doesn't ignore dot files by default
+        if(!config.get('includeDotFiles')) {
+            options.ignored = /(^|[\/\\])\../;
+        }
+
+        watch(src, options, async (callback) => {
+
+            buildQueue.push(modName);
+
+            if(!isBuilding) {
+                await buildQueuedMods();
             }
-            catch (error) {
-                print.error(error);
-                exitCode = 1;
-            };
 
             callback();
         });
     };
+
+    async function buildQueuedMods() {
+        isBuilding = true;
+
+        while(buildQueue.length > 0) {
+            await buildMod(buildQueue.shift());
+        }
+
+        isBuilding = false;
+    }
+
+    async function buildMod(modName) {
+        try {
+            await builder.buildMod(toolsDir, modName, {
+                shouldRemoveTemp,
+                makeWorkshopCopy,
+                verbose,
+                ignoreBuildErrors,
+                modId,
+                copySource
+            });
+        }
+        catch (error) {
+            print.error(error);
+            exitCode = 1;
+        };
+    }
 
     return { exitCode, finished: false };
 };

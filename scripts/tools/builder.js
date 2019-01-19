@@ -367,7 +367,7 @@ async function _deleteSource(bundleDirs = []) {
     }
 }
 
-// Copies source code, ignoring bundle dirs, item previews and .cfg files
+// Copies source code, ignoring bundle dirs, ignoredDirsPerMod, item previews and .cfg files
 async function _copySource(modName, targetBundleDir, bundleDirs = [], itemPreviews = []) {
     let modDir = modTools.getModDir(modName);
 
@@ -381,6 +381,12 @@ async function _copySource(modName, targetBundleDir, bundleDirs = [], itemPrevie
         src.push('!' + bundleDir + '/**');
     }
 
+    for(let ignoredDir of config.get('ignoredDirsPerMod')) {
+        ignoredDir = path.combine(modDir, ignoredDir);
+        src.push('!' + ignoredDir);
+        src.push('!' + ignoredDir + '/**');
+    }
+
     for (let itemPreview of itemPreviews) {
         src.push('!' + itemPreview);
     }
@@ -389,8 +395,10 @@ async function _copySource(modName, targetBundleDir, bundleDirs = [], itemPrevie
 
     console.log(`Copying source files to "${sourcePath}"`);
     return await new Promise(function(resolve, reject) {
-        vinyl.src(src, {base: modDir})
-            .pipe(vinyl.dest(sourcePath))
+        vinyl.src(src, {
+            base: modDir,
+            dot: config.get('includeDotFiles')
+        }).pipe(vinyl.dest(sourcePath))
             .on('error', reject)
             .on('end', () => {
                 resolve();

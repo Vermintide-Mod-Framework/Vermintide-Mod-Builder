@@ -62,10 +62,11 @@ let defaultData = {
         'core/**'
     ],
 
-    ignored_dirs: [
-        '.git',
-        defaultTempDir
-    ],
+    include_dot_files: false,
+
+    ignored_dirs: [],
+
+    ignored_dirs_per_mod: [],
 
     ignore_build_errors: false
 };
@@ -87,7 +88,9 @@ let values = {
 
     fallbackToolsDir: undefined,     // Fallback Vermintide SDK folder
     fallbackSteamAppsDir: undefined, // Fallback steamapps folder
-    ignoredDirs: undefined,          // Array of folders that are ignored when scanning for mods
+    includeDotFiles: undefined,      // Whether to ignore files & folders starting with .
+    ignoredDirs: undefined,          // Folders that are ignored when scanning for mods
+    ignoredDirsPerMod: undefined,    // Folders that are ignored when watching a mod or copying its sourse code
 
     templateDir: undefined,  // Folder with template for creating new mods
     itemPreview: undefined,  // Name of item preview image file
@@ -181,10 +184,14 @@ async function parseData() {
     values.defaultBundleDir = 'bundleV' + values.gameNumber;
     values.bundleExtension = _getGameSpecificKey('bundle_extension');
 
+    let includeDotFiles = cl.get('dot', 'include-dot-files');
+    values.includeDotFiles = includeDotFiles === undefined ? data.include_dot_files : includeDotFiles;
+
     // Other config params
     values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir'));
     values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir'));
     values.ignoredDirs = data.ignored_dirs;
+    values.ignoredDirsPerMod = data.ignored_dirs_per_mod;
 
     values.templateDir = await _getTemplateDir(data.template_dir);
     values.itemPreview = data.template_preview_image;

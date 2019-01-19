@@ -302,7 +302,13 @@ async function getModNames() {
             modNames = await pfs.getDirs(config.get('modsDir'), config.get('ignoredDirs'));
         }
         catch (err) {
+            modNames = [];
             print.error(err);
+        }
+
+        // Ignore folder names starting with .
+        if(!config.get('includeDotFiles')) {
+            modNames = modNames.filter((modName) => modName[0] != '.');
         }
     }
 
