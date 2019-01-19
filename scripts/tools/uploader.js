@@ -73,6 +73,10 @@ async function _runUploader(toolsDir, uploaderParams) {
         }
     });
 
+    ugc_tool.stderr.on('data', data => {
+        console.error(str.rmn(data));
+    });
+
     return await new Promise((resolve, reject) => {
         ugc_tool.on('error', error => reject(error));
 

@@ -145,6 +145,10 @@ async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
         }
     });
 
+    stingray.stderr.on('data', data => {
+        console.error(str.rmn(data));
+    });
+
     let buildTime = Date.now();
 
     return await new Promise((resolve, reject) => {
