@@ -3,6 +3,7 @@ const print = require('../print');
 
 const watch = require('../lib/glob-debounced-watch');
 const path = require('../lib/path');
+const cl = require('../modules/cl');
 
 const config = require('../modules/config');
 
@@ -75,7 +76,11 @@ module.exports = async function taskWatch() {
         }
 
         for (let pattern of ignoredSrc) {
-            console.log(`   Ignoring "${pattern}"`);
+
+            if(cl.get('verbose')) {
+                console.log(`   Ignoring "${pattern}"`);
+            }
+
             src.push('!' + pattern);
         }
 
