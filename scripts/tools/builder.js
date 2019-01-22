@@ -262,7 +262,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
         ], { base: buildDir })
             .pipe(rename(p => {
 
-                if(!config.get('useNewFormat')) {
+                if (!useNewFormat) {
                     p.basename = modTools.hashModName(modName);
                 }
 
