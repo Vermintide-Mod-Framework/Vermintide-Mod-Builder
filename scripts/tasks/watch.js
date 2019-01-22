@@ -91,7 +91,7 @@ module.exports = async function taskWatch() {
             options.ignored = /(^|[\/\\])\../;
         }
 
-        watch(src, options, async (callback) => {
+        let watcher = watch(src, options, async (callback) => {
 
             buildQueue.push(modName);
 
@@ -100,6 +100,11 @@ module.exports = async function taskWatch() {
             }
 
             callback();
+        });
+
+        watcher.on('error', (error) => {
+            print.error(error);
+            exitCode = 1;
         });
     };
 
