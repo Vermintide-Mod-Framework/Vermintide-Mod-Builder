@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "gulp": "^4.0.0",
-    "gulp-vinyl-zip": "^2.1.0",
+    "gulp-vinyl-zip": "^2.1.2",
     "pkg": "^4.3.7"
   },
   "scripts": {
