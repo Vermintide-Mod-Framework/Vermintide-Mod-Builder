@@ -78,22 +78,28 @@ async function getModId(modName) {
 }
 
 // Return steamapps folder path of a specific app
-async function getSteamAppsDir(appId){
+async function getSteamAppsDir(appId) {
 
-    let appKey = 'HKEY_CURRENT_USER\\Software\\Valve\\Steam';
-    let value = 'SteamPath';
-    let steamDir;
+    let steamAppsDir;
 
-    // Find steam installation directory in win registry
-    try {
-        steamDir = await reg.get(appKey, value);
-    }
-    catch (err) {
-        throw new Error(`${err}\nSteam installation directory not found`);
+    // Get default SteamApps directory
+    if (process.platform == 'linux') {
+        steamAppsDir = path.combine(os.homedir(), '.steam/steam/steamapps')
+    } else {
+        let appKey = 'HKEY_CURRENT_USER\\Software\\Valve\\Steam';
+        let value = 'SteamPath';
+
+        try {
+            // Find steam installation directory in win registry
+            let steamDir = await reg.get(appKey, value);
+            steamAppsDir = path.combine(steamDir, 'SteamApps');
+        }
+        catch (err) {
+            throw new Error(`${err}\nSteam installation directory not found`);
+        }
     }
 
     let appManifestName = `appmanifest_${appId}.acf`;
-    let steamAppsDir = path.combine(steamDir, 'SteamApps');
 
     // Check if the main steam folder has a manifest file for the requested app in it
     if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
