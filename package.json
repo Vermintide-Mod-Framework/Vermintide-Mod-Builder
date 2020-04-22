@@ -16,19 +16,19 @@
     "@octetstream/promisify": "^1.3.3",
     "debounce-hashed": "^0.2.0",
     "del": "^3.0.0",
-    "glob-watcher": "^5.0.1",
-    "gulp-rename": "^1.2.2",
+    "glob-watcher": "^5.0.3",
+    "gulp-rename": "^1.4.0",
     "gulp-replace": "^0.6.1",
     "merge-stream": "^1.0.1",
     "normalize-path": "^3.0.0",
-    "opn": "^5.2.0",
+    "opn": "^5.5.0",
     "vdf": "0.0.2",
     "vinyl-fs": "^3.0.3"
   },
   "devDependencies": {
-    "gulp": "^4.0.0",
-    "gulp-vinyl-zip": "^2.1.2",
-    "pkg": "^4.3.7"
+    "gulp": "^4.0.2",
+    "gulp-vinyl-zip": "^2.2.0",
+    "pkg": "^4.4.7"
   },
   "scripts": {
     "start": "node vmb.js",
