@@ -120,16 +120,37 @@ async function _getTempDir(modName, shouldRemove) {
 // Builds the bundle
 async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
 
+    let stingrayExe = config.get('stingrayExe');
     let stingrayParams = [
-        `--compile-for win32`,
-        `--source-dir "${modDir}"`,
-        `--data-dir "${dataDir}"`,
-        `--bundle-dir "${buildDir}"`
+        '--compile-for',
+        'win32',
+        '--source-dir',
+        modDir,
+        '--data-dir',
+        dataDir,
+        '--bundle-dir',
+        buildDir
     ];
+
+    if (process.platform == 'linux') {
+        let protonDir;
+        try {
+            protonDir = await modTools.getProtonDir();
+        }
+        catch (error) {
+            print.error(error);
+            return { exitCode: 1, finished: true };
+        }
+        let protonExe = path.combine(protonDir, config.get('protonExe'));
+        stingrayParams.unshift(stingrayExe);
+        stingrayParams.unshift('run');
+        stingrayExe = protonExe;
+        process.env['STEAM_COMPAT_DATA_PATH'] = await modTools.getCompatDataDir(config.get('toolsId'));
+    }
 
     // Spawn stingray.exe
     let stingray = child_process.spawn(
-        config.get('stingrayExe'),
+        stingrayExe,
         stingrayParams,
         {
             // Working from stingray's location

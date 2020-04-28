@@ -7,7 +7,7 @@ gulp.task('build', async function(callback) {
     try {
         let version = await applyVersion();
         await pkg(['.']);
-        await zipVmb(version);
+        //await zipVmb(version);
     }
     catch(err) {
         console.error(err);

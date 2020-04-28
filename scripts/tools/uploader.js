@@ -1,8 +1,11 @@
 const child_process = require('child_process');
+const os = require('os');
 
 const pfs = require('../lib/pfs');
 const path = require('../lib/path');
 const str = require('../lib/str');
+
+const modTools = require('../tools/mod_tools');
 
 const config = require('../modules/config');
 const cfg = require('../modules/cfg');
@@ -14,8 +17,13 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 
     // Path to .cfg
     let uploaderParams = [
-        '-c', '"' + cfgPath + '"'
+        '-c'
     ];
+    if (process.platform == 'linux') {
+        uploaderParams.push(cfgPath);
+    } else {
+        uploaderParams.push('"' + cfgPath + '"');
+    }
 
     if (config.get('gameNumber') === 2) {
         uploaderParams.push('-x');
@@ -42,9 +50,26 @@ async function _runUploader(toolsDir, uploaderParams) {
     // Set uploader game id
     await pfs.writeFile(path.combine(toolsDir, config.get('uploaderDir'), config.get('uploaderGameConfig')), config.get('gameId'));
 
+    let uploaderExe = config.get('uploaderExe');
+
+    if (process.platform == 'linux') {
+        let protonDir;
+        try {
+            protonDir = await modTools.getProtonDir();
+        }
+        catch (error) {
+            print.error(error);
+            return { exitCode: 1, finished: true };
+        }
+        let protonExe = path.combine(protonDir, config.get('protonExe'));
+        uploaderParams.unshift(uploaderExe);
+        uploaderParams.unshift('run');
+        uploaderExe = protonExe;
+        process.env['STEAM_COMPAT_DATA_PATH'] = await modTools.getCompatDataDir(config.get('toolsId'));
+    }
     // Spawn process
     let ugc_tool = child_process.spawn(
-        config.get('uploaderExe'),
+        uploaderExe,
         uploaderParams,
         {
             // Working from uploader's folder

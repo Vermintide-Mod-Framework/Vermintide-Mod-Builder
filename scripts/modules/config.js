@@ -85,6 +85,7 @@ let values = {
     gameNumber: undefined, // Vermintide 1 or 2
     gameId: undefined,     // Steam app id of Vermintide
     toolsId: undefined,    // Steam app id of Vermintide SDK
+    protonId: undefined,   // Steam app id of Proton [Linux only]
 
     fallbackToolsDir: undefined,     // Fallback Vermintide SDK folder
     fallbackSteamAppsDir: undefined, // Fallback steamapps folder
@@ -115,10 +116,11 @@ let values = {
 
     // Paths to mod tools relative to the mod tools folder
     uploaderDir: 'ugc_uploader/',
-    uploaderExe: 'ugc_tool.exe',
+    uploaderExe: './ugc_tool.exe',
     uploaderGameConfig: 'steam_appid.txt',
     stingrayDir: 'bin/',
-    stingrayExe: 'stingray_win64_dev_x64.exe'
+    stingrayExe: './stingray_win64_dev_x64.exe',
+    protonExe: './proton'
 };
 
 // Returns key value, throws if it's undefined
@@ -156,6 +158,7 @@ async function readData(optionalData) {
     let dir = await _getConfigDir(filename, cwd, exeDir);
 
     console.log(`Using ${filename} in "${dir}"`);
+    console.log(`${execDir}:"${cwd}"`);
 
     // Save values
     values.dir = dir;
@@ -180,6 +183,7 @@ async function parseData() {
     values.gameNumber = _getGameNumber(data.game);
     values.gameId = _getGameSpecificKey('game_id');
     values.toolsId = _getGameSpecificKey('tools_id');
+    values.protonId = data.proton_id;
 
     values.defaultBundleDir = 'bundleV' + values.gameNumber;
     values.bundleExtension = _getGameSpecificKey('bundle_extension');

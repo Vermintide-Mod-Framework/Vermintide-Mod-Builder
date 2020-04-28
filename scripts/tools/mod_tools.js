@@ -1,5 +1,6 @@
 const vdf = require('vdf');
 const crypto = require('crypto');
+const os = require('os');
 
 const print = require('../print');
 
@@ -250,6 +251,60 @@ async function getWorkshopDir() {
     return steamAppsDir;
 }
 
+async function getProtonDir() {
+    let protonDir;
+
+    if (config.get('useFallback')) {
+        console.log(`Using fallback Proton folder.`);
+    }
+    else{
+
+        // Get app location
+        try {
+            protonDir = await getAppDir(config.get('protonId'));
+        }
+        catch (err) {
+            print.error(err);
+        }
+
+        if (!protonDir) {
+            print.error('Proton folder not found, using fallback.');
+        }
+    }
+
+    // Use fallback path if no found
+    if (!protonDir) {
+        protonDir = config.get('fallbackProtonDir');
+    }
+
+    // Check that the path is correct by finding stingray exe inside the app
+    if (!await pfs.accessibleFile(path.combine(protonDir, config.get('protonExe')))) {
+
+        throw new Error(
+            `Proton executable not found in "${protonDir}".\n` +
+            `You need to install Proton from Steam client and specify its steam id in config or specify a valid fallback path.`
+        );
+    }
+
+    console.log(`Proton folder "${protonDir}"`);
+    return protonDir;
+}
+
+
+
+async function getCompatDataDir(appId) {
+    let steamAppsDir = await getSteamAppsDir(appId);
+    let compatDataDir = path.combine(steamAppsDir, "compatdata", appId);
+
+    if (!await pfs.accessibleDir(compatDataDir)) {
+        pfs.mkdir(compatDataDir);
+    }
+
+    return compatDataDir;
+}
+
+
+
 // Returns modsDir/modName
 function getModDir(modName) {
     return path.combine(config.get('modsDir'), modName);
@@ -360,6 +415,8 @@ exports.getSteamAppsDir = getSteamAppsDir;
 exports.getAppDir = getAppDir;
 exports.getModToolsDir = getModToolsDir;
 exports.getWorkshopDir = getWorkshopDir;
+exports.getProtonDir = getProtonDir;
+exports.getCompatDataDir = getCompatDataDir;
 exports.getModDir = getModDir;
 exports.getTempDir = getTempDir;
 exports.getBundleDir = getBundleDir;
