@@ -93,7 +93,7 @@ async function getSteamAppsDir(appId) {
         try {
             // Find steam installation directory in win registry
             let steamDir = await reg.get(appKey, value);
-            steamAppsDir = path.combine(steamDir, 'SteamApps');
+            steamAppsDir = path.combine(steamDir, 'steamapps');
         }
         catch (err) {
             throw new Error(`${err}\nSteam installation directory not found`);
@@ -131,7 +131,7 @@ async function getSteamAppsDir(appId) {
             break;
         }
 
-        steamAppsDir = path.combine(libraryDir, 'SteamApps');
+        steamAppsDir = path.combine(libraryDir, 'steamapps');
         if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
             return steamAppsDir;
         }
