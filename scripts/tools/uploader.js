@@ -12,16 +12,20 @@ const cfg = require('../modules/cfg');
 
 // Uploads mod to the workshop
 async function uploadMod(toolsDir, modName, changenote, skip) {
-
-    let cfgPath = cfg.getPath(modName);
-
     // Path to .cfg
     let uploaderParams = [
         '-c'
     ];
     if (process.platform == 'linux') {
-        uploaderParams.push(cfgPath);
+        // The cfg path passed to ugc_tool has to be inside
+        // Proton prefix, otherwise, link inside the config
+        // will be broken.
+        // The mod directory will be symlinked to this location
+        // right before uploading to workshop.
+        let cfgBase = cfg.getBase();
+        uploaderParams.push('C:\\modDirSymlink\\' + cfgBase);
     } else {
+        let cfgPath = cfg.getPath(modName);
         uploaderParams.push('"' + cfgPath + '"');
     }
 
@@ -42,10 +46,10 @@ async function uploadMod(toolsDir, modName, changenote, skip) {
 
     console.log(`Running uploader with steam app id ${config.get('gameId')}`);
 
-    return await _runUploader(toolsDir, uploaderParams);
+    return await _runUploader(toolsDir, uploaderParams, modName);
 }
 
-async function _runUploader(toolsDir, uploaderParams) {
+async function _runUploader(toolsDir, uploaderParams, modName) {
 
     // Set uploader game id
     await pfs.writeFile(path.combine(toolsDir, config.get('uploaderDir'), config.get('uploaderGameConfig')), config.get('gameId'));
@@ -61,11 +65,22 @@ async function _runUploader(toolsDir, uploaderParams) {
             print.error(error);
             return { exitCode: 1, finished: true };
         }
+
         let protonExe = path.combine(protonDir, config.get('protonExe'));
         uploaderParams.unshift(uploaderExe);
         uploaderParams.unshift('run');
         uploaderExe = protonExe;
-        process.env['STEAM_COMPAT_DATA_PATH'] = await modTools.getCompatDataDir(config.get('toolsId'));
+
+        let protonPrefixDir = await modTools.getCompatDataDir(config.get('toolsId'));
+
+        process.env['STEAM_COMPAT_DATA_PATH'] = protonPrefixDir;
+
+        let modDirPath = cfg.getDir(modName);
+        let modDirSymlinkPath = path.combine(protonPrefixDir, 'pfx/drive_c/modDirSymlink');
+        if (pfs.accessible(modDirSymlinkPath)) {
+            pfs.unlink(modDirSymlinkPath);
+        }
+        await pfs.symlink(modDirPath, modDirSymlinkPath);
     }
     // Spawn process
     let ugc_tool = child_process.spawn(

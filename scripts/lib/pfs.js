@@ -4,7 +4,7 @@ const rename = require('gulp-rename');
 const fs = require('fs');
 const promisify = require('@octetstream/promisify');
 
-let names = ['access', 'readFile', 'writeFile', 'close', 'open', 'read', 'write', 'rename', 'rmdir', 'mkdir', 'readdir', 'stat', 'lstat', 'fstat', 'appendFile', 'realpath', 'link', 'unlink', 'readlink', 'chmod', 'fchmod', 'chown', 'fchown', 'lchown', 'fsync', 'utimes', 'futimes', 'ftruncate', 'copyFile'];
+let names = ['access', 'readFile', 'writeFile', 'close', 'open', 'read', 'write', 'rename', 'rmdir', 'mkdir', 'readdir', 'stat', 'lstat', 'fstat', 'appendFile', 'realpath', 'link', 'symlink', 'unlink', 'readlink', 'chmod', 'fchmod', 'chown', 'fchown', 'lchown', 'fsync', 'utimes', 'futimes', 'ftruncate', 'copyFile'];
 
 let pfs = promisify.some(fs, names);
 
