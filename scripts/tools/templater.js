@@ -95,8 +95,8 @@ async function copyTemplate(params) {
                 // Copy files that shouldn't be modified
                 if (config.get('coreSrc').length > 0) {
 
-                    //these function should probably be spun off into a more robust solution
-                    //something searches the VT2 sdk install folder for a list of required folders/files
+                    //these functions should probably be spun off into a more robust solution
+                    //something that searches the VT2 sdk install folder for a list of required folders/files
                     copyFolderRecursiveSync(sdkDir+"/streamable_resources/core", modDir)
                     copyFileSync(sdkDir+"/streamable_resources/lua_preprocessor_defines.config", modDir)
                     
