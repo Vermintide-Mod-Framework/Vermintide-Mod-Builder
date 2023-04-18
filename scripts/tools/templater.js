@@ -9,8 +9,6 @@ const config = require('../modules/config');
 
 const modTools = require('./mod_tools');
 
-const fs = require('fs');
-
 // Throws if template folder doesn't exist or doesn't have itemPreview file in it
 async function validateTemplate(templateDir) {
 
@@ -23,50 +21,11 @@ async function validateTemplate(templateDir) {
     }
 }
 
-//pair of functions to copy a file or folder if the source exists
-function copyFileSync( source, target ) {
-    if (fs.existsSync( source )) {
-        var targetFile = target;
-
-        if ( fs.existsSync( target ) ) {
-            if ( fs.lstatSync( target ).isDirectory() ) {
-                targetFile = path.join( target, path.basename( source ) );
-            }
-        }
-
-        fs.writeFileSync(targetFile, fs.readFileSync(source));
-    }
-}
-
-function copyFolderRecursiveSync( source, target) {
-    if (fs.existsSync( source )) {
-        var files = [];
-
-        var targetFolder = path.join( target, path.basename( source ) );
-        if ( !fs.existsSync( targetFolder ) ) {
-            fs.mkdirSync( targetFolder );
-        }
-
-        if ( fs.lstatSync( source ).isDirectory() ) {
-            files = fs.readdirSync( source );
-            files.forEach( function ( file ) {
-                var curSource = path.join( source, file );
-                if ( fs.lstatSync( curSource ).isDirectory() ) {
-                    copyFolderRecursiveSync( curSource, targetFolder );
-                } else {
-                    copyFileSync( curSource, targetFolder );
-                }
-            } );
-        }
-    }
-}
-
 // Copies and renames mod template folder and its contents
 async function copyTemplate(params) {
 
     let modName = params.name;
     let modDir = modTools.getModDir(modName);
-    let sdkDir = await modTools.getModToolsDir();
 
     // Check that template is valid
     await validateTemplate(config.get('templateDir'));
@@ -93,13 +52,7 @@ async function copyTemplate(params) {
             .on('end', () => {
 
                 // Copy files that shouldn't be modified
-                if (config.get('coreSrc').length > 0) {
-
-                    //these functions should probably be spun off into a more robust solution
-                    //something that searches the VT2 sdk install folder for a list of required folders/files
-                    copyFolderRecursiveSync(sdkDir+"/streamable_resources/core", modDir)
-                    copyFileSync(sdkDir+"/streamable_resources/lua_preprocessor_defines.config", modDir)
-                    
+                if (config.get('coreSrc').length > 0) {                
                     vinyl.src(config.get('coreSrc'), { base: config.get('templateDir') })
                         .pipe(vinyl.dest(modDir))
                         .on('error', reject)

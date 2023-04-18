@@ -14,7 +14,7 @@ module.exports = async function taskWatch() {
 
     let exitCode = 0;
 
-    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource } = await modTools.getBuildParams();
+    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore } = await modTools.getBuildParams();
 
     if (modNames.length === 0) {
         console.log(`No mods to watch`);
@@ -126,7 +126,8 @@ module.exports = async function taskWatch() {
                 verbose,
                 ignoreBuildErrors,
                 modId,
-                copySource
+                copySource,
+                useModCore
             });
         }
         catch (error) {

@@ -331,7 +331,9 @@ async function getBuildParams() {
 
     let copySource = config.get('copySource');
 
-    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource };
+    let useModCore = cl.get('useModCore', 'use-mod-core', 'core', 'c') || false;
+
+    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore};
 }
 
 // Returns modsDir/modName/modName.mod

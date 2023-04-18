@@ -19,7 +19,7 @@ const modTools = require('./mod_tools');
 async function buildMod(toolsDir, modName, params) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource } = params;
+    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource, useModCore } = params;
 
     // Check that modName.mod file exists in the mod folder
     let modFilePath = modTools.getModFilePath(modName);
@@ -70,7 +70,12 @@ async function buildMod(toolsDir, modName, params) {
 
     // Run stingray and process its output
     let modDir = modTools.getModDir(modName);
-    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, verbose);
+    let sdkDir = await modTools.getModToolsDir();
+    console.log(useModCore)
+    console.log("useModCore")
+    console.log(verbose)
+    console.log("verbose")
+    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose, useModCore);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
     // Remove bundle and .mod files from bundle folders
@@ -118,14 +123,18 @@ async function _getTempDir(modName, shouldRemove) {
 }
 
 // Builds the bundle
-async function _runStingray(toolsDir, modDir, dataDir, buildDir, verbose) {
-
+async function _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose, use_mod_core) {
     let stingrayParams = [
         `--compile-for win32`,
         `--source-dir "${modDir}"`,
         `--data-dir "${dataDir}"`,
-        `--bundle-dir "${buildDir}"`
+        `--bundle-dir "${buildDir}"`,
+        `--map-source-dir core "${sdkDir}"`
     ];
+
+    if (use_mod_core) {
+        stingrayParams.pop();
+    }
 
     // Spawn stingray.exe
     let stingray = child_process.spawn(
