@@ -71,10 +71,6 @@ async function buildMod(toolsDir, modName, params) {
     // Run stingray and process its output
     let modDir = modTools.getModDir(modName);
     let sdkDir = await modTools.getModToolsDir();
-    console.log(useModCore)
-    console.log("useModCore")
-    console.log(verbose)
-    console.log("verbose")
     let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose, useModCore);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
@@ -132,6 +128,7 @@ async function _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose
         `--map-source-dir core "${sdkDir}"`
     ];
 
+    // Removes map-source-dir flag if the mod's "core" folder is to be used
     if (use_mod_core) {
         stingrayParams.pop();
     }

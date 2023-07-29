@@ -52,7 +52,7 @@ async function copyTemplate(params) {
             .on('end', () => {
 
                 // Copy files that shouldn't be modified
-                if (config.get('coreSrc').length > 0) {                
+                if (config.get('coreSrc').length > 0) {
                     vinyl.src(config.get('coreSrc'), { base: config.get('templateDir') })
                         .pipe(vinyl.dest(modDir))
                         .on('error', reject)
