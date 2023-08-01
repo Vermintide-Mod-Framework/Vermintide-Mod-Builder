@@ -359,7 +359,7 @@ function buildBundleGulp(buildDir, extConfigName){
     
     if (extConfigName != 'bundleExtension'){
         gulp_array[0] += config.get(extConfigName);
-    }s
+    }
 
     return gulp_array
 }
