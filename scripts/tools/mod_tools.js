@@ -1,5 +1,7 @@
 const vdf = require('vdf');
 const crypto = require('crypto');
+const vinyl = require('vinyl-fs');
+const rename = require('gulp-rename');
 
 const print = require('../print');
 
@@ -348,6 +350,38 @@ function hashModName(modName) {
     return hash.substring(0, 16);
 }
 
+// Returns a gulp pattern array, used for matching file types when copying files over from '.temp' folder
+function buildBundleGulp(buildDir, extConfigName){
+    let gulp_array = [
+        buildDir + '/*([0-f])',
+        '!' + buildDir + '/dlc'
+    ]
+    
+    if (extConfigName != 'bundleExtension'){
+        gulp_array[0] += config.get(extConfigName);
+    }s
+
+    return gulp_array
+}
+
+// Returns the bundle's file stream and initiates the process of copying the bundle file to the buildDir
+function bundleStreamer(extConfigName, buildDir, useNewFormat, modName, reject) {
+    let bundleStream = vinyl.src(
+        buildBundleGulp(buildDir, extConfigName),
+        { base: buildDir })
+        .pipe(rename(p => {
+
+            if (!useNewFormat) {
+                p.basename = hashModName(modName);
+            }
+
+            p.extname = config.get(extConfigName);
+        }))
+        .on('error', reject);
+
+    return bundleStream
+}
+
 
 exports.validateModNames = validateModNames;
 exports.validModName = validModName;
@@ -367,3 +401,5 @@ exports.getWorkshopParams = getWorkshopParams;
 exports.getFirstModName = getFirstModName;
 exports.getModNames = getModNames;
 exports.getBuildParams = getBuildParams;
+
+exports.bundleStreamer = bundleStreamer;
