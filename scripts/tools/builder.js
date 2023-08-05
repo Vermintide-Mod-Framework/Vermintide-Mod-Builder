@@ -262,9 +262,8 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
         }
 
         let bundleStream = modTools.bundleStreamer('bundleExtension', buildDir, useNewFormat, modName, reject);
-        let streamFileStream = modTools.bundleStreamer('streamFileExtension', buildDir, useNewFormat, modName, reject);
 
-        let mergedStream = useNewFormat ? merge(modFileStream, bundleStream, streamFileStream) : bundleStream;
+        let mergedStream = useNewFormat ? merge(modFileStream, bundleStream) : bundleStream;
 
         mergedStream = mergedStream.pipe(vinyl.dest(bundleDir)).on('error', reject);
 
