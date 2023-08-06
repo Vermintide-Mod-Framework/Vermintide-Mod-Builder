@@ -1,6 +1,5 @@
 const child_process = require('child_process');
 const vinyl = require('vinyl-fs');
-const rename = require('gulp-rename');
 const del = require('del');
 const merge = require('merge-stream');
 
@@ -262,19 +261,7 @@ async function _copyModFiles(modName, buildDir, bundleDir, modWorkshopDir) {
             ], { base: modTools.getModDir(modName)});
         }
 
-        let bundleStream = vinyl.src([
-            buildDir + '/*([0-f])',
-            '!' + buildDir + '/dlc'
-        ], { base: buildDir })
-            .pipe(rename(p => {
-
-                if (!useNewFormat) {
-                    p.basename = modTools.hashModName(modName);
-                }
-
-                p.extname = config.get('bundleExtension');
-            }))
-            .on('error', reject);
+        let bundleStream = modTools.bundleStreamer('bundleExtension', buildDir, useNewFormat, modName, reject);
 
         let mergedStream = useNewFormat ? merge(modFileStream, bundleStream) : bundleStream;
 

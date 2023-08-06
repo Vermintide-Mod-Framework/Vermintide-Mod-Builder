@@ -104,9 +104,10 @@ let values = {
     coreSrc: undefined,  // Blob of files to copy without changes
     modSrc: undefined,   // Blob of files to copy and replace
 
-    defaultBundleDir: undefined,  // Default folder in which the built bundle is gonna be stored
-    bundleExtension: undefined,   // Extension of built bundle file
-    modFileExtension: '.mod',     // Extension of .mod file
+    defaultBundleDir: undefined,    // Default folder in which the built bundle is gonna be stored
+    bundleExtension: undefined,     // Extension of built bundle file
+    modFileExtension: '.mod',       // Extension of .mod file
+    streamFileExtension: '.stream', // Extension of .stream file
 
     useNewFormat: undefined,      // Determines whether bundle is renamed and whether .mod file is copied
     ignoreBuildErrors: undefined, // Determines whether stingray.exe exit code should be ignored
