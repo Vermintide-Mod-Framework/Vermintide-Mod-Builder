@@ -1,0 +1,40 @@
+name: VMB build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build_n_release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present
+                        
+      - name: Generate release tag
+        id: tag
+        run: |
+          VMB_VERSION=$(npm pkg get version | tr -d '"')
+          echo "release_tag=${VMB_VERSION}" >> $GITHUB_OUTPUT 
+         
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.event.pull_request.merged }}
+        with:
+          name: VMB v${{ steps.tag.outputs.release_tag }}
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          generate_release_notes: True
+          files: |
+            *.zip
