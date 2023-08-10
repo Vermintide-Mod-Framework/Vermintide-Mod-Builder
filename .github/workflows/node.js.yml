@@ -30,8 +30,8 @@ jobs:
           echo "release_tag=${VMB_VERSION}" >> $GITHUB_OUTPUT 
          
       - name: Release
+        if: contains(fromJSON('["push"]'), github.event_name)
         uses: softprops/action-gh-release@v1
-        if: ${{ github.event.pull_request.merged }}
         with:
           name: VMB v${{ steps.tag.outputs.release_tag }}
           tag_name: ${{ steps.tag.outputs.release_tag }}
