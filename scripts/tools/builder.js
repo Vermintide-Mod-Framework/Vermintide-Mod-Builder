@@ -211,7 +211,7 @@ function _outputFailedBundles(data, modName) {
     bundles.splice(0, 1);
 
     for (let line of bundles) {
-        let bundle = line.split(', ');
+        let bundle = line.split(',');
 
         // Each line has to be bundle, "resource", "type", "bytes"
         if (bundle.length < 4) {
