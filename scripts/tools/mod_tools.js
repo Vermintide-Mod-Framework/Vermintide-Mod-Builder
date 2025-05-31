@@ -79,6 +79,22 @@ async function getModId(modName) {
     return modId;
 }
 
+async function legacyGetSteamAppsDir(libraryFolders, appManifestName) {
+    let dir_i = 0;
+    while(++dir_i) {
+        const libraryDir = libraryFolders[String(dir_i)];
+
+        if(!libraryDir) {
+            break;
+        }
+
+        const steamAppsDir = path.combine(libraryDir, 'SteamApps');
+        if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
+            return steamAppsDir;
+        }
+    }
+}
+
 // Return steamapps folder path of a specific app
 async function getSteamAppsDir(appId){
 
@@ -103,33 +119,47 @@ async function getSteamAppsDir(appId){
     }
 
     let vdfName = 'libraryfolders.vdf';
-    let data;
-
+    
     // Read other steam library folders from libraryfolders.vdf
+    let file;
     try {
-        data = vdf.parse(await pfs.readFile(path.combine(steamAppsDir, vdfName), 'utf-8'));
+        file = await pfs.readFile(path.combine(steamAppsDir, vdfName), 'utf-8');
     }
     catch (err) {
-        throw new Error(`${err}\nCoudln't parse ${vdfName}`);
+        throw new Error(`${err}\nCouldn't read ${vdfName}`);
     }
-
-    if (!data.LibraryFolders) {
-        throw new Error(`Coudln't parse ${vdfName}`);
+    
+    let data;
+    try {
+        data = vdf.parse(file);
+        pfs.close(file)
+    } catch (err) {
+        throw new Error(`${err}\nCouldn't parse ${vdfName}`);
     }
 
     // Check all other steam library folders for app's manifest file
-    let i = 0;
-    while(++i) {
-        let libraryDir = data.LibraryFolders[String(i)];
-
-        if(!libraryDir) {
-            break;
+    if(data.LibraryFolders) {
+        const appsDir = await legacyGetSteamAppsDir(data.LibraryFolders, appManifestName)
+        if(appsDir) {
+            return appsDir
         }
+    } else if(data.libraryfolders) {
+        let dir_i = 0;
+        while(++dir_i) {
+            const libraryDirData = data.libraryfolders[String(dir_i)];
 
-        steamAppsDir = path.combine(libraryDir, 'SteamApps');
-        if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
-            return steamAppsDir;
+            if(!libraryDirData) {
+                break;
+            }
+
+            const libraryDir = libraryDirData.path
+            const steamAppsDir = path.combine(libraryDir, 'SteamApps');
+            if (await pfs.accessibleFile(path.combine(steamAppsDir, appManifestName))) {
+                return steamAppsDir;
+            }
         }
+    } else {
+        throw new Error(`Missing key (LibraryFolders|libraryfolders) in ${vdfName}. Found keys: [${Object.keys(data).join(", ")}]`);
     }
 
     throw new Error(`SteamApps folder for app ${appId} not found`);
