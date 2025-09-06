@@ -63,7 +63,10 @@ async function _runUploader(toolsDir, uploaderParams) {
         // Check if uploader has printed item id
         if (data.includes('publisher_id')) {
             try {
-                modId = data.match(/publisher_id: (\d*)/)[1];
+                modId = data.match(/publisher_id: (-?\d*)/)[1];
+                
+                // The tool prints the mod id as a signed integer (-731833689), interpret it as unsigned (3563133607)
+                modId = modId >>> 0;
             }
             catch (err) { }
         }

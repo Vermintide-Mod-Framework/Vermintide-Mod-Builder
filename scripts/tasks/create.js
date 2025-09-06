@@ -51,7 +51,7 @@ module.exports = async function taskCreate() {
         params.filePath = cfg.getPath(modName);
         await cfg.writeFile(params);
 
-        // Get path tosdk and upload mod
+        // Get path to sdk and upload mod
         let modId = await uploader.uploadMod(await modTools.getModToolsDir(), modName);
 
         // Print and optionally open url if -o flag was set
