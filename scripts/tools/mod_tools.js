@@ -132,7 +132,6 @@ async function getSteamAppsDir(appId){
     let data;
     try {
         data = vdf.parse(file);
-        pfs.close(file)
     } catch (err) {
         throw new Error(`${err}\nCouldn't parse ${vdfName}`);
     }
