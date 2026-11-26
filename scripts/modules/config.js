@@ -39,7 +39,7 @@ let defaultData = {
     tools_id2: '866060',
 
     fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
-    fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 SDK/',
+    fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools/',
 
     fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
     fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
@@ -118,7 +118,7 @@ let values = {
     uploaderDir: 'ugc_uploader/',
     uploaderExe: 'ugc_tool.exe',
     uploaderGameConfig: 'steam_appid.txt',
-    stingrayDir: 'bin/',
+    stingrayDir: 'sdk/engine/win64/dev/',
     stingrayExe: 'stingray_win64_dev_x64.exe'
 };
 
