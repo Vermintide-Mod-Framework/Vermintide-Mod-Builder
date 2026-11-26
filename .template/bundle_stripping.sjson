@@ -1,0 +1,3 @@
+// List of roots from which to calculate reachability.
+// Must be either an array of package names or false to generate all packages.
+root_packages = false

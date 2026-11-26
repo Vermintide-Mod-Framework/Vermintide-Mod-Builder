@@ -124,7 +124,7 @@ async function _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose
         `--source-dir "${modDir}"`,
         `--data-dir "${dataDir}"`,
         `--bundle-dir "${buildDir}"`,
-        `--map-source-dir core "${sdkDir}"`
+        `--map-source-dir core "${path.combine(sdkDir, 'sdk')}"`
     ];
 
     // Removes map-source-dir flag if the mod's "core" folder is to be used
