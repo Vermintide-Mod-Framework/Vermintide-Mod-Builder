@@ -76,6 +76,13 @@ async function buildMod(toolsDir, modName, params) {
     let sourceDir = modDir;
     let mapSourceDirs = config.get('mapSourceDirs');
     if (mapSourceDirs.length > 0) {
+
+        // Entries named alone are in the Modding Tools Content
+        if (mapSourceDirs.some(({ dir }) => dir === null)) {
+            let contentDir = await modTools.getContentDir();
+            mapSourceDirs = mapSourceDirs.map(({ name, dir }) => ({ name, dir: dir === null ? contentDir : dir }));
+        }
+
         sourceDir = path.combine(modTempDir, 'source');
         mappedSources.stage(modDir, sourceDir, mapSourceDirs, bundleDirs, resolveDeps !== false);
     }

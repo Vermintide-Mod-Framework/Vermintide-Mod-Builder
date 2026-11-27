@@ -75,9 +75,9 @@ let defaultData = {
 
     ignored_dirs_per_mod: [],
 
-    // Folders a mod can use resources from, as { "name": "<root folder name>", "dir": "<folder that has it>" },
-    // or a top-level file to always include, as { "name": "<file name>", "dir": "<folder that has it>" }.
-    // The mod and the files it uses from them are copied to its temp folder, and the mod is compiled from there.
+    // Folders a mod can use resources from, and top-level files to always include. An entry is the name of a folder
+    // or file in the Modding Tools Content's project folder, such as "units", or { "name": "<name>", "dir": "<folder that has it>" }
+    // for one elsewhere. The mod and the files it uses from them are copied to its temp folder, and compiled from there.
     map_source_dirs: [],
 
     ignore_build_errors: false
@@ -105,7 +105,7 @@ let values = {
     includeDotFiles: undefined,      // Whether to ignore files & folders starting with .
     ignoredDirs: undefined,          // Folders that are ignored when scanning for mods
     ignoredDirsPerMod: undefined,    // Folders that are ignored when watching a mod or copying its sourse code
-    mapSourceDirs: undefined,        // Extra source folders for the compiler: [{ name, dir }]
+    mapSourceDirs: undefined,        // Extra source folders for the compiler: [{ name, dir }], dir null for the Content's
 
     templateDir: undefined,  // Folder with template for creating new mods
     itemPreview: undefined,  // Name of item preview image file
@@ -441,15 +441,20 @@ async function _getModsDir(modsDir, tempDir) {
     return { modsDir, tempDir };
 }
 
-// Checks the extra source folders and makes their paths absolute
+// Checks the extra source folders and makes their paths absolute. A name alone is in the Modding Tools Content,
+// whose folder is found when a build needs it, so its dir is null here.
 function _getMapSourceDirs(mapSourceDirs) {
 
     return mapSourceDirs.map(entry => {
 
+        if (typeof entry == 'string' && entry) {
+            return { name: entry, dir: null };
+        }
+
         if (!entry || typeof entry.name != 'string' || !entry.name || typeof entry.dir != 'string' || !entry.dir) {
             throw new Error(
-                `Invalid value in ${values.filename}: ` +
-                `each entry of "map_source_dirs" must be { "name": "<root folder name>", "dir": "<folder that has it>" }.`
+                `Invalid value in ${values.filename}: each entry of "map_source_dirs" must be ` +
+                `the name of a folder or file in the Modding Tools Content, or { "name": "<name>", "dir": "<folder that has it>" }.`
             );
         }
 
