@@ -36,7 +36,7 @@ const REFERENCE_PATTERN = /"([A-Za-z0-9_\-]+(?:\/[A-Za-z0-9_.\-]+)+)"/g;
 async function sourceDirs() {
     let dirs = config.get('sourceDirs');
 
-    if (dirs.length == 0) {
+    if (dirs.length === 0) {
         throw new Error(`"source_dirs" in ${config.get('filename')} is empty`);
     }
 
@@ -103,7 +103,7 @@ function _split(dirs) {
 // The mod's files, without its list and the skipped folders
 function _modFiles(modDir, skippedDirs) {
     let listFile = path.combine(modDir, LIST_FILE);
-    return _allFilesIn(modDir, skippedDirs.map(dir => path.fix(dir))).filter(file => file != listFile);
+    return _allFilesIn(modDir, skippedDirs.map(dir => path.fix(dir))).filter(file => file !== listFile);
 }
 
 // The files the mod's files refer to in the folders, the files those refer to, and so on: relative path -> source file
@@ -143,7 +143,7 @@ function _filesListed(listFile, dirs) {
             continue;
         }
 
-        let entry = dirs.find(({ name }) => relative == name || relative.startsWith(name + '/'));
+        let entry = dirs.find(({ name }) => relative === name || relative.startsWith(name + '/'));
         let file = entry && path.combine(entry.dir, relative);
 
         if (!file || !fs.existsSync(file)) {
@@ -203,7 +203,7 @@ function _filesFor(reference, folders, listings) {
         let stem = path.basename(fileName, path.extname(fileName));
 
         // A reference names a resource without its extension, or one file with it
-        if (stem == wantedName || fileName == wantedName) {
+        if (stem === wantedName || fileName === wantedName) {
             files.push({ relative: path.combine(relativeDir, fileName), file: path.combine(sourceDir, fileName) });
         }
     }
@@ -260,9 +260,9 @@ function _copyNeeded(needed, stagingDir) {
             let stagedStats = fs.statSync(staged);
 
             // Times are compared in whole seconds, since setting a file's time can round it
-            let sameTime = Math.floor(stagedStats.mtimeMs / 1000) == Math.floor(sourceStats.mtimeMs / 1000);
+            let sameTime = Math.floor(stagedStats.mtimeMs / 1000) === Math.floor(sourceStats.mtimeMs / 1000);
 
-            if (stagedStats.size == sourceStats.size && sameTime) {
+            if (stagedStats.size === sourceStats.size && sameTime) {
                 continue;
             }
         }

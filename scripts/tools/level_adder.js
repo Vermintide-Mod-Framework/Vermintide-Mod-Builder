@@ -157,7 +157,7 @@ function addLevel(contentDir, modDir, modName, levelName) {
         fs.symlinkSync(modLevelsDir, link, 'junction');
         done.push(`Linked "${link}" to "${modLevelsDir}"`);
     }
-    else if (path.fix(_linkTarget(link)).toLowerCase() != modLevelsDir.toLowerCase()) {
+    else if (path.fix(_linkTarget(link)).toLowerCase() !== modLevelsDir.toLowerCase()) {
         throw new Error(`"${link}" already exists and doesn't link to "${modLevelsDir}"`);
     }
 

@@ -447,11 +447,11 @@ function _getSourceDirs(sourceDirs) {
 
     return sourceDirs.map(entry => {
 
-        if (typeof entry == 'string' && entry) {
+        if (typeof entry === 'string' && entry) {
             return { name: entry, dir: null };
         }
 
-        if (!entry || typeof entry.name != 'string' || !entry.name || typeof entry.dir != 'string' || !entry.dir) {
+        if (!entry || typeof entry.name !== 'string' || !entry.name || typeof entry.dir !== 'string' || !entry.dir) {
             throw new Error(
                 `Invalid value in ${values.filename}: each entry of "source_dirs" must be ` +
                 `the name of a folder or file in the Modding Tools Content, or { "name": "<name>", "dir": "<folder that has it>" }.`
