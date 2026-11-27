@@ -19,8 +19,78 @@ const MOD_TOOLS_LEVEL_SETTINGS = 'scripts/settings/dlcs/mod_tools/level_settings
 // A new level: the editor's empty level, with the game's skydome and an environment of the game.
 // The environment has to be one of the game's: an end zone blends the level's environment to its
 // waystone_environment_01 setting when it opens, and the SDK's default environments don't have it.
+// The editor reads a level from editor_metadata, and writes the rest of the file from it when it saves.
+// It refuses a level without editor_metadata's Flow, and takes the skydome and environment from its Settings.
 const LEVEL_TEXT =
 `editor_metadata = {
+	Flow = {
+		Connections = [
+		]
+		Groups = [
+		]
+		Nodes = [
+		]
+	}
+	Groups = [
+	]
+	Layers = [
+		"Default"
+	]
+	LevelObjectSets = {
+		NestedSetNamesBySetName = {
+		}
+		ObjectIdsBySetName = {
+		}
+		VisibleSetNames = [
+		]
+	}
+	LevelReferences = [
+	]
+	LightBakeSettings = {
+		ExcludedObjectSets = [
+		]
+		Layers = [
+		]
+	}
+	LuaPluginObjects = [
+	]
+	Notes = [
+	]
+	Overrides = [
+	]
+	ParticleEffects = [
+	]
+	PositionMarkers = [
+	]
+	Prototypes = [
+	]
+	Replays = [
+	]
+	Scatter = {
+		Dirty = false
+		PoolSettings = {
+		}
+		ScatterData = {
+		}
+	}
+	Settings = {
+		FrozenLayers = [
+		]
+		HiddenLayers = [
+		]
+		HiddenObjects = [
+		]
+		LastHiddenObjects = [
+		]
+		ShadingEnvironment = "environment/default_honduras_02"
+		SkydomeUnit = "units/skydome/skydome_hdr"
+	}
+	Sounds = [
+	]
+	Splines = [
+	]
+	Stories = [
+	]
 	Triggers = [
 	]
 	Units = [
