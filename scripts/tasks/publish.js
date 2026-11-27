@@ -49,8 +49,7 @@ module.exports = async function taskPublish() {
             ignoreBuildErrors: buildParams.ignoreBuildErrors,
             modId: null,
             copySource: buildParams.copySource,
-            useModCore: buildParams.useModCore,
-            resolveDeps: buildParams.resolveDeps
+            useModCore: buildParams.useModCore
         });
 
         console.log();

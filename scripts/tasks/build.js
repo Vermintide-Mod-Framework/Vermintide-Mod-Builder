@@ -7,7 +7,7 @@ module.exports = async function taskBuild() {
 
     let exitCode = 0;
 
-    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore, resolveDeps } = await modTools.getBuildParams();
+    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore } = await modTools.getBuildParams();
 
     // Only print what we're gonna build if there's more than one mod
     if (modNames.length > 1) {
@@ -48,8 +48,7 @@ module.exports = async function taskBuild() {
                 ignoreBuildErrors,
                 modId,
                 copySource,
-                useModCore,
-                resolveDeps
+                useModCore
             });
         }
         catch (error) {

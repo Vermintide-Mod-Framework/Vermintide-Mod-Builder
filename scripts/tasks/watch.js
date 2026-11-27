@@ -9,13 +9,12 @@ const config = require('../modules/config');
 
 const modTools = require('../tools/mod_tools');
 const builder = require('../tools/builder');
-const mappedSources = require('../tools/mapped_sources');
 
 module.exports = async function taskWatch() {
 
     let exitCode = 0;
 
-    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore, resolveDeps } = await modTools.getBuildParams();
+    let { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore } = await modTools.getBuildParams();
 
     if (modNames.length === 0) {
         console.log(`No mods to watch`);
@@ -63,9 +62,7 @@ module.exports = async function taskWatch() {
 
         let ignoredSrc = [
             // Ignore temp files stingray creates
-            modDir + '/*.tmp',
-            // and the list of mapped files the build writes
-            modDir + '/' + mappedSources.LIST_FILE
+            modDir + '/*.tmp'
         ];
 
         // Ignore folders with built files
@@ -130,8 +127,7 @@ module.exports = async function taskWatch() {
                 ignoreBuildErrors,
                 modId,
                 copySource,
-                useModCore,
-                resolveDeps
+                useModCore
             });
         }
         catch (error) {

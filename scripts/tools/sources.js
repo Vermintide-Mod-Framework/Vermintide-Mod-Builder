@@ -2,20 +2,25 @@ const fs = require('fs');
 
 const path = require('../lib/path');
 
-// Gives the compiler only the files a mod uses from the folders in map_source_dirs.
-// The compiler compiles everything in its source folder, and the game's folders are most of the game,
-// so instead the mod's own files, the files they refer to, and the files those refer to in turn are copied
-// to a staging folder in the mod's temp folder, and the mod is compiled from there.
-// The references are read from the files' text, as the compiler reads them. The compiler's dependency database
-// (dependency_database.db) can't be used instead: it lists what the game loads, not what the compiler reads,
-// such as texture categories, shader nodes, or a unit built from another unit's mesh.
-// An entry can also name a file in the top folder, such as global.script_flow_nodes, which is always copied:
-// the compiler only reads top-level files from its source folder.
-// The files found are written to LIST_FILE in the mod's folder, one path per line, so that what the mod takes from
-// the game can be seen and kept with it. With --no-resolve-deps the build copies the files in that list instead of
-// finding them again.
+const config = require('../modules/config');
 
-const LIST_FILE = 'mapped_sources.txt';
+const modTools = require('./mod_tools');
+
+// Lets a mod use files from the folders in source_dirs, such as the game's units in the Modding Tools Content.
+//
+// vmb resolve-sources finds the files the mod uses there: the ones its files refer to, the ones those refer to, and so on,
+// read from the files' text as the compiler reads them. It writes them to LIST_FILE in the mod's folder, one per line.
+// The compiler's dependency database (dependency_database.db) can't be used instead: it lists what the game loads,
+// not what the compiler reads, such as texture categories, shader nodes, or a unit built from another unit's mesh.
+//
+// vmb build, for a mod with that list, copies the mod and the listed files to a staging folder in the mod's temp folder
+// and compiles from there. The compiler compiles everything in its source folder, and the game's folders are most of
+// the game, so they can't be given to it whole. A mod without the list builds from its own folder as before.
+//
+// An entry of source_dirs can also name a file in the top folder, such as global.script_flow_nodes, which is always
+// listed: the compiler only reads top-level files from its source folder.
+
+const LIST_FILE = 'sources.txt';
 
 // Files that are never read for references: binary data, and big plain-text meshes
 const BINARY_EXTENSIONS = [
@@ -27,53 +32,83 @@ const MAX_TEXT_FILE_SIZE = 8 * 1024 * 1024;
 // A resource path in quotes, as text resources write them: "units/props/barrel_01"
 const REFERENCE_PATTERN = /"([A-Za-z0-9_\-]+(?:\/[A-Za-z0-9_.\-]+)+)"/g;
 
-// Copies modDir's files and the files it uses from mapSourceDirs into stagingDir,
-// and removes staged files it no longer uses. skippedDirs are the absolute paths of the mod's folders that are not compiled,
-// such as its bundle folders. With resolve false, the files it uses are the ones in its LIST_FILE.
-function stage(modDir, stagingDir, mapSourceDirs, skippedDirs, resolve) {
+// The folders and files of source_dirs as [{ name, dir }], with the Modding Tools Content's folder for names given alone
+async function sourceDirs() {
+    let dirs = config.get('sourceDirs');
 
-    let listings = new Map();
+    if (dirs.length == 0) {
+        throw new Error(`"source_dirs" in ${config.get('filename')} is empty`);
+    }
+
+    if (dirs.some(({ dir }) => dir === null)) {
+        let contentDir = await modTools.getContentDir();
+        dirs = dirs.map(({ name, dir }) => ({ name, dir: dir === null ? contentDir : dir }));
+    }
+
+    return dirs;
+}
+
+// Whether the mod has a list of the files it uses from source_dirs
+function hasList(modDir) {
+    return fs.existsSync(path.combine(modDir, LIST_FILE));
+}
+
+// Finds the files the mod in modDir uses from dirs and writes them to its list. Returns how many there are.
+// skippedDirs are the absolute paths of the mod's folders that are not compiled, such as its bundle folders.
+function resolve(modDir, dirs, skippedDirs) {
+    let { folders, files } = _split(dirs);
+    let used = _filesUsed(_modFiles(modDir, skippedDirs), folders, new Map());
+
+    let lines = files.map(({ name }) => name).concat(Array.from(used.keys()).sort());
+    fs.writeFileSync(path.combine(modDir, LIST_FILE), lines.join('\n') + '\n');
+
+    return lines.length;
+}
+
+// Copies the mod in modDir and the files in its list into stagingDir, and removes staged files it no longer uses
+function stage(modDir, stagingDir, dirs, skippedDirs) {
     let needed = new Map(); // staged relative path -> source file
-    let listFile = path.combine(modDir, LIST_FILE);
 
-    // The mod's own files
-    let modFiles = _allFilesIn(modDir, skippedDirs.map(dir => path.fix(dir))).filter(file => file != listFile);
-    for (let file of modFiles) {
+    for (let file of _modFiles(modDir, skippedDirs)) {
         needed.set(_relative(modDir, file), file);
     }
 
-    // Top-level files named in map_source_dirs
-    let folders = [];
-    for (let entry of mapSourceDirs) {
-        let file = path.combine(entry.dir, entry.name);
-
-        if (fs.existsSync(file) && fs.statSync(file).isFile()) {
-            needed.set(entry.name, file);
-        }
-        else {
-            folders.push(entry);
-        }
-    }
-
-    let mapped = resolve ? _filesUsed(modFiles, folders, listings) : _filesListed(listFile, folders);
-
-    for (let [relative, file] of mapped) {
+    for (let [relative, file] of _filesListed(path.combine(modDir, LIST_FILE), dirs)) {
         needed.set(relative, file);
-    }
-
-    if (resolve) {
-        let lines = Array.from(mapped.keys()).sort();
-        fs.writeFileSync(listFile, lines.join('\n') + '\n');
     }
 
     _copyNeeded(needed, stagingDir);
     _removeUnneeded(needed, stagingDir);
 }
 
-// The files the mod's files refer to in the mapped folders, the files those refer to, and so on:
-// staged relative path -> source file
+// The entries of dirs that are folders, and the ones that are top-level files
+function _split(dirs) {
+    let folders = [];
+    let files = [];
+
+    for (let entry of dirs) {
+        let file = path.combine(entry.dir, entry.name);
+
+        if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+            files.push(entry);
+        }
+        else {
+            folders.push(entry);
+        }
+    }
+
+    return { folders, files };
+}
+
+// The mod's files, without its list and the skipped folders
+function _modFiles(modDir, skippedDirs) {
+    let listFile = path.combine(modDir, LIST_FILE);
+    return _allFilesIn(modDir, skippedDirs.map(dir => path.fix(dir))).filter(file => file != listFile);
+}
+
+// The files the mod's files refer to in the folders, the files those refer to, and so on: relative path -> source file
 function _filesUsed(modFiles, folders, listings) {
-    let mapped = new Map();
+    let used = new Map();
     let queue = modFiles.filter(_isText);
 
     while (queue.length > 0) {
@@ -83,11 +118,11 @@ function _filesUsed(modFiles, folders, listings) {
 
             for (let source of _filesFor(reference, folders, listings)) {
 
-                if (mapped.has(source.relative)) {
+                if (used.has(source.relative)) {
                     continue;
                 }
 
-                mapped.set(source.relative, source.file);
+                used.set(source.relative, source.file);
 
                 if (_isText(source.file)) {
                     queue.push(source.file);
@@ -96,34 +131,29 @@ function _filesUsed(modFiles, folders, listings) {
         }
     }
 
-    return mapped;
+    return used;
 }
 
-// The files in the mod's list: staged relative path -> source file
-function _filesListed(listFile, folders) {
-
-    if (!fs.existsSync(listFile)) {
-        throw new Error(`"${listFile}" not found. Build without --no-resolve-deps first to make it.`);
-    }
-
-    let mapped = new Map();
+// The files in the mod's list: relative path -> source file
+function _filesListed(listFile, dirs) {
+    let listed = new Map();
 
     for (let relative of fs.readFileSync(listFile, 'utf8').split(/\r?\n/)) {
         if (!relative) {
             continue;
         }
 
-        let mapping = folders.find(({ name }) => relative.startsWith(name + '/'));
-        let file = mapping && path.combine(mapping.dir, relative);
+        let entry = dirs.find(({ name }) => relative == name || relative.startsWith(name + '/'));
+        let file = entry && path.combine(entry.dir, relative);
 
         if (!file || !fs.existsSync(file)) {
-            throw new Error(`"${relative}" in "${listFile}" is not in the folders of map_source_dirs`);
+            throw new Error(`"${relative}" in "${listFile}" is not in source_dirs. Run vmb resolve-sources again.`);
         }
 
-        mapped.set(relative, file);
+        listed.set(relative, file);
     }
 
-    return mapped;
+    return listed;
 }
 
 // A file's path relative to dir, with forward slashes
@@ -153,19 +183,19 @@ function _referencesIn(file) {
     return references;
 }
 
-// The files a resource path names in the mapped folders: every file in its folder with that name,
+// The files a resource path names in the folders: every file in its folder with that name,
 // whatever the extension, as a unit's .unit, .bsi and .physics or a texture's .texture and .dds
-function _filesFor(reference, mapSourceDirs, listings) {
+function _filesFor(reference, folders, listings) {
 
-    let mapping = mapSourceDirs.find(({ name }) => reference.startsWith(name + '/'));
+    let entry = folders.find(({ name }) => reference.startsWith(name + '/'));
 
-    if (!mapping) {
+    if (!entry) {
         return [];
     }
 
     let relativeDir = path.dirname(reference);
     let wantedName = path.basename(reference);
-    let sourceDir = path.combine(mapping.dir, relativeDir);
+    let sourceDir = path.combine(entry.dir, relativeDir);
 
     let files = [];
 
@@ -287,4 +317,4 @@ function _makeDir(dir) {
     fs.mkdirSync(dir);
 }
 
-module.exports = { stage, LIST_FILE };
+module.exports = { LIST_FILE, sourceDirs, hasList, resolve, stage };

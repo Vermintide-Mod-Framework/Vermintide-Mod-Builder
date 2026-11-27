@@ -25,6 +25,9 @@ let tasks = {
     // Watches for changes in specified mods and builds them whenever they occur
     watch: require('./tasks/watch'),
 
+    // Finds the files mods use from source_dirs and lists them in each mod's sources.txt, which build then copies
+    'resolve-sources': require('./tasks/resolve_sources'),
+
     // Lists information about mods (folder, last built, published status, cfg file)
     info: require('./tasks/info'),
 

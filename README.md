@@ -37,17 +37,15 @@ See **[wiki](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/
 
 ### Using the game's resources
 
-A mod can only use resources the compiler can find. By default that is the mod's own folder and the SDK's `core` folder. To let it use more, for example the game's units from the Modding Tools Content, list their folders in `map_source_dirs` in .vmbrc. A name alone is a top-level folder of the Modding Tools Content, which vmb finds through Steam:
+A mod can only use resources the compiler can find. By default that is the mod's own folder and the SDK's `core` folder. To let it use more, for example the game's units from the Modding Tools Content, list their folders in `source_dirs` in .vmbrc. A name alone is a top-level folder of the Modding Tools Content, which vmb finds through Steam:
 
-	"map_source_dirs": [ "units", "environment", "shaders", "shader_nodes", "fx", "texture_categories", "rendering", "global.script_flow_nodes" ]
+	"source_dirs": [ "units", "environment", "shaders", "shader_nodes", "fx", "texture_categories", "rendering", "global.script_flow_nodes" ]
 
-A folder from anywhere else is given with the folder that contains it: `{ "name": "units", "dir": "D:/my_project" }`.
+A folder from anywhere else is given with the folder that contains it: `{ "name": "units", "dir": "D:/my_project" }`. An entry can also name a single file in the top folder, such as `global.script_flow_nodes` above: the compiler only reads top-level files from its source folder, and the game's flow needs its custom flow nodes.
 
-The compiler compiles everything in its source folder, and these folders hold most of the game. So vmb doesn't give it them: it follows the resource paths the mod's files refer to, and the paths those files refer to in turn, copies the mod and only the files found to `source` in the mod's temp folder, and compiles from there.
+`vmb resolve-sources <mod_name>` finds the files the mod uses from those folders: it follows the resource paths the mod's files refer to, and the paths those files refer to in turn. It lists them in `sources.txt` in the mod's folder, one per line, so you can see what the mod takes from the game and commit it with the mod. Run it again whenever the mod starts using something new.
 
-An entry can also name a single file in the top folder, which is always copied, such as `global.script_flow_nodes` above. The compiler only reads top-level files from its source folder, and the game's flow needs its custom flow nodes.
-
-Each build writes the files it found to `mapped_sources.txt` in the mod's folder, one per line. Commit it with the mod to see what the mod takes from the game and how that changes. `vmb build <mod_name> --no-resolve-deps` builds from that list instead of finding the files again.
+`vmb build` then copies the mod and the files in its `sources.txt` to `source` in the mod's temp folder, and compiles from there. The compiler compiles everything in its source folder, and these folders hold most of the game, so they can't be given to it whole. A mod without a `sources.txt` builds from its own folder as before.
 
 ### Making levels
 

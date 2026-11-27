@@ -405,10 +405,7 @@ async function getBuildParams() {
 
     let useModCore = cl.get('useModCore', 'use-mod-core', 'core', 'c') || false;
 
-    // With map_source_dirs, whether to find the files the mod uses again or take them from its list
-    let resolveDeps = !cl.get('no-resolve-deps');
-
-    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore, resolveDeps };
+    return { modNames, verbose, shouldRemoveTemp, modId, makeWorkshopCopy, ignoreBuildErrors, copySource, useModCore };
 }
 
 // Returns modsDir/modName/modName.mod

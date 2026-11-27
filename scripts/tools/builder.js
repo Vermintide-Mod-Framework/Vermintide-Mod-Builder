@@ -13,13 +13,13 @@ const config = require('../modules/config');
 const cfg = require('../modules/cfg');
 
 const modTools = require('./mod_tools');
-const mappedSources = require('./mapped_sources');
+const sources = require('./sources');
 
 // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
 async function buildMod(toolsDir, modName, params) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource, useModCore, resolveDeps } = params;
+    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource, useModCore } = params;
 
     // Check that modName.mod file exists in the mod folder
     let modFilePath = modTools.getModFilePath(modName);
@@ -72,19 +72,11 @@ async function buildMod(toolsDir, modName, params) {
     let modDir = modTools.getModDir(modName);
     let sdkDir = await modTools.getModToolsDir();
 
-    // With map_source_dirs, compile from a copy of the mod and the files it uses from those folders
+    // A mod with a list of the files it uses from source_dirs is compiled from a copy of it and those files
     let sourceDir = modDir;
-    let mapSourceDirs = config.get('mapSourceDirs');
-    if (mapSourceDirs.length > 0) {
-
-        // Entries named alone are in the Modding Tools Content
-        if (mapSourceDirs.some(({ dir }) => dir === null)) {
-            let contentDir = await modTools.getContentDir();
-            mapSourceDirs = mapSourceDirs.map(({ name, dir }) => ({ name, dir: dir === null ? contentDir : dir }));
-        }
-
+    if (sources.hasList(modDir)) {
         sourceDir = path.combine(modTempDir, 'source');
-        mappedSources.stage(modDir, sourceDir, mapSourceDirs, bundleDirs, resolveDeps !== false);
+        sources.stage(modDir, sourceDir, await sources.sourceDirs(), bundleDirs);
     }
 
     let stingrayExitCode = await _runStingray(toolsDir, sourceDir, dataDir, buildDir, sdkDir, verbose, useModCore);
