@@ -43,8 +43,8 @@ module.exports = async function taskResolveSources() {
             }
             let { bundleDirs } = await builder.getRelevantCfgParams(modName, bundleDir);
 
-            let count = sources.resolve(modDir, sourceDirs, bundleDirs);
-            console.log(`${modName}: ${count} files from source_dirs, listed in ${sources.LIST_FILE}`);
+            let { listFile, count } = sources.resolve(modDir, sourceDirs, bundleDirs);
+            console.log(`${modName}: ${count} files from source_dirs, listed in "${listFile}"`);
         }
         catch (error) {
             print.error(error);

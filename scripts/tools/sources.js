@@ -53,16 +53,18 @@ function hasList(modDir) {
     return fs.existsSync(path.combine(modDir, LIST_FILE));
 }
 
-// Finds the files the mod in modDir uses from dirs and writes them to its list. Returns how many there are.
+// Finds the files the mod in modDir uses from dirs and writes them to its list.
+// Returns the list's path and how many files it has.
 // skippedDirs are the absolute paths of the mod's folders that are not compiled, such as its bundle folders.
 function resolve(modDir, dirs, skippedDirs) {
     let { folders, files } = _split(dirs);
     let used = _filesUsed(_modFiles(modDir, skippedDirs), folders, new Map());
 
     let lines = files.map(({ name }) => name).concat(Array.from(used.keys()).sort());
-    fs.writeFileSync(path.combine(modDir, LIST_FILE), lines.join('\n') + '\n');
+    let listFile = path.combine(modDir, LIST_FILE);
+    fs.writeFileSync(listFile, lines.join('\n') + '\n');
 
-    return lines.length;
+    return { listFile, count: lines.length };
 }
 
 // Copies the mod in modDir and the files in its list into stagingDir, and removes staged files it no longer uses
@@ -317,4 +319,4 @@ function _makeDir(dir) {
     fs.mkdirSync(dir);
 }
 
-module.exports = { LIST_FILE, sourceDirs, hasList, resolve, stage };
+module.exports = { sourceDirs, hasList, resolve, stage };
