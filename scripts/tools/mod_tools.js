@@ -235,6 +235,47 @@ async function getModToolsDir() {
     return toolsDir;
 }
 
+// Gets the Modding Tools Content's project folder (its "content" folder), the game's source content that
+// the level editor works in, from steam's install location or the fallback
+async function getContentDir() {
+
+    let contentId = config.get('contentId');
+    if (!contentId) {
+        throw new Error(`Vermintide ${config.get('gameNumber')} has no Modding Tools Content.`);
+    }
+
+    let appDir;
+
+    if (!config.get('useFallback')) {
+        try {
+            appDir = await getAppDir(contentId);
+        }
+        catch (err) {
+            print.error(err);
+        }
+
+        if (!appDir) {
+            print.error('Modding Tools Content folder not found, using fallback.');
+        }
+    }
+
+    if (!appDir) {
+        appDir = config.get('fallbackContentDir');
+    }
+
+    // The project folder has the game's scripts
+    let contentDir = path.combine(appDir, 'content');
+    if (!await pfs.accessibleFile(path.combine(contentDir, 'scripts/boot.lua'))) {
+        throw new Error(
+            `Modding Tools Content not found in "${appDir}".\n` +
+            `You need to install it from Steam client or specify a valid fallback path.`
+        );
+    }
+
+    console.log(`Modding Tools Content folder "${contentDir}"`);
+    return contentDir;
+}
+
 // Gets workshop folder placement for the current game from steam's install location
 async function getWorkshopDir() {
     let gameId = config.get('gameId');
@@ -415,6 +456,7 @@ exports.getModId = getModId;
 exports.getSteamAppsDir = getSteamAppsDir;
 exports.getAppDir = getAppDir;
 exports.getModToolsDir = getModToolsDir;
+exports.getContentDir = getContentDir;
 exports.getWorkshopDir = getWorkshopDir;
 exports.getModDir = getModDir;
 exports.getTempDir = getTempDir;

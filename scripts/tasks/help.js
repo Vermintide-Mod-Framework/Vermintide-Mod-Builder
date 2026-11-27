@@ -62,6 +62,8 @@ module.exports = async function taskHelp(taskName) {
 
             '  vmb info    [<mod_name1> <mod_name2>...] [--show-cfg]\n\n' +
 
+            '  vmb setup-content\n\n' +
+
             'For more information on specific commands:\n' +
             '  vmb help <command>\n' +
             '  vmb      <command> --help \n\n' +

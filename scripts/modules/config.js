@@ -41,6 +41,13 @@ let defaultData = {
     fallback_tools_dir1: 'C:/Program Files (x86)/Steam/steamapps/common/Warhammer End Times Vermintide Mod Tools/',
     fallback_tools_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools/',
 
+    // The Modding Tools Content, the game's source content that the level editor works in (Vermintide 2 only)
+    content_id1: '',
+    content_id2: '2448250',
+
+    fallback_content_dir1: '',
+    fallback_content_dir2: 'C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools Content/',
+
     fallback_steamapps_dir1: 'C:/Program Files (x86)/Steam/steamapps/',
     fallback_steamapps_dir2: 'C:/Program Files (x86)/Steam/steamapps/',
 
@@ -92,6 +99,8 @@ let values = {
     toolsId: undefined,    // Steam app id of Vermintide SDK
 
     fallbackToolsDir: undefined,     // Fallback Vermintide SDK folder
+    contentId: undefined,            // Steam app id of the Modding Tools Content, '' if the game has none
+    fallbackContentDir: undefined,   // Fallback Modding Tools Content folder
     fallbackSteamAppsDir: undefined, // Fallback steamapps folder
     includeDotFiles: undefined,      // Whether to ignore files & folders starting with .
     ignoredDirs: undefined,          // Folders that are ignored when scanning for mods
@@ -197,6 +206,9 @@ async function parseData() {
     // Other config params
     values.fallbackToolsDir = path.absolutify(_getGameSpecificKey('fallback_tools_dir'));
     values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir'));
+    values.contentId = _getGameSpecificKey('content_id');
+    let fallbackContentDir = _getGameSpecificKey('fallback_content_dir');
+    values.fallbackContentDir = fallbackContentDir ? path.absolutify(fallbackContentDir) : '';
     values.ignoredDirs = data.ignored_dirs;
     values.ignoredDirsPerMod = data.ignored_dirs_per_mod;
     values.mapSourceDirs = _getMapSourceDirs(data.map_source_dirs);

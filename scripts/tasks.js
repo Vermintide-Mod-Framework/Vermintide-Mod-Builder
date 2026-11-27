@@ -26,7 +26,10 @@ let tasks = {
     watch: require('./tasks/watch'),
 
     // Lists information about mods (folder, last built, published status, cfg file)
-    info: require('./tasks/info')
+    info: require('./tasks/info'),
+
+    // Adds what the Modding Tools Content is missing for the level editor's tools to work
+    'setup-content': require('./tasks/setup_content')
 };
 
 module.exports = tasks;
