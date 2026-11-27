@@ -13,12 +13,13 @@ const config = require('../modules/config');
 const cfg = require('../modules/cfg');
 
 const modTools = require('./mod_tools');
+const mappedSources = require('./mapped_sources');
 
 // Builds modName, optionally deleting its temp folder, and copies it to the bundle and workshop dirs
 async function buildMod(toolsDir, modName, params) {
     console.log(`\nPreparing to build ${modName}`);
 
-    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource, useModCore } = params;
+    let { shouldRemoveTemp, makeWorkshopCopy, verbose, ignoreBuildErrors, modId, copySource, useModCore, resolveDeps } = params;
 
     // Check that modName.mod file exists in the mod folder
     let modFilePath = modTools.getModFilePath(modName);
@@ -70,7 +71,16 @@ async function buildMod(toolsDir, modName, params) {
     // Run stingray and process its output
     let modDir = modTools.getModDir(modName);
     let sdkDir = await modTools.getModToolsDir();
-    let stingrayExitCode = await _runStingray(toolsDir, modDir, dataDir, buildDir, sdkDir, verbose, useModCore);
+
+    // With map_source_dirs, compile from a copy of the mod and the files it uses from those folders
+    let sourceDir = modDir;
+    let mapSourceDirs = config.get('mapSourceDirs');
+    if (mapSourceDirs.length > 0) {
+        sourceDir = path.combine(modTempDir, 'source');
+        mappedSources.stage(modDir, sourceDir, mapSourceDirs, bundleDirs, resolveDeps !== false);
+    }
+
+    let stingrayExitCode = await _runStingray(toolsDir, sourceDir, dataDir, buildDir, sdkDir, verbose, useModCore);
     await _processStingrayOutput(modName, dataDir, stingrayExitCode, ignoreBuildErrors);
 
     // Remove bundle and .mod files from bundle folders

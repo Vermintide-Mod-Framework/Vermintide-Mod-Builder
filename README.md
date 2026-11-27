@@ -35,6 +35,20 @@ You'll need to delete the `published_id` line from the mod's .cfg file when re-p
 	
 See **[wiki](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/wiki)**.
 
+### Using the game's resources
+
+A mod can only use resources the compiler can find. By default that is the mod's own folder and the SDK's `core` folder. To let it use more, for example the game's units from the Modding Tools Content, list their folders in `map_source_dirs` in .vmbrc. Each entry names a top-level folder and the folder that contains it:
+
+	"map_source_dirs": [
+		{ "name": "units", "dir": "C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools Content/content" }
+	]
+
+The compiler compiles everything in its source folder, and these folders hold most of the game. So vmb doesn't give it them: it follows the resource paths the mod's files refer to, and the paths those files refer to in turn, copies the mod and only the files found to `source` in the mod's temp folder, and compiles from there.
+
+An entry can also name a single file in the top folder, which is always copied. The compiler only reads top-level files from its source folder, and the game's flow needs its custom flow nodes:
+
+	{ "name": "global.script_flow_nodes", "dir": "C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools Content/content" }
+
 
 ### Building VMB executable
 

@@ -68,6 +68,11 @@ let defaultData = {
 
     ignored_dirs_per_mod: [],
 
+    // Folders a mod can use resources from, as { "name": "<root folder name>", "dir": "<folder that has it>" },
+    // or a top-level file to always include, as { "name": "<file name>", "dir": "<folder that has it>" }.
+    // The mod and the files it uses from them are copied to its temp folder, and the mod is compiled from there.
+    map_source_dirs: [],
+
     ignore_build_errors: false
 };
 
@@ -91,6 +96,7 @@ let values = {
     includeDotFiles: undefined,      // Whether to ignore files & folders starting with .
     ignoredDirs: undefined,          // Folders that are ignored when scanning for mods
     ignoredDirsPerMod: undefined,    // Folders that are ignored when watching a mod or copying its sourse code
+    mapSourceDirs: undefined,        // Extra source folders for the compiler: [{ name, dir }]
 
     templateDir: undefined,  // Folder with template for creating new mods
     itemPreview: undefined,  // Name of item preview image file
@@ -193,6 +199,7 @@ async function parseData() {
     values.fallbackSteamAppsDir = path.absolutify(_getGameSpecificKey('fallback_steamapps_dir'));
     values.ignoredDirs = data.ignored_dirs;
     values.ignoredDirsPerMod = data.ignored_dirs_per_mod;
+    values.mapSourceDirs = _getMapSourceDirs(data.map_source_dirs);
 
     values.templateDir = await _getTemplateDir(data.template_dir);
     values.itemPreview = data.template_preview_image;
@@ -420,6 +427,22 @@ async function _getModsDir(modsDir, tempDir) {
     }
 
     return { modsDir, tempDir };
+}
+
+// Checks the extra source folders and makes their paths absolute
+function _getMapSourceDirs(mapSourceDirs) {
+
+    return mapSourceDirs.map(entry => {
+
+        if (!entry || typeof entry.name != 'string' || !entry.name || typeof entry.dir != 'string' || !entry.dir) {
+            throw new Error(
+                `Invalid value in ${values.filename}: ` +
+                `each entry of "map_source_dirs" must be { "name": "<root folder name>", "dir": "<folder that has it>" }.`
+            );
+        }
+
+        return { name: entry.name, dir: path.absolutify(path.fix(entry.dir)) };
+    });
 }
 
 // Gets game number from cl/config data and validates it
