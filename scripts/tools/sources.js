@@ -274,6 +274,26 @@ function _removeUnneeded(needed, stagingDir) {
             fs.unlinkSync(file);
         }
     }
+
+    _removeEmptyDirs(stagingDir);
+}
+
+// Deletes the empty folders inside dir. A folder left from a removed file still counts as a source folder to the
+// compiler: an empty core folder takes the place of the SDK's.
+function _removeEmptyDirs(dir) {
+
+    for (let entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) {
+            continue;
+        }
+
+        let subDir = path.combine(dir, entry.name);
+        _removeEmptyDirs(subDir);
+
+        if (fs.readdirSync(subDir).length === 0) {
+            fs.rmdirSync(subDir);
+        }
+    }
 }
 
 // All files in a folder and its subfolders, except in skippedDirs
