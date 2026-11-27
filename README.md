@@ -49,6 +49,7 @@ An entry can also name a single file in the top folder, which is always copied. 
 
 	{ "name": "global.script_flow_nodes", "dir": "C:/Program Files (x86)/Steam/steamapps/common/Vermintide 2 Modding Tools Content/content" }
 
+Each build writes the files it found to `mapped_sources.txt` in the mod's folder, one per line. Commit it with the mod to see what the mod takes from the game and how that changes. `vmb build <mod_name> --no-resolve-deps` builds from that list instead of finding the files again.
 
 ### Building VMB executable
 
