@@ -76,7 +76,7 @@ async function buildMod(toolsDir, modName, params) {
     let sourceDir = modDir;
     if (sources.hasList(modDir)) {
         sourceDir = path.combine(modTempDir, 'source');
-        sources.stage(modDir, sourceDir, await sources.sourceDirs(), bundleDirs);
+        await sources.stage(modDir, sourceDir, bundleDirs);
     }
 
     let stingrayExitCode = await _runStingray(toolsDir, sourceDir, dataDir, buildDir, sdkDir, verbose, useModCore);

@@ -32,8 +32,16 @@ const MAX_TEXT_FILE_SIZE = 8 * 1024 * 1024;
 // A resource path in quotes, as text resources write them: "units/props/barrel_01"
 const REFERENCE_PATTERN = /"([A-Za-z0-9_\-]+(?:\/[A-Za-z0-9_.\-]+)+)"/g;
 
+// source_dirs with every dir filled in, once found
+let _sourceDirs = null;
+
 // The folders and files of source_dirs as [{ name, dir }], with the Modding Tools Content's folder for names given alone
-async function sourceDirs() {
+async function _getSourceDirs() {
+
+    if (_sourceDirs) {
+        return _sourceDirs;
+    }
+
     let dirs = config.get('sourceDirs');
 
     if (dirs.length === 0) {
@@ -45,6 +53,7 @@ async function sourceDirs() {
         dirs = dirs.map(({ name, dir }) => ({ name, dir: dir === null ? contentDir : dir }));
     }
 
+    _sourceDirs = dirs;
     return dirs;
 }
 
@@ -53,11 +62,11 @@ function hasList(modDir) {
     return fs.existsSync(path.combine(modDir, LIST_FILE));
 }
 
-// Finds the files the mod in modDir uses from dirs and writes them to its list.
+// Finds the files the mod in modDir uses from source_dirs and writes them to its list.
 // Returns the list's path and how many files it has.
 // skippedDirs are the absolute paths of the mod's folders that are not compiled, such as its bundle folders.
-function resolve(modDir, dirs, skippedDirs) {
-    let { folders, files } = _split(dirs);
+async function resolve(modDir, skippedDirs) {
+    let { folders, files } = _split(await _getSourceDirs());
     let used = _filesUsed(_modFiles(modDir, skippedDirs), folders, new Map());
 
     let lines = files.map(({ name }) => name).concat(Array.from(used.keys()).sort());
@@ -68,7 +77,8 @@ function resolve(modDir, dirs, skippedDirs) {
 }
 
 // Copies the mod in modDir and the files in its list into stagingDir, and removes staged files it no longer uses
-function stage(modDir, stagingDir, dirs, skippedDirs) {
+async function stage(modDir, stagingDir, skippedDirs) {
+    let dirs = await _getSourceDirs();
     let needed = new Map(); // staged relative path -> source file
 
     for (let file of _modFiles(modDir, skippedDirs)) {
@@ -319,4 +329,4 @@ function _makeDir(dir) {
     fs.mkdirSync(dir);
 }
 
-module.exports = { sourceDirs, hasList, resolve, stage };
+module.exports = { hasList, resolve, stage };

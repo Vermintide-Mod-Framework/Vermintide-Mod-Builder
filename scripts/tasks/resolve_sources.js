@@ -15,15 +15,6 @@ module.exports = async function taskResolveSources() {
         return { exitCode, finished: true };
     }
 
-    let sourceDirs;
-    try {
-        sourceDirs = await sources.sourceDirs();
-    }
-    catch (error) {
-        print.error(error);
-        return { exitCode: 1, finished: true };
-    }
-
     for (let { modName, modDir, error } of await modTools.validateModNames(modNames, false)) {
 
         if (error) {
@@ -43,7 +34,7 @@ module.exports = async function taskResolveSources() {
             }
             let { bundleDirs } = await builder.getRelevantCfgParams(modName, bundleDir);
 
-            let { listFile, count } = sources.resolve(modDir, sourceDirs, bundleDirs);
+            let { listFile, count } = await sources.resolve(modDir, bundleDirs);
             console.log(`${modName}: ${count} files from source_dirs, listed in "${listFile}"`);
         }
         catch (error) {
