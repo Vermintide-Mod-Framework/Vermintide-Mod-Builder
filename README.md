@@ -51,6 +51,16 @@ An entry can also name a single file in the top folder, which is always copied. 
 
 Each build writes the files it found to `mapped_sources.txt` in the mod's folder, one per line. Commit it with the mod to see what the mod takes from the game and how that changes. `vmb build <mod_name> --no-resolve-deps` builds from that list instead of finding the files again.
 
+### Making levels
+
+The level editor only works in its project, the Modding Tools Content. `vmb add-level <mod_name> <level_name>` keeps the level in the mod and lets the editor work on it there:
+
+- it makes `levels/<mod_name>/<level_name>/world.level` in the mod, a level with the game's skydome and one of its environments
+- it links the Content's `levels/<mod_name>` folder to the mod's, so the editor opens and saves the mod's own files
+- it registers the level with the Content's `mod_tools` DLC, as `LevelSettings.<level_name>`, so it can be played from ToolCenter with `-auto-host-level <level_name>`
+
+Adding the level to the mod's own scripts and package is left to you. It also runs `vmb setup-content`, which adds `editor_requires.lua` to the Content: the editor's Ledgelator and Path Generator need game scripts that only the game's own boot loads.
+
 ### Building VMB executable
 
 	npm run setup   

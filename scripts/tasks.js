@@ -29,7 +29,10 @@ let tasks = {
     info: require('./tasks/info'),
 
     // Adds what the Modding Tools Content is missing for the level editor's tools to work
-    'setup-content': require('./tasks/setup_content')
+    'setup-content': require('./tasks/setup_content'),
+
+    // Adds a level to a mod and sets the Modding Tools Content's level editor up to work on it
+    'add-level': require('./tasks/add_level')
 };
 
 module.exports = tasks;
