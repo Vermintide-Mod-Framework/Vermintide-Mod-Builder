@@ -72,7 +72,7 @@ async function buildMod(toolsDir, modName, params) {
     let modDir = modTools.getModDir(modName);
     let sdkDir = await modTools.getModToolsDir();
 
-    // A mod with a list of the files it uses from source_dirs is compiled from a copy of it and those files
+    // A mod with a list of the game's files it uses is compiled from a copy of it and those files
     let sourceDir = modDir;
     if (sources.hasList(modDir)) {
         sourceDir = path.combine(modTempDir, 'source');

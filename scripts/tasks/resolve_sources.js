@@ -4,7 +4,8 @@ const modTools = require('../tools/mod_tools');
 const builder = require('../tools/builder');
 const sources = require('../tools/sources');
 
-// Finds the files each mod uses from source_dirs and writes them to its sources.txt, which vmb build then copies
+// Finds the files each mod uses from the Modding Tools Content and source_dirs, and writes them to its sources.txt,
+// which vmb build then copies
 module.exports = async function taskResolveSources() {
 
     let exitCode = 0;
@@ -35,7 +36,7 @@ module.exports = async function taskResolveSources() {
             let { bundleDirs } = await builder.getRelevantCfgParams(modName, bundleDir);
 
             let { listFile, count } = await sources.resolve(modDir, bundleDirs);
-            console.log(`${modName}: ${count} files from source_dirs, listed in "${listFile}"`);
+            console.log(`${modName}: ${count} files from the game's sources, listed in "${listFile}"`);
         }
         catch (error) {
             print.error(error);

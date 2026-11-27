@@ -75,29 +75,9 @@ let defaultData = {
 
     ignored_dirs_per_mod: [],
 
-    // Folders a mod can use resources from, and top-level files to always include, for vmb resolve-sources. An entry is
-    // the name of a folder or file in the Modding Tools Content's project folder, such as "units",
-    // or { "name": "<name>", "dir": "<folder that has it>" } for one elsewhere.
-    // By default, the Content's folders of resources. Only the files a mod refers to are listed, so more folders cost nothing.
-    // global.script_flow_nodes has the game's flow nodes, which the game's units' flow needs to compile.
-    source_dirs: [
-        'units',
-        'environment',
-        'fx',
-        'materials',
-        'shaders',
-        'shader_nodes',
-        'texture_categories',
-        'rendering',
-        'gui',
-        'video',
-        'wwise',
-        'script_flow_nodes',
-        'subflow',
-        'vector_fields',
-        'volume_types',
-        'global.script_flow_nodes'
-    ],
+    // Folders mods can take resources from besides the Modding Tools Content, for vmb resolve-sources:
+    // the folders that resource paths start from, like the Content's "content" folder
+    source_dirs: [],
 
     ignore_build_errors: false
 };
@@ -124,7 +104,7 @@ let values = {
     includeDotFiles: undefined,      // Whether to ignore files & folders starting with .
     ignoredDirs: undefined,          // Folders that are ignored when scanning for mods
     ignoredDirsPerMod: undefined,    // Folders that are ignored when watching a mod or copying its sourse code
-    sourceDirs: undefined,           // Folders and files mods can use: [{ name, dir }], dir null for the Content's
+    sourceDirs: undefined,           // Folders mods can take resources from besides the Modding Tools Content
 
     templateDir: undefined,  // Folder with template for creating new mods
     itemPreview: undefined,  // Name of item preview image file
@@ -460,24 +440,16 @@ async function _getModsDir(modsDir, tempDir) {
     return { modsDir, tempDir };
 }
 
-// Checks the source folders and makes their paths absolute. A name alone is in the Modding Tools Content,
-// whose folder is found when it's needed, so its dir is null here.
+// Checks the extra source folders and makes their paths absolute
 function _getSourceDirs(sourceDirs) {
 
-    return sourceDirs.map(entry => {
+    return sourceDirs.map(dir => {
 
-        if (typeof entry === 'string' && entry) {
-            return { name: entry, dir: null };
+        if (typeof dir !== 'string' || !dir) {
+            throw new Error(`Invalid value in ${values.filename}: each entry of "source_dirs" must be a folder's path.`);
         }
 
-        if (!entry || typeof entry.name !== 'string' || !entry.name || typeof entry.dir !== 'string' || !entry.dir) {
-            throw new Error(
-                `Invalid value in ${values.filename}: each entry of "source_dirs" must be ` +
-                `the name of a folder or file in the Modding Tools Content, or { "name": "<name>", "dir": "<folder that has it>" }.`
-            );
-        }
-
-        return { name: entry.name, dir: path.absolutify(path.fix(entry.dir)) };
+        return path.absolutify(path.fix(dir));
     });
 }
 

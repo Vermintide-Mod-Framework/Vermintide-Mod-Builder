@@ -6,21 +6,27 @@ const config = require('../modules/config');
 
 const modTools = require('./mod_tools');
 
-// Lets a mod use files from the folders in source_dirs, such as the game's units in the Modding Tools Content.
+// Lets a mod use the game's resources from the Modding Tools Content, and from any other folders in source_dirs.
 //
 // vmb resolve-sources finds the files the mod uses there: the ones its files refer to, the ones those refer to, and so on,
-// read from the files' text as the compiler reads them. It writes them to LIST_FILE in the mod's folder, one per line.
+// read from the files' text as the compiler reads them. A reference such as "units/props/barrel_01" is looked for under
+// each of those folders. It writes them to LIST_FILE in the mod's folder, one per line.
 // The compiler's dependency database (dependency_database.db) can't be used instead: it lists what the game loads,
 // not what the compiler reads, such as texture categories, shader nodes, or a unit built from another unit's mesh.
 //
 // vmb build, for a mod with that list, copies the mod and the listed files to a staging folder in the mod's temp folder
-// and compiles from there. The compiler compiles everything in its source folder, and the game's folders are most of
-// the game, so they can't be given to it whole. A mod without the list builds from its own folder as before.
-//
-// An entry of source_dirs can also name a file in the top folder, such as global.script_flow_nodes, which is always
-// listed: the compiler only reads top-level files from its source folder.
+// and compiles from there. The compiler compiles everything in its source folder, and the Content is the whole game,
+// so it can't be given to the compiler as it is. A mod without the list builds from its own folder as before.
 
 const LIST_FILE = 'sources.txt';
+
+// Files in the top folder that are always listed when a source folder has them: the compiler only reads top-level files
+// from its source folder, and the game's units' flow needs the game's flow nodes to compile
+const TOP_LEVEL_FILES = ['global.script_flow_nodes'];
+
+// Files that are never taken from the source folders: scripts and packages are the game's code and bundles, not resources.
+// A mod's Lua names game scripts in its requires, and they would be compiled into its bundle.
+const SKIPPED_EXTENSIONS = ['.lua', '.package'];
 
 // Files that are never read for references: binary data, and big plain-text meshes
 const BINARY_EXTENSIONS = [
@@ -32,44 +38,34 @@ const MAX_TEXT_FILE_SIZE = 8 * 1024 * 1024;
 // A resource path in quotes, as text resources write them: "units/props/barrel_01"
 const REFERENCE_PATTERN = /"([A-Za-z0-9_\-]+(?:\/[A-Za-z0-9_.\-]+)+)"/g;
 
-// source_dirs with every dir filled in, once found
-let _sourceDirs = null;
+// The source folders, once found
+let _roots = null;
 
-// The folders and files of source_dirs as [{ name, dir }], with the Modding Tools Content's folder for names given alone
-async function _getSourceDirs() {
+// The folders mods take sources from: the Modding Tools Content, then the folders in source_dirs
+async function _getRoots() {
 
-    if (_sourceDirs) {
-        return _sourceDirs;
+    if (!_roots) {
+        _roots = [await modTools.getContentDir()].concat(config.get('sourceDirs'));
     }
 
-    let dirs = config.get('sourceDirs');
-
-    if (dirs.length === 0) {
-        throw new Error(`"source_dirs" in ${config.get('filename')} is empty`);
-    }
-
-    if (dirs.some(({ dir }) => dir === null)) {
-        let contentDir = await modTools.getContentDir();
-        dirs = dirs.map(({ name, dir }) => ({ name, dir: dir === null ? contentDir : dir }));
-    }
-
-    _sourceDirs = dirs;
-    return dirs;
+    return _roots;
 }
 
-// Whether the mod has a list of the files it uses from source_dirs
+// Whether the mod has a list of the files it uses from the source folders
 function hasList(modDir) {
     return fs.existsSync(path.combine(modDir, LIST_FILE));
 }
 
-// Finds the files the mod in modDir uses from source_dirs and writes them to its list.
+// Finds the files the mod in modDir uses from the source folders and writes them to its list.
 // Returns the list's path and how many files it has.
 // skippedDirs are the absolute paths of the mod's folders that are not compiled, such as its bundle folders.
 async function resolve(modDir, skippedDirs) {
-    let { folders, files } = _split(await _getSourceDirs());
-    let used = _filesUsed(_modFiles(modDir, skippedDirs), folders, new Map());
+    let roots = await _getRoots();
 
-    let lines = files.map(({ name }) => name).concat(Array.from(used.keys()).sort());
+    let topLevelFiles = TOP_LEVEL_FILES.filter(name => roots.some(root => fs.existsSync(path.combine(root, name))));
+    let used = _filesUsed(_modFiles(modDir, skippedDirs), roots, new Map());
+
+    let lines = topLevelFiles.concat(Array.from(used.keys()).sort());
     let listFile = path.combine(modDir, LIST_FILE);
     fs.writeFileSync(listFile, lines.join('\n') + '\n');
 
@@ -78,38 +74,19 @@ async function resolve(modDir, skippedDirs) {
 
 // Copies the mod in modDir and the files in its list into stagingDir, and removes staged files it no longer uses
 async function stage(modDir, stagingDir, skippedDirs) {
-    let dirs = await _getSourceDirs();
+    let roots = await _getRoots();
     let needed = new Map(); // staged relative path -> source file
 
     for (let file of _modFiles(modDir, skippedDirs)) {
         needed.set(_relative(modDir, file), file);
     }
 
-    for (let [relative, file] of _filesListed(path.combine(modDir, LIST_FILE), dirs)) {
+    for (let [relative, file] of _filesListed(path.combine(modDir, LIST_FILE), roots)) {
         needed.set(relative, file);
     }
 
     _copyNeeded(needed, stagingDir);
     _removeUnneeded(needed, stagingDir);
-}
-
-// The entries of dirs that are folders, and the ones that are top-level files
-function _split(dirs) {
-    let folders = [];
-    let files = [];
-
-    for (let entry of dirs) {
-        let file = path.combine(entry.dir, entry.name);
-
-        if (fs.existsSync(file) && fs.statSync(file).isFile()) {
-            files.push(entry);
-        }
-        else {
-            folders.push(entry);
-        }
-    }
-
-    return { folders, files };
 }
 
 // The mod's files, without its list and the skipped folders
@@ -118,8 +95,8 @@ function _modFiles(modDir, skippedDirs) {
     return _allFilesIn(modDir, skippedDirs.map(dir => path.fix(dir))).filter(file => file !== listFile);
 }
 
-// The files the mod's files refer to in the folders, the files those refer to, and so on: relative path -> source file
-function _filesUsed(modFiles, folders, listings) {
+// The files the mod's files refer to in the source folders, the files those refer to, and so on: relative path -> source file
+function _filesUsed(modFiles, roots, listings) {
     let used = new Map();
     let queue = modFiles.filter(_isText);
 
@@ -128,7 +105,7 @@ function _filesUsed(modFiles, folders, listings) {
 
         for (let reference of _referencesIn(file)) {
 
-            for (let source of _filesFor(reference, folders, listings)) {
+            for (let source of _filesFor(reference, roots, listings)) {
 
                 if (used.has(source.relative)) {
                     continue;
@@ -146,8 +123,8 @@ function _filesUsed(modFiles, folders, listings) {
     return used;
 }
 
-// The files in the mod's list: relative path -> source file
-function _filesListed(listFile, dirs) {
+// The files in the mod's list, from the first source folder that has each: relative path -> source file
+function _filesListed(listFile, roots) {
     let listed = new Map();
 
     for (let relative of fs.readFileSync(listFile, 'utf8').split(/\r?\n/)) {
@@ -155,14 +132,13 @@ function _filesListed(listFile, dirs) {
             continue;
         }
 
-        let entry = dirs.find(({ name }) => relative === name || relative.startsWith(name + '/'));
-        let file = entry && path.combine(entry.dir, relative);
+        let root = roots.find(root => fs.existsSync(path.combine(root, relative)));
 
-        if (!file || !fs.existsSync(file)) {
-            throw new Error(`"${relative}" in "${listFile}" is not in source_dirs. Run vmb resolve-sources again.`);
+        if (!root) {
+            throw new Error(`"${relative}" in "${listFile}" is in none of the source folders. Run vmb resolve-sources again.`);
         }
 
-        listed.set(relative, file);
+        listed.set(relative, path.combine(root, relative));
     }
 
     return listed;
@@ -195,28 +171,29 @@ function _referencesIn(file) {
     return references;
 }
 
-// The files a resource path names in the folders: every file in its folder with that name,
-// whatever the extension, as a unit's .unit, .bsi and .physics or a texture's .texture and .dds
-function _filesFor(reference, folders, listings) {
-
-    let entry = folders.find(({ name }) => reference.startsWith(name + '/'));
-
-    if (!entry) {
-        return [];
-    }
-
+// The files a resource path names in the source folders: every file in its folder with that name,
+// whatever the extension, as a unit's .unit, .bsi and .physics or a texture's .texture and .dds.
+// A file in more than one source folder is taken from the first.
+function _filesFor(reference, roots, listings) {
     let relativeDir = path.dirname(reference);
     let wantedName = path.basename(reference);
-    let sourceDir = path.combine(entry.dir, relativeDir);
 
     let files = [];
+    let found = new Set();
 
-    for (let fileName of _listing(sourceDir, listings)) {
-        let stem = path.basename(fileName, path.extname(fileName));
+    for (let root of roots) {
+        let sourceDir = path.combine(root, relativeDir);
 
-        // A reference names a resource without its extension, or one file with it
-        if (stem === wantedName || fileName === wantedName) {
-            files.push({ relative: path.combine(relativeDir, fileName), file: path.combine(sourceDir, fileName) });
+        for (let fileName of _listing(sourceDir, listings)) {
+            let stem = path.basename(fileName, path.extname(fileName));
+
+            // A reference names a resource without its extension, or one file with it
+            let named = stem === wantedName || fileName === wantedName;
+
+            if (named && !found.has(fileName) && !SKIPPED_EXTENSIONS.includes(path.extname(fileName).toLowerCase())) {
+                found.add(fileName);
+                files.push({ relative: path.combine(relativeDir, fileName), file: path.combine(sourceDir, fileName) });
+            }
         }
     }
 
