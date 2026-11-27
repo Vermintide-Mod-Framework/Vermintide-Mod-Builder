@@ -37,11 +37,12 @@ See **[wiki](https://github.com/Vermintide-Mod-Framework/Vermintide-Mod-Builder/
 
 ### Using the game's resources
 
-A mod can only use resources the compiler can find. By default that is the mod's own folder and the SDK's `core` folder. To let it use more, for example the game's units from the Modding Tools Content, list their folders in `source_dirs` in .vmbrc. A name alone is a top-level folder of the Modding Tools Content, which vmb finds through Steam:
+A mod can only use resources the compiler can find: its own folder and the SDK's `core` folder. To use the game's resources too, such as its units, it takes them from the folders in `source_dirs` in .vmbrc. By default these are the Modding Tools Content's folders of resources, which vmb finds through Steam:
 
-	"source_dirs": [ "units", "environment", "shaders", "shader_nodes", "fx", "texture_categories", "rendering", "global.script_flow_nodes" ]
+	"source_dirs": [ "units", "environment", "fx", "materials", "shaders", "shader_nodes", "texture_categories", "rendering",
+	                 "gui", "video", "wwise", "script_flow_nodes", "subflow", "vector_fields", "volume_types", "global.script_flow_nodes" ]
 
-A folder from anywhere else is given with the folder that contains it: `{ "name": "units", "dir": "D:/my_project" }`. An entry can also name a single file in the top folder, such as `global.script_flow_nodes` above: the compiler only reads top-level files from its source folder, and the game's flow needs its custom flow nodes.
+A name alone is a folder or file of the Modding Tools Content. A folder from anywhere else is given with the folder that contains it: `{ "name": "units", "dir": "D:/my_project" }`. An entry can also name a single file in the top folder, such as `global.script_flow_nodes`: the compiler only reads top-level files from its source folder, and the game's units' flow needs the game's flow nodes.
 
 `vmb resolve-sources <mod_name>` finds the files the mod uses from those folders: it follows the resource paths the mod's files refer to, and the paths those files refer to in turn. It lists them in `sources.txt` in the mod's folder, one per line, so you can see what the mod takes from the game and commit it with the mod. Run it again whenever the mod starts using something new.
 

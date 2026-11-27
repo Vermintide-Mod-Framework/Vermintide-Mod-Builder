@@ -78,7 +78,26 @@ let defaultData = {
     // Folders a mod can use resources from, and top-level files to always include, for vmb resolve-sources. An entry is
     // the name of a folder or file in the Modding Tools Content's project folder, such as "units",
     // or { "name": "<name>", "dir": "<folder that has it>" } for one elsewhere.
-    source_dirs: [],
+    // By default, the Content's folders of resources. Only the files a mod refers to are listed, so more folders cost nothing.
+    // global.script_flow_nodes has the game's flow nodes, which the game's units' flow needs to compile.
+    source_dirs: [
+        'units',
+        'environment',
+        'fx',
+        'materials',
+        'shaders',
+        'shader_nodes',
+        'texture_categories',
+        'rendering',
+        'gui',
+        'video',
+        'wwise',
+        'script_flow_nodes',
+        'subflow',
+        'vector_fields',
+        'volume_types',
+        'global.script_flow_nodes'
+    ],
 
     ignore_build_errors: false
 };
