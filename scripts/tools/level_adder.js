@@ -20,7 +20,8 @@ const MOD_TOOLS_LEVEL_SETTINGS = 'scripts/settings/dlcs/mod_tools/level_settings
 // The environment has to be one of the game's: an end zone blends the level's environment to its
 // waystone_environment_01 setting when it opens, and the SDK's default environments don't have it.
 // The editor reads a level from editor_metadata, and writes the rest of the file from it when it saves.
-// It refuses a level without editor_metadata's Flow, and takes the skydome and environment from its Settings.
+// It refuses a level without editor_metadata's Flow, takes the skydome and environment from its Settings,
+// and the camera it starts with from its Transients.
 const LEVEL_TEXT =
 `editor_metadata = {
 	Flow = {
@@ -91,6 +92,33 @@ const LEVEL_TEXT =
 	]
 	Stories = [
 	]
+	Transients = {
+		Camera = {
+			FarRange = 1000
+			InterestPointDistance = 10
+			OrthographicPlane = {
+				W = 1
+				X = 0
+				Y = 0
+				Z = 0
+			}
+			OrthographicZoom = 10
+			Pos = {
+				X = 0
+				Y = -10
+				Z = 3
+			}
+			ProjectionType = 1
+			Rot = {
+				W = 1
+				X = 0
+				Y = 0
+				Z = 0
+			}
+			RotationSpeed = 0.003
+			TranslationSpeed = 1
+		}
+	}
 	Triggers = [
 	]
 	Units = [
